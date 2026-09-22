@@ -255,28 +255,21 @@ export class GameState {
 
   checkEndConditions() {
     const playerNodes = this.countOwned(OWNER.PLAYER);
-    const enemyNodes = this.countOwned(OWNER.ENEMY);
-    const hasEnemy = this.level.hasOpponent;
-
     if (playerNodes === 0) {
       this.result = 'defeat';
       return;
     }
-    if (hasEnemy && enemyNodes === 0 && this.objective === 'conquest') {
-      this.result = 'victory';
-      return;
-    }
-    if (hasEnemy && enemyNodes === 0 && this.objective !== 'conquest') {
-      // still need to satisfy the specific objective, but eliminating the enemy
-      // outright is always a valid win too
-      this.result = 'victory';
-      return;
-    }
 
-    if (this.objective === 'hold' && this.holdProgress >= this.holdDuration) {
-      this.result = 'victory';
-    } else if (this.objective === 'exfil' && this.exfilProgress >= this.exfilTarget) {
-      this.result = 'victory';
+    if (this.objective === 'conquest') {
+      // "capture everything" means the whole map, not just beating the enemy
+      // operator — this also has to work on levels with no opponent at all.
+      const neutralLeft = this.countOwned(OWNER.NEUTRAL);
+      const enemyLeft = this.countOwned(OWNER.ENEMY);
+      if (neutralLeft === 0 && enemyLeft === 0) this.result = 'victory';
+    } else if (this.objective === 'hold') {
+      if (this.holdProgress >= this.holdDuration) this.result = 'victory';
+    } else if (this.objective === 'exfil') {
+      if (this.exfilProgress >= this.exfilTarget) this.result = 'victory';
     }
   }
 }

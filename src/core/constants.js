@@ -1,6 +1,6 @@
 // Core tunable constants for the NETSPLIT simulation.
 
-export const CABLE_BASE_BANDWIDTH = 4;      // packets/s a stock cable can carry per direction
+export const CABLE_BASE_BANDWIDTH = 6;      // packets/s a stock cable can carry per direction
 export const CHANNEL_MAX = 4;               // max simultaneous outgoing channels per node
 export const CHANNEL_SHARE = 0.25;          // each channel carries this fraction of node output
 
