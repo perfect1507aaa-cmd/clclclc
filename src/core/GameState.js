@@ -1,5 +1,5 @@
 import { Node } from './Node.js';
-import { Edge } from './Edge.js';
+import { Connection } from './Connection.js';
 import {
   OWNER,
   DORMANT_CLAIM_COST,
@@ -15,20 +15,12 @@ export class GameState {
   constructor(level) {
     this.level = level;
     this.nodes = new Map();
-    this.edges = [];
-    this.adjacency = new Map(); // nodeId -> [edge,...]
+    this.connections = [];
 
     for (const n of level.nodes) {
       const node = new Node(n);
       this.nodes.set(node.id, node);
-      this.adjacency.set(node.id, []);
     }
-    level.edges.forEach(([a, b, opts], i) => {
-      const edge = new Edge(`e${i}`, a, b, opts || {});
-      this.edges.push(edge);
-      this.adjacency.get(a).push(edge);
-      this.adjacency.get(b).push(edge);
-    });
 
     this.time = 0;
     this.traceEnabled = !!level.trace;
@@ -59,10 +51,6 @@ export class GameState {
     }
   }
 
-  neighborsOf(nodeId) {
-    return this.adjacency.get(nodeId).map((e) => this.nodes.get(e.other(nodeId)));
-  }
-
   pushEvent(evt) {
     this.events.push(evt);
   }
@@ -73,32 +61,69 @@ export class GameState {
     return evts;
   }
 
-  // --- player/AI actions -------------------------------------------------
+  // --- connections ------------------------------------------------------
 
-  toggleChannel(sourceId, targetId, actingOwner) {
-    const source = this.nodes.get(sourceId);
-    const target = this.nodes.get(targetId);
+  connect(fromId, toId, actingOwner) {
+    if (fromId === toId) return null;
+    const source = this.nodes.get(fromId);
+    const target = this.nodes.get(toId);
     if (!source || !target) return null;
     if (source.owner !== actingOwner) return null;
     if (target.owner === OWNER.DORMANT) return null;
-    const edge = this.adjacency.get(sourceId).find((e) => e.connects(targetId));
-    if (!edge || edge.dashed) return null;
-    return source.toggleChannel(targetId);
+
+    const existing = this.connections.find((c) => c.from === fromId && c.to === toId);
+    if (existing) {
+      this.disconnect(existing.id);
+      return 'removed';
+    }
+    if (!source.canOpenConnection()) return 'full';
+
+    const conn = new Connection(fromId, toId, actingOwner);
+    this.connections.push(conn);
+    source.outgoing.push(conn.id);
+    return 'added';
   }
 
-  attemptUpgrade(nodeId, branch, actingOwner) {
-    const node = this.nodes.get(nodeId);
-    if (!node || node.owner !== actingOwner) return false;
-    return node.applyUpgrade(branch);
+  disconnect(connId) {
+    const conn = this.connections.find((c) => c.id === connId);
+    if (!conn) return;
+    const source = this.nodes.get(conn.from);
+    if (source) source.buffer = Math.min(source.bufferMax, source.buffer + conn.inTransit);
+    this.removeConnection(conn);
+  }
+
+  cutConnection(connId, t) {
+    const conn = this.connections.find((c) => c.id === connId);
+    if (!conn) return false;
+    const clamped = Math.min(1, Math.max(0, t));
+    const source = this.nodes.get(conn.from);
+    const target = this.nodes.get(conn.to);
+    const toSource = conn.inTransit * clamped;
+    const toDest = conn.inTransit - toSource;
+
+    if (source) source.buffer = Math.min(source.bufferMax, source.buffer + toSource);
+    if (source && target && toDest > 0) this.deliver(source, target, toDest);
+
+    this.pushEvent({ type: 'cut', fromId: conn.from, toId: conn.to, t: clamped });
+    this.removeConnection(conn);
+    return true;
+  }
+
+  removeConnection(conn) {
+    const idx = this.connections.indexOf(conn);
+    if (idx >= 0) this.connections.splice(idx, 1);
+    const source = this.nodes.get(conn.from);
+    if (source) {
+      const oi = source.outgoing.indexOf(conn.id);
+      if (oi >= 0) source.outgoing.splice(oi, 1);
+    }
   }
 
   attemptClaimDormant(dormantId, actingOwner) {
     const dormantNode = this.nodes.get(dormantId);
     if (!dormantNode || dormantNode.owner !== OWNER.DORMANT) return false;
-    const neighborEdges = this.adjacency.get(dormantId);
     let best = null;
-    for (const e of neighborEdges) {
-      const n = this.nodes.get(e.other(dormantId));
+    for (const n of this.nodes.values()) {
       if (n.owner === actingOwner && n.buffer >= DORMANT_CLAIM_COST) {
         if (!best || n.buffer > best.buffer) best = n;
       }
@@ -120,11 +145,16 @@ export class GameState {
     this.time += dt;
 
     for (const node of this.nodes.values()) node.tickGeneration(dt);
+    // tier bonuses depend on current buffer, so keep them live for every
+    // node (a big neutral/enemy node is tankier even before you own it)
+    for (const node of this.nodes.values()) node.recomputeStats();
 
     this.computeAndApplyFlows(dt);
 
     for (const node of this.nodes.values()) node.tickCosmetics(dt);
-    for (const edge of this.edges) edge.tickCosmetics(dt);
+    for (const conn of this.connections) {
+      if (conn.collisionFlash > 0) conn.collisionFlash = Math.max(0, conn.collisionFlash - dt * 3);
+    }
 
     if (this.traceEnabled) this.tickTrace(dt);
     this.tickObjective(dt);
@@ -132,51 +162,68 @@ export class GameState {
   }
 
   computeAndApplyFlows(dt) {
-    for (const edge of this.edges) {
-      edge.flowAB = 0;
-      edge.flowBA = 0;
-      edge.collision = null;
-      if (edge.dashed) continue;
+    const pending = new Map();
 
-      const nodeA = this.nodes.get(edge.a);
-      const nodeB = this.nodes.get(edge.b);
-      const bandwidth = edge.bandwidth(this.nodes);
+    // pass 1: draw from each source into its pipe, work out how much each
+    // pipe is trying to leak into its destination this tick
+    for (const conn of this.connections) {
+      const source = this.nodes.get(conn.from);
+      if (!source || !source.isOwned()) {
+        pending.set(conn.id, 0);
+        conn.drawFlow = 0;
+        continue;
+      }
+      const draw = Math.max(0, Math.min(source.channelShareOutput, dt > 0 ? source.buffer / dt : 0));
+      source.buffer = Math.max(0, source.buffer - draw * dt);
+      conn.inTransit += draw * dt;
+      conn.drawFlow = draw;
 
-      const rawAB = this.rawFlow(nodeA, edge.b, bandwidth, dt);
-      const rawBA = this.rawFlow(nodeB, edge.a, bandwidth, dt);
+      const travelTime = conn.travelTime(this.nodes);
+      const leakRate = conn.inTransit / travelTime;
+      pending.set(conn.id, Math.min(leakRate * dt, conn.inTransit));
+    }
 
-      // sunk cost: senders burn their own raw rate from buffer regardless of outcome
-      if (rawAB > 0) nodeA.buffer = Math.max(0, nodeA.buffer - rawAB * dt);
-      if (rawBA > 0) nodeB.buffer = Math.max(0, nodeB.buffer - rawBA * dt);
+    // pass 2: opposing pipes between the same two nodes fight — both burn
+    // their attempted delivery, only the difference gets through
+    const resolved = new Set();
+    for (const conn of this.connections) {
+      if (resolved.has(conn.id)) continue;
+      const opposite = this.connections.find(
+        (c) => !resolved.has(c.id) && c.id !== conn.id && c.from === conn.to && c.to === conn.from
+      );
 
-      edge.flowAB = rawAB;
-      edge.flowBA = rawBA;
+      if (opposite) {
+        const a = pending.get(conn.id) || 0;
+        const b = pending.get(opposite.id) || 0;
+        conn.inTransit = Math.max(0, conn.inTransit - a);
+        opposite.inTransit = Math.max(0, opposite.inTransit - b);
+        conn.deliverFlow = a;
+        opposite.deliverFlow = b;
+        conn.collisionRatio = a + b > 0 ? a / (a + b) : 0.5;
+        opposite.collisionRatio = 1 - conn.collisionRatio;
+        conn.collisionFlash = 1;
+        opposite.collisionFlash = 1;
 
-      if (rawAB > 0 && rawBA > 0) {
-        const total = rawAB + rawBA;
-        const ratio = 0.5 + 0.5 * ((rawAB - rawBA) / total);
-        edge.collision = { ratio: Math.min(0.96, Math.max(0.04, ratio)) };
-        edge.collisionFlash = 1;
-        const net = rawAB - rawBA;
-        if (net > 0.0001) {
-          this.deliver(nodeA, nodeB, net * dt);
-        } else if (net < -0.0001) {
-          this.deliver(nodeB, nodeA, -net * dt);
+        const net = a - b;
+        if (Math.abs(net) > 0.0001) {
+          const winner = net > 0 ? conn : opposite;
+          const source = this.nodes.get(winner.from);
+          const target = this.nodes.get(winner.to);
+          if (source && target) this.deliver(source, target, Math.abs(net));
         }
-      } else if (rawAB > 0) {
-        this.deliver(nodeA, nodeB, rawAB * dt);
-      } else if (rawBA > 0) {
-        this.deliver(nodeB, nodeA, rawBA * dt);
+        resolved.add(conn.id);
+        resolved.add(opposite.id);
+      } else {
+        const amount = pending.get(conn.id) || 0;
+        conn.inTransit = Math.max(0, conn.inTransit - amount);
+        conn.deliverFlow = amount;
+        conn.collisionRatio = null;
+        const source = this.nodes.get(conn.from);
+        const target = this.nodes.get(conn.to);
+        if (source && target && amount > 0) this.deliver(source, target, amount);
+        resolved.add(conn.id);
       }
     }
-  }
-
-  rawFlow(sourceNode, targetId, bandwidth, dt) {
-    if (!sourceNode.isOwned()) return 0;
-    if (!sourceNode.hasChannelTo(targetId)) return 0;
-    const desired = sourceNode.channelShareOutput;
-    const bufferCap = dt > 0 ? sourceNode.buffer / dt : 0;
-    return Math.max(0, Math.min(desired, bandwidth, bufferCap));
   }
 
   deliver(sourceNode, targetNode, amount) {
@@ -194,14 +241,14 @@ export class GameState {
 
     if (targetNode.buffer <= 0) {
       const prevOwner = targetNode.owner;
+      // any pipes this node was pushing out are severed by the capture
+      this.connections = this.connections.filter((c) => c.from !== targetNode.id);
       targetNode.resetOnCapture(sourceNode.owner);
       targetNode.powerMult = sourceNode.owner === OWNER.ENEMY ? this.aiPowerMult : 1;
       targetNode.recomputeStats();
       targetNode.buffer = 1;
       this.captureEvents.push({ nodeId: targetNode.id, from: prevOwner, to: sourceNode.owner });
       this.pushEvent({ type: 'capture', nodeId: targetNode.id, from: prevOwner, to: sourceNode.owner });
-      // drop any outstanding channels elsewhere pointed with stale assumptions is unnecessary;
-      // flow calc re-reads live owner each tick.
     }
   }
 

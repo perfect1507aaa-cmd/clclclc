@@ -27,17 +27,17 @@ let rafId = null;
 
 const input = new InputController(canvas, renderer, {
   getGameState: () => (paused ? null : gameState),
-  onToggleChannel: (from, to) => {
+  onConnect: (from, to) => {
     if (!gameState) return;
-    gameState.toggleChannel(from, to, OWNER.PLAYER);
+    gameState.connect(from, to, OWNER.PLAYER);
   },
   onClaimDormant: (id) => {
     if (!gameState) return;
     gameState.attemptClaimDormant(id, OWNER.PLAYER);
   },
-  onUpgrade: (id, branch) => {
+  onCutConnection: (connId, t) => {
     if (!gameState) return;
-    gameState.attemptUpgrade(id, branch, OWNER.PLAYER);
+    gameState.cutConnection(connId, t);
   },
 });
 

@@ -6,19 +6,24 @@ export class InputController {
   constructor(canvas, renderer, callbacks) {
     this.canvas = canvas;
     this.renderer = renderer;
-    this.callbacks = callbacks; // { onToggleChannel, onClaimDormant, onUpgrade, getGameState }
+    this.callbacks = callbacks; // { onConnect, onClaimDormant, onCutConnection, getGameState }
 
     this.dragFrom = null;
     this.dragPos = { x: 0, y: 0 };
     this.moved = false;
-    this.selectedNodeId = null;
+
+    this.cutting = false;
+    this.cutConnId = null;
+    this.cutT = 0.5;
+    this.cutPoint = null;
+
     this.hoverNodeId = null;
-    this.pendingMenuAction = null;
 
     canvas.addEventListener('pointerdown', this.onDown.bind(this));
     canvas.addEventListener('pointermove', this.onMove.bind(this));
     window.addEventListener('pointerup', this.onUp.bind(this));
     canvas.addEventListener('pointercancel', this.onCancel.bind(this));
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   coords(e) {
@@ -30,19 +35,21 @@ export class InputController {
     const gs = this.callbacks.getGameState();
     if (!gs || gs.result) return;
     const pos = this.coords(e);
-    this.downPos = pos;
-    this.moved = false;
 
-    if (this.selectedNodeId) {
-      const branch = this.renderer.hitTestUpgradeMenu(pos.x, pos.y);
-      if (branch) {
-        this.pendingMenuAction = { nodeId: this.selectedNodeId, branch };
-        return;
+    if (e.button === 2) {
+      const hit = this.renderer.hitTestConnection(gs, pos.x, pos.y);
+      if (hit) {
+        this.cutting = true;
+        this.cutConnId = hit.connId;
+        this.cutT = hit.t;
+        this.cutPoint = hit.point;
       }
+      return;
     }
 
+    this.downPos = pos;
+    this.moved = false;
     const nodeId = this.renderer.hitTestNode(gs, pos.x, pos.y);
-    this.downNodeId = nodeId;
     if (nodeId) {
       const node = gs.nodes.get(nodeId);
       if (node.owner === OWNER.PLAYER) {
@@ -57,6 +64,28 @@ export class InputController {
     if (!gs) return;
     const pos = this.coords(e);
     this.hoverNodeId = this.renderer.hitTestNode(gs, pos.x, pos.y);
+
+    if (this.cutting && this.cutConnId) {
+      const conn = gs.connections.find((c) => c.id === this.cutConnId);
+      if (conn) {
+        const a = this.renderer.pos(conn.from);
+        const b = this.renderer.pos(conn.to);
+        if (a && b) {
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const lenSq = dx * dx + dy * dy || 1;
+          let t = ((pos.x - a.x) * dx + (pos.y - a.y) * dy) / lenSq;
+          t = Math.min(1, Math.max(0, t));
+          this.cutT = t;
+          this.cutPoint = { x: a.x + dx * t, y: a.y + dy * t };
+        }
+      } else {
+        this.cutting = false;
+        this.cutConnId = null;
+      }
+      return;
+    }
+
     if (this.dragFrom) {
       this.dragPos = pos;
       const dx = pos.x - this.downPos.x;
@@ -71,13 +100,16 @@ export class InputController {
       this.reset();
       return;
     }
-    const pos = this.coords(e);
 
-    if (this.pendingMenuAction) {
-      this.callbacks.onUpgrade(this.pendingMenuAction.nodeId, this.pendingMenuAction.branch);
-      this.pendingMenuAction = null;
+    if (this.cutting) {
+      if (this.cutConnId) this.callbacks.onCutConnection(this.cutConnId, this.cutT);
+      this.cutting = false;
+      this.cutConnId = null;
+      this.cutPoint = null;
       return;
     }
+
+    const pos = this.coords(e);
 
     if (this.dragFrom) {
       if (this.moved) {
@@ -87,11 +119,9 @@ export class InputController {
           if (targetNode.owner === OWNER.DORMANT) {
             this.callbacks.onClaimDormant(targetId);
           } else {
-            this.callbacks.onToggleChannel(this.dragFrom, targetId);
+            this.callbacks.onConnect(this.dragFrom, targetId);
           }
         }
-      } else {
-        this.selectedNodeId = this.selectedNodeId === this.dragFrom ? null : this.dragFrom;
       }
       this.dragFrom = null;
       this.moved = false;
@@ -103,7 +133,6 @@ export class InputController {
       const node = gs.nodes.get(nodeId);
       if (node.owner === OWNER.DORMANT) this.callbacks.onClaimDormant(nodeId);
     }
-    this.selectedNodeId = null;
   }
 
   onCancel() {
@@ -113,7 +142,9 @@ export class InputController {
   reset() {
     this.dragFrom = null;
     this.moved = false;
-    this.pendingMenuAction = null;
+    this.cutting = false;
+    this.cutConnId = null;
+    this.cutPoint = null;
   }
 
   getState() {
@@ -121,12 +152,11 @@ export class InputController {
       dragFrom: this.dragFrom,
       dragPos: this.dragPos,
       hoverNodeId: this.hoverNodeId,
-      selectedNodeId: this.selectedNodeId,
+      cutPreview: this.cutting && this.cutPoint ? { point: this.cutPoint, t: this.cutT } : null,
     };
   }
 
   clearSelection() {
-    this.selectedNodeId = null;
-    this.dragFrom = null;
+    this.reset();
   }
 }

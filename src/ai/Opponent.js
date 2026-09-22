@@ -1,4 +1,4 @@
-import { OWNER, CHANNEL_MAX, DORMANT_CLAIM_COST, UPGRADE_MAX_LEVEL } from '../core/constants.js';
+import { OWNER, DORMANT_CLAIM_COST } from '../core/constants.js';
 
 // The enemy operator. Difficulty ramps smoothly across the ten campaign
 // levels: early on it runs its hardware under-powered, thinks slowly, and
@@ -15,8 +15,6 @@ export class Opponent {
     this.dualChannel = t >= 0.6;
     this.costAware = t >= 0.35;
     this.reinforceUnderFire = t >= 0.5;
-    this.investUpgrades = t >= 0.3;
-    this.pullReinforcements = t >= 0.75;
 
     this.timer = 0;
   }
@@ -36,29 +34,42 @@ export class Opponent {
     return list;
   }
 
+  otherNodes(gameState, excludeOwner) {
+    const list = [];
+    for (const node of gameState.nodes.values()) {
+      if (node.owner === OWNER.DORMANT || node.owner === excludeOwner) continue;
+      list.push(node);
+    }
+    return list;
+  }
+
   decide(gameState) {
     const enemyNodes = this.enemyNodes(gameState);
     if (enemyNodes.length === 0) return;
 
     this.expandFrontier(gameState, enemyNodes);
     this.claimDormant(gameState, enemyNodes);
-    if (this.investUpgrades) this.upgrade(gameState, enemyNodes);
     if (this.reinforceUnderFire) this.reinforce(gameState, enemyNodes);
   }
 
   expandFrontier(gameState, enemyNodes) {
+    const targets = this.otherNodes(gameState, OWNER.ENEMY);
+    if (!targets.length) return;
+
     const candidates = [];
     for (const node of enemyNodes) {
-      if (node.channels.length >= CHANNEL_MAX) continue;
-      for (const edge of gameState.adjacency.get(node.id)) {
-        if (edge.dashed) continue;
-        const targetId = edge.other(node.id);
-        const target = gameState.nodes.get(targetId);
-        if (target.owner === OWNER.ENEMY || target.owner === OWNER.DORMANT) continue;
-        if (node.hasChannelTo(targetId)) continue;
+      if (!node.canOpenConnection()) continue;
+      for (const target of targets) {
+        if (node.outgoing.some((cid) => {
+          const c = gameState.connections.find((x) => x.id === cid);
+          return c && c.to === target.id;
+        })) {
+          continue;
+        }
         const defenseFactor = this.costAware ? target.defenseMultiplier : 1;
-        const cost = target.buffer * defenseFactor + 1;
-        candidates.push({ node, targetId, cost });
+        const dist = Math.hypot(node.x - target.x, node.y - target.y);
+        const cost = target.buffer * defenseFactor + dist * 8;
+        candidates.push({ node, target, cost });
       }
     }
     if (!candidates.length) return;
@@ -67,58 +78,34 @@ export class Opponent {
     let taken = 0;
     for (const c of candidates) {
       if (taken >= picks) break;
-      if (c.node.channels.length >= CHANNEL_MAX) continue;
-      const res = gameState.toggleChannel(c.node.id, c.targetId, OWNER.ENEMY);
+      if (!c.node.canOpenConnection()) continue;
+      const res = gameState.connect(c.node.id, c.target.id, OWNER.ENEMY);
       if (res === 'added') taken++;
     }
   }
 
   claimDormant(gameState, enemyNodes) {
-    for (const node of enemyNodes) {
-      if (node.buffer < DORMANT_CLAIM_COST * 1.4) continue;
-      for (const edge of gameState.adjacency.get(node.id)) {
-        const targetId = edge.other(node.id);
-        const target = gameState.nodes.get(targetId);
-        if (target.owner === OWNER.DORMANT) {
-          gameState.attemptClaimDormant(targetId, OWNER.ENEMY);
-          break;
-        }
-      }
-    }
-  }
-
-  upgrade(gameState, enemyNodes) {
-    const order = ['nic', 'ice', 'cpu', 'ram'];
-    for (const node of enemyNodes) {
-      if (node.buffer < node.bufferMax * 0.55) continue;
-      for (const branch of order) {
-        if (node.upgrades[branch] < UPGRADE_MAX_LEVEL && node.buffer >= node.upgradeCost(branch)) {
-          gameState.attemptUpgrade(node.id, branch, OWNER.ENEMY);
-          break;
-        }
+    const richest = enemyNodes.reduce((a, b) => (b.buffer > a.buffer ? b : a), enemyNodes[0]);
+    if (!richest || richest.buffer < DORMANT_CLAIM_COST * 1.4) return;
+    for (const node of gameState.nodes.values()) {
+      if (node.owner === OWNER.DORMANT) {
+        if (gameState.attemptClaimDormant(node.id, OWNER.ENEMY)) return;
       }
     }
   }
 
   reinforce(gameState, enemyNodes) {
     for (const node of enemyNodes) {
-      const underFire = gameState.adjacency.get(node.id).some((edge) => {
-        const otherId = edge.other(node.id);
-        const other = gameState.nodes.get(otherId);
-        if (other.owner === OWNER.ENEMY || other.owner === OWNER.DORMANT) return false;
-        return edge.a === node.id ? edge.flowBA > 0 : edge.flowAB > 0;
+      const underFire = gameState.connections.some((c) => {
+        if (c.to !== node.id) return false;
+        const source = gameState.nodes.get(c.from);
+        return source && source.owner !== OWNER.ENEMY && c.deliverFlow > 0;
       });
       if (!underFire) continue;
-      for (const edge of gameState.adjacency.get(node.id)) {
-        if (edge.dashed) continue;
-        const otherId = edge.other(node.id);
-        const other = gameState.nodes.get(otherId);
-        if (other.owner !== OWNER.ENEMY) continue;
-        if (other.hasChannelTo(node.id) || other.channels.length >= CHANNEL_MAX) continue;
-        if (this.pullReinforcements || other.buffer > other.bufferMax * 0.4) {
-          gameState.toggleChannel(other.id, node.id, OWNER.ENEMY);
-          break;
-        }
+      for (const ally of enemyNodes) {
+        if (ally.id === node.id || !ally.canOpenConnection()) continue;
+        if (ally.buffer < ally.bufferMax * 0.3) continue;
+        if (gameState.connect(ally.id, node.id, OWNER.ENEMY) === 'added') break;
       }
     }
   }

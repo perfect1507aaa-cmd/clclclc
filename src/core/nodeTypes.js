@@ -1,19 +1,14 @@
-// Base stats per node archetype. All numbers are "level 0 / no upgrades".
+// Base stats per node archetype. All numbers are "tier 1 / no bonuses".
+// generation/output are tuned so a single tier-1 connection sits close to
+// break-even with the source's own generation (see Node.channelShareOutput).
 export const NODE_TYPES = {
-  // "output" is a node's raw send capacity, spent 25% per active channel
-  // (see CHANNEL_SHARE). Generating types are tuned so that ONE open
-  // channel sits close to break-even with generation — pushing costs you
-  // buffer only once you stack multiple channels or upgrade NIC further.
-  // The router is the deliberate exception: it never generates, so any
-  // channel it opens is a pure drain unless fed by an ally.
   workstation: {
     label: 'WORKSTATION',
     generation: 1.0,
     bufferMax: 90,
     output: 4.0,
     defense: 0,
-    upgradeCostMult: 1,
-    cableMultiplier: 1,
+    flowBoost: 1,
   },
   server: {
     label: 'SERVER',
@@ -21,8 +16,7 @@ export const NODE_TYPES = {
     bufferMax: 260,
     output: 1.8,
     defense: 6,
-    upgradeCostMult: 0.55,
-    cableMultiplier: 1,
+    flowBoost: 1,
   },
   router: {
     label: 'ROUTER',
@@ -30,8 +24,7 @@ export const NODE_TYPES = {
     bufferMax: 140,
     output: 16,
     defense: 8,
-    upgradeCostMult: 1,
-    cableMultiplier: 2,
+    flowBoost: 1.8, // never generates its own traffic, but moves everyone else's fast
   },
   firewall: {
     label: 'FIREWALL',
@@ -39,8 +32,7 @@ export const NODE_TYPES = {
     bufferMax: 190,
     output: 1.6,
     defense: 28,
-    upgradeCostMult: 1,
-    cableMultiplier: 1,
+    flowBoost: 1,
   },
   mainframe: {
     label: 'MAINFRAME',
@@ -48,7 +40,6 @@ export const NODE_TYPES = {
     bufferMax: 620,
     output: 8.0,
     defense: 16,
-    upgradeCostMult: 1,
-    cableMultiplier: 1,
+    flowBoost: 1,
   },
 };

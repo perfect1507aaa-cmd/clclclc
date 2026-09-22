@@ -1,4 +1,4 @@
-import { OWNER, CABLE_BASE_BANDWIDTH, UPGRADE_MAX_LEVEL } from '../core/constants.js';
+import { OWNER, CUT_HIT_RADIUS } from '../core/constants.js';
 import { ScreenEffects } from './effects.js';
 
 const COLOR = {
@@ -12,15 +12,6 @@ const COLOR = {
   bg: '#05070a',
 };
 
-const BRANCH_COLOR = {
-  cpu: '#ffd23b',
-  ram: '#3bff8a',
-  nic: '#ff9d3b',
-  ice: '#3bd6ff',
-};
-const BRANCH_LABEL = { cpu: 'CPU', ram: 'RAM', nic: 'NIC', ice: 'ICE' };
-const BRANCH_ANGLE = { cpu: -90, ram: 0, nic: 90, ice: 180 };
-
 const TYPE_RADIUS = {
   workstation: 16,
   server: 20,
@@ -28,6 +19,9 @@ const TYPE_RADIUS = {
   firewall: 20,
   mainframe: 27,
 };
+
+const TIER_RADIUS_MULT = { 1: 1, 2: 1.18, 3: 1.4 };
+const VISUAL_MAX_TRANSIT = 14; // inTransit that maxes out beam thickness/glow
 
 function deg(d) {
   return (d * Math.PI) / 180;
@@ -48,7 +42,6 @@ export class Renderer {
     this.layout = new Map();
     this.w = 0;
     this.h = 0;
-    this.menuGeom = null;
     this.time = 0;
   }
 
@@ -80,7 +73,8 @@ export class Renderer {
   }
 
   radius(node) {
-    return TYPE_RADIUS[node.type] || 16;
+    const base = TYPE_RADIUS[node.type] || 16;
+    return base * (TIER_RADIUS_MULT[node.tier] || 1);
   }
 
   hitTestNode(gameState, sx, sy) {
@@ -93,23 +87,29 @@ export class Renderer {
     return null;
   }
 
-  hitTestUpgradeMenu(sx, sy) {
-    if (!this.menuGeom) return null;
-    const { center } = this.menuGeom;
-    const dx = sx - center.x;
-    const dy = sy - center.y;
-    const dist = Math.hypot(dx, dy);
-    for (const sector of this.menuGeom.sectors) {
-      if (dist < sector.rInner || dist > sector.rOuter) continue;
-      let a = (Math.atan2(dy, dx) * 180) / Math.PI;
-      let lo = sector.startAngle;
-      let hi = sector.endAngle;
-      // normalize a into [lo, lo+360)
-      while (a < lo) a += 360;
-      while (a >= lo + 360) a -= 360;
-      if (a >= lo && a <= hi) return sector.branch;
+  // finds the nearest connection beam to a screen point, for the RMB cut
+  // gesture — returns { connId, t } where t is the fraction of the way
+  // from source to destination the point projects onto.
+  hitTestConnection(gameState, sx, sy) {
+    let best = null;
+    for (const conn of gameState.connections) {
+      const a = this.pos(conn.from);
+      const b = this.pos(conn.to);
+      if (!a || !b) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq < 1) continue;
+      let t = ((sx - a.x) * dx + (sy - a.y) * dy) / lenSq;
+      t = Math.min(1, Math.max(0, t));
+      const px = a.x + dx * t;
+      const py = a.y + dy * t;
+      const dist = Math.hypot(sx - px, sy - py);
+      if (dist <= CUT_HIT_RADIUS && (!best || dist < best.dist)) {
+        best = { connId: conn.id, t, dist, point: { x: px, y: py } };
+      }
     }
-    return null;
+    return best;
   }
 
   render(gameState, input, dt) {
@@ -119,8 +119,9 @@ export class Renderer {
     ctx.fillStyle = COLOR.bg;
     ctx.fillRect(0, 0, this.w, this.h);
 
-    this.drawEdges(gameState);
+    this.drawConnections(gameState);
     this.drawDragLine(gameState, input);
+    this.drawCutPreview(input);
     this.drawNodes(gameState, input);
     this.drawTraceStrike(gameState);
 
@@ -128,61 +129,39 @@ export class Renderer {
     ctx.restore();
   }
 
-  // ---- edges ---------------------------------------------------------
+  // ---- connections ------------------------------------------------------
 
-  drawEdges(gameState) {
+  drawConnections(gameState) {
     const ctx = this.ctx;
-    for (const edge of gameState.edges) {
-      const a = gameState.nodes.get(edge.a);
-      const b = gameState.nodes.get(edge.b);
-      const pa = this.pos(edge.a);
-      const pb = this.pos(edge.b);
+    for (const conn of gameState.connections) {
+      const source = gameState.nodes.get(conn.from);
+      const pa = this.pos(conn.from);
+      const pb = this.pos(conn.to);
       if (!pa || !pb) continue;
 
-      ctx.save();
-      if (edge.dashed) {
-        ctx.setLineDash([4, 6]);
-        ctx.strokeStyle = 'rgba(120,128,140,0.35)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(pa.x, pa.y);
-        ctx.lineTo(pb.x, pb.y);
-        ctx.stroke();
-        ctx.restore();
-        continue;
-      }
+      const fill = Math.min(1, conn.inTransit / VISUAL_MAX_TRANSIT);
+      const width = 1.5 + fill * 7;
+      const color = ownerColor(conn.owner || source.owner);
 
-      ctx.setLineDash([]);
-      ctx.strokeStyle = 'rgba(120,128,140,0.28)';
-      ctx.lineWidth = 2;
+      const collisionPt =
+        conn.collisionRatio != null
+          ? { x: pa.x + (pb.x - pa.x) * conn.collisionRatio, y: pa.y + (pb.y - pa.y) * conn.collisionRatio }
+          : null;
+
+      ctx.save();
+      // faint guide line so the pipe reads even when nearly empty
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(pa.x, pa.y);
       ctx.lineTo(pb.x, pb.y);
       ctx.stroke();
 
-      const bw = edge.bandwidth(gameState.nodes) || CABLE_BASE_BANDWIDTH;
-      const widthFor = (flow) => 1.5 + Math.min(1, flow / bw) * 5;
+      const end = collisionPt || pb;
+      this.beam(pa, end, color, width, fill);
 
-      const collisionPt = edge.collision
-        ? { x: pa.x + (pb.x - pa.x) * edge.collision.ratio, y: pa.y + (pb.y - pa.y) * edge.collision.ratio }
-        : null;
-
-      if (edge.flowAB > 0) {
-        const end = collisionPt || pb;
-        this.beam(pa, end, ownerColor(a.owner), widthFor(edge.flowAB));
-      }
-      if (edge.flowBA > 0) {
-        const end = collisionPt || pa;
-        this.beam(pb, end, ownerColor(b.owner), widthFor(edge.flowBA));
-      }
       if (collisionPt) {
-        const net = edge.flowAB - edge.flowBA;
-        if (Math.abs(net) > 0.001) {
-          const winner = net > 0 ? a : b;
-          const target = net > 0 ? pb : pa;
-          this.beam(collisionPt, target, ownerColor(winner.owner), widthFor(Math.abs(net) * 0.7));
-        }
-        const flash = 0.55 + 0.45 * Math.sin(this.time * 14) * 0.5 + edge.collisionFlash * 0.4;
+        const flash = 0.5 + 0.5 * Math.sin(this.time * 14) * 0.5 + conn.collisionFlash * 0.4;
         ctx.beginPath();
         ctx.fillStyle = `rgba(255,255,255,${Math.min(1, flash)})`;
         ctx.shadowColor = '#ffffff';
@@ -194,15 +173,26 @@ export class Renderer {
     }
   }
 
-  beam(from, to, color, width) {
+  beam(from, to, color, width, fill = 1) {
     const ctx = this.ctx;
     ctx.save();
     ctx.strokeStyle = color;
     ctx.shadowColor = color;
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 4 + fill * 10;
     ctx.lineWidth = width;
     ctx.lineCap = 'round';
-    ctx.globalAlpha = 0.9;
+    ctx.globalAlpha = 0.35 + fill * 0.6;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+
+    // traveling dash pattern to sell direction of flow
+    const dashLen = 10;
+    ctx.setLineDash([3, dashLen]);
+    ctx.lineDashOffset = -this.time * 40;
+    ctx.globalAlpha = 0.5 + fill * 0.5;
+    ctx.lineWidth = Math.max(1, width * 0.5);
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
@@ -226,16 +216,29 @@ export class Renderer {
     ctx.restore();
   }
 
+  drawCutPreview(input) {
+    if (!input || !input.cutPreview) return;
+    const { point } = input.cutPreview;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 16;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(point.x - 9, point.y - 9);
+    ctx.lineTo(point.x + 9, point.y + 9);
+    ctx.moveTo(point.x + 9, point.y - 9);
+    ctx.lineTo(point.x - 9, point.y + 9);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // ---- nodes ----------------------------------------------------------
 
   drawNodes(gameState, input) {
-    this.menuGeom = null;
     for (const node of gameState.nodes.values()) {
       this.drawNode(gameState, node, input);
-    }
-    if (input && input.selectedNodeId) {
-      const node = gameState.nodes.get(input.selectedNodeId);
-      if (node && node.isOwned()) this.drawUpgradeMenu(node);
     }
   }
 
@@ -297,12 +300,13 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
 
-      this.drawUpgradeTicks(p, ringR + 7, node, color);
-
       if (gameState.mainframeId === node.id && gameState.objective === 'hold') {
-        this.drawHoldArc(p, ringR + 15, gameState);
+        this.drawHoldArc(p, ringR + 10, gameState);
       }
     }
+
+    // tier rings — the more digits in the buffer, the more rings a node wears
+    this.drawTierRings(p, r, node, color);
 
     // shape
     ctx.save();
@@ -310,23 +314,17 @@ export class Renderer {
     ctx.fillStyle = node.owner === OWNER.NEUTRAL ? '#14161b' : `${color}22`;
     ctx.strokeStyle = color;
     ctx.shadowColor = color;
-    ctx.shadowBlur = node.owner === OWNER.NEUTRAL ? 2 : 10;
-    ctx.lineWidth = 2;
+    ctx.shadowBlur = node.owner === OWNER.NEUTRAL ? 2 : 8 + node.tier * 4;
+    ctx.lineWidth = 1.5 + node.tier * 0.5;
     this.drawShape(node.type, r);
     ctx.restore();
 
-    // labels: buffer / hardware level count
-    const hwLevels = node.upgrades.cpu + node.upgrades.ram + node.upgrades.nic + node.upgrades.ice;
+    // buffer number
     ctx.save();
-    ctx.fillStyle = 'rgba(230,232,236,0.85)';
-    ctx.font = '11px "Courier New", monospace';
+    ctx.fillStyle = 'rgba(230,232,236,0.9)';
+    ctx.font = `${10 + node.tier}px "Courier New", monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(Math.floor(node.buffer).toString(), p.x, p.y + r + 24);
-    if (hwLevels > 0) {
-      ctx.fillStyle = 'rgba(180,185,195,0.6)';
-      ctx.font = '9px "Courier New", monospace';
-      ctx.fillText(`hw ${hwLevels}`, p.x, p.y + r + 35);
-    }
+    ctx.fillText(Math.floor(node.buffer).toString(), p.x, p.y + r + 22 + node.tier);
     ctx.restore();
 
     if (input && input.hoverNodeId === node.id) {
@@ -338,6 +336,26 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  drawTierRings(center, r, node, color) {
+    if (node.tier <= 1) return;
+    const ctx = this.ctx;
+    ctx.save();
+    for (let i = 0; i < node.tier - 1; i++) {
+      const ringR = r + 3 + i * 4;
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.5 - i * 0.15;
+      ctx.lineWidth = 1;
+      if (node.tier >= 3) {
+        ctx.setLineDash([2, 3]);
+        ctx.lineDashOffset = this.time * (i % 2 === 0 ? 12 : -12);
+      }
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   drawShape(type, r) {
@@ -399,33 +417,6 @@ export class Renderer {
     }
   }
 
-  drawUpgradeTicks(center, radius, node, ownerCol) {
-    const ctx = this.ctx;
-    ctx.save();
-    for (const branch of ['cpu', 'ram', 'nic', 'ice']) {
-      const level = node.upgrades[branch];
-      const centerAngle = BRANCH_ANGLE[branch];
-      for (let i = 0; i < UPGRADE_MAX_LEVEL; i++) {
-        const a = deg(centerAngle + (i - 1) * 9);
-        const x1 = center.x + Math.cos(a) * radius;
-        const y1 = center.y + Math.sin(a) * radius;
-        const x2 = center.x + Math.cos(a) * (radius + 5);
-        const y2 = center.y + Math.sin(a) * (radius + 5);
-        const lit = i < level;
-        ctx.strokeStyle = lit ? BRANCH_COLOR[branch] : 'rgba(255,255,255,0.15)';
-        ctx.shadowColor = lit ? BRANCH_COLOR[branch] : 'transparent';
-        ctx.shadowBlur = lit ? 6 : 0;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      }
-    }
-    void ownerCol;
-    ctx.restore();
-  }
-
   drawHoldArc(center, radius, gameState) {
     const ctx = this.ctx;
     const frac = gameState.holdProgress / gameState.holdDuration;
@@ -438,59 +429,6 @@ export class Renderer {
     ctx.arc(center.x, center.y, radius, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-  }
-
-  drawUpgradeMenu(node) {
-    const ctx = this.ctx;
-    const center = this.pos(node.id);
-    const r = this.radius(node);
-    const rInner = r + 34;
-    const rOuter = rInner + 46;
-    const sectors = [];
-
-    ctx.save();
-    for (const branch of ['cpu', 'ram', 'nic', 'ice']) {
-      const centerAngle = BRANCH_ANGLE[branch];
-      const startAngle = centerAngle - 36;
-      const endAngle = centerAngle + 36;
-      const level = node.upgrades[branch];
-      const maxed = level >= UPGRADE_MAX_LEVEL;
-      const cost = node.upgradeCost(branch);
-      const affordable = !maxed && node.buffer >= cost;
-      sectors.push({ branch, startAngle, endAngle, rInner, rOuter });
-
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, rOuter, deg(startAngle), deg(endAngle));
-      ctx.arc(center.x, center.y, rInner, deg(endAngle), deg(startAngle), true);
-      ctx.closePath();
-      ctx.fillStyle = maxed
-        ? 'rgba(255,255,255,0.05)'
-        : affordable
-        ? `${BRANCH_COLOR[branch]}33`
-        : 'rgba(255,255,255,0.04)';
-      ctx.strokeStyle = maxed ? 'rgba(255,255,255,0.2)' : BRANCH_COLOR[branch];
-      ctx.lineWidth = 1.5;
-      ctx.shadowColor = affordable ? BRANCH_COLOR[branch] : 'transparent';
-      ctx.shadowBlur = affordable ? 10 : 0;
-      ctx.fill();
-      ctx.stroke();
-
-      const midA = deg(centerAngle);
-      const midR = (rInner + rOuter) / 2;
-      const tx = center.x + Math.cos(midA) * midR;
-      const ty = center.y + Math.sin(midA) * midR;
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = affordable ? '#fff' : 'rgba(255,255,255,0.5)';
-      ctx.font = 'bold 11px "Courier New", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(BRANCH_LABEL[branch], tx, ty - 6);
-      ctx.font = '9px "Courier New", monospace';
-      ctx.fillText(maxed ? 'MAX' : `Lv${level}>${level + 1}`, tx, ty + 6);
-      ctx.fillText(maxed ? '' : `-${cost}`, tx, ty + 17);
-    }
-    ctx.restore();
-
-    this.menuGeom = { center, sectors, nodeId: node.id };
   }
 
   drawTraceStrike(gameState) {
