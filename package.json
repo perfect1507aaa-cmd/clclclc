@@ -1,0 +1,10 @@
+{
+  "name": "netsplit",
+  "version": "1.0.0",
+  "description": "NETSPLIT — real-time network conquest strategy",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  }
+}

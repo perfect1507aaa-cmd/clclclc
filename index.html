@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>NETSPLIT</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="menu-screen" class="screen">
+      <div class="menu-inner">
+        <h1 class="title">NETSPLIT</h1>
+        <p class="subtitle">захвати сеть прежде, чем это сделают с тобой</p>
+        <div id="level-grid" class="level-grid"></div>
+        <button id="reset-progress" class="ghost-btn">сбросить прогресс</button>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen hidden">
+      <div id="hud"></div>
+      <canvas id="game-canvas"></canvas>
+    </section>
+
+    <section id="end-overlay" class="screen hidden overlay">
+      <div class="overlay-inner">
+        <h2 id="end-title"></h2>
+        <p id="end-sub"></p>
+        <div class="overlay-actions">
+          <button id="end-retry" class="ghost-btn">повторить</button>
+          <button id="end-next" class="primary-btn">далее</button>
+          <button id="end-menu" class="ghost-btn">меню</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pause-overlay" class="screen hidden overlay">
+      <div class="overlay-inner">
+        <h2>ПАУЗА</h2>
+        <div class="overlay-actions">
+          <button id="pause-resume" class="primary-btn">продолжить</button>
+          <button id="pause-restart" class="ghost-btn">заново</button>
+          <button id="pause-menu" class="ghost-btn">меню</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

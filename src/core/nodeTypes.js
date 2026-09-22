@@ -1,0 +1,48 @@
+// Base stats per node archetype. All numbers are "level 0 / no upgrades".
+export const NODE_TYPES = {
+  workstation: {
+    label: 'WORKSTATION',
+    generation: 1.0,
+    bufferMax: 90,
+    output: 40,
+    defense: 0,
+    upgradeCostMult: 1,
+    cableMultiplier: 1,
+  },
+  server: {
+    label: 'SERVER',
+    generation: 0.45,
+    bufferMax: 260,
+    output: 26,
+    defense: 6,
+    upgradeCostMult: 0.55,
+    cableMultiplier: 1,
+  },
+  router: {
+    label: 'ROUTER',
+    generation: 0,
+    bufferMax: 140,
+    output: 70,
+    defense: 8,
+    upgradeCostMult: 1,
+    cableMultiplier: 2,
+  },
+  firewall: {
+    label: 'FIREWALL',
+    generation: 0.65,
+    bufferMax: 190,
+    output: 18,
+    defense: 28,
+    upgradeCostMult: 1,
+    cableMultiplier: 1,
+  },
+  mainframe: {
+    label: 'MAINFRAME',
+    generation: 2.2,
+    bufferMax: 620,
+    output: 55,
+    defense: 16,
+    upgradeCostMult: 1,
+    cableMultiplier: 1,
+  },
+};
