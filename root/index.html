@@ -85,8 +85,15 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:center;
   padding:0 14px calc(env(safe-area-inset-bottom,0px) + 14px);
 }
-.pill{ pointer-events:auto; border-radius:10px; padding:5px 5px 5px 14px; display:flex; align-items:center; gap:12px; }
+.pill{ pointer-events:auto; border-radius:10px; padding:5px; display:flex; align-items:center; gap:12px; }
 .pill-label{ font-size:11px; color:var(--fg2); white-space:nowrap; }
+.grp{
+  height:28px; border:1px solid var(--line); border-radius:6px; background:transparent; font-size:12px; padding:0 10px;
+  cursor:pointer; white-space:nowrap; transition:border-color .15s ease, color .15s ease, background .15s ease;
+}
+.grp:hover{ border-color:var(--c1); color:var(--c1); }
+.grp[aria-pressed="true"]{ border-color:var(--c1); color:var(--c1); background:var(--fill2); }
+.grp .k{ color:var(--fg3); margin-left:6px; font-size:11px; }
 .info{ pointer-events:none; border-radius:10px; padding:8px 14px 9px; min-width:min(460px, calc(100vw - 28px)); max-width:calc(100vw - 28px); display:flex; flex-direction:column; gap:3px; }
 .info-a{ font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .info-b{ font-size:11px; color:var(--fg2); display:flex; flex-wrap:wrap; column-gap:16px; row-gap:2px; }
@@ -230,6 +237,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   </div>
   <div class="hud-bottom">
     <div class="pill panel">
+      <button class="grp" id="btnAll" aria-pressed="false"></button>
       <span class="pill-label">пачка</span>
       <div class="seg" id="segPct" style="--n:3"><button data-v="0.5">50%</button><button data-v="0.75">75%</button><button data-v="1">100%</button></div>
     </div>
@@ -470,7 +478,7 @@ function padVoice(f, t, dur, vol) {
 }
 
 /* ---------- palette ---------- */
-let PAL = null, PKT = [], bgDirty = true;
+let PAL = null, PKT = [], DOT = [], bgDirty = true;
 const nCache = new Map();
 function hexToRgb(h) { h = h.replace('#', '').trim(); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
@@ -481,15 +489,15 @@ function readPalette() {
     dark: g('--dark') === '1', c: [g('--c0'), g('--c1'), g('--c2'), g('--c3'), g('--c4')] };
   PAL.rgb = PAL.c.map(hexToRgb);
   PAL.lab = PAL.rgb.map(c => rgba(PAL.dark ? mix(c, [255, 255, 255], 0.1) : mix(c, [0, 0, 0], 0.12), 1));
-  PKT = PAL.rgb.map(makePacket);
+  PKT = PAL.rgb.map(c => makePacket(c, 0.13)); DOT = PAL.rgb.map(c => makePacket(c, 0.22));
   nCache.clear(); bgDirty = true; updatePopbarColors();
 }
-function makePacket(c) {
+function makePacket(c, core) {
   const S = 40, cv = document.createElement('canvas'); cv.width = cv.height = S;
   const x = cv.getContext('2d'), gr = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   gr.addColorStop(0, rgba(c, PAL.dark ? 0.32 : 0.18)); gr.addColorStop(0.3, rgba(c, PAL.dark ? 0.07 : 0.03)); gr.addColorStop(1, rgba(c, 0));
   x.fillStyle = gr; x.fillRect(0, 0, S, S);
-  const q = S * 0.13; x.fillStyle = PAL.dark ? rgba(mix(c, [255, 255, 255], 0.45), 1) : rgba(mix(c, [0, 0, 0], 0.1), 1);
+  const q = S * core; x.fillStyle = PAL.dark ? rgba(mix(c, [255, 255, 255], 0.45), 1) : rgba(mix(c, [0, 0, 0], 0.1), 1);
   x.fillRect(S / 2 - q / 2, S / 2 - q / 2, q, q);
   return cv;
 }
@@ -671,11 +679,18 @@ function quickSpec(opp, map) {
 
 /* ---------- game state ---------- */
 let G = null;
-const ARMY_SPEED = 125;
-const FLOW = [10, 18, 28, 42];
-const PULSE = 4;
-const CLASH = 0.55;
+/* Packets travel one by one: crossing any channel takes 2–3 s, whatever its length. */
+const travelTime = len => clamp(2 + (len - 300) / 500, 2, 3);
+const edgeSpeed = e => Math.max(60, e.len - 80) / travelTime(e.len);
+/* Emission: base packets/s by class, faster for big batches so a send never drags on. */
+const FLOW = [4, 6, 8, 10];
+const FLOW_MAX = 24;
+const flowRate = (tier, n) => Math.min(FLOW_MAX, Math.max(FLOW[tier], n / 4));
+/* Defender bonus by class: each duel at a node kills one attacker and 1 / (1 + HOME) defenders. */
 const HOME = [0.06, 0.12, 0.2, 0.32];
+/* Duels per second at a besieged node: small fights are readable, big ones do not drag. */
+const siegeRate = (att, def) => 5 + 0.5 * Math.min(att, def);
+const SIEGE_SHOW = 40;
 function buildGame(map, aiNames, meta) {
   const used = new Set();
   const nodes = map.nodes.map((d, i) => {
@@ -686,7 +701,7 @@ function buildGame(map, aiNames, meta) {
     return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, owner: d.o, v, vd: v, tier: tierOf(v), name, seed: Math.floor(Math.random() * 1e6),
       hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
   });
-  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], time: 0, sel: -1, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
+  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], dives: [], time: 0, sel: -1, group: new Set(), speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
     pct: store.pct || 0.5,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0 };
@@ -812,19 +827,44 @@ function packetRoute(i, j, o, maxHops) {
   while (prev.get(cur)) { const p = prev.get(cur); hops.unshift({ e: p.e, from: p.i, to: cur }); cur = p.i; }
   return { hops };
 }
+/* Shortest path through your own finished channels to any own node that has a finished channel to foreign node j. */
+function attackRoute(i, j, o, maxHops) {
+  const N = G.nodes;
+  if (N[i].infect > 0) return { err: 'узел заражён демоном' };
+  const prev = new Map([[i, null]]), q = [i];
+  while (q.length) {
+    const cur = q.shift();
+    const last = N[cur].nb.find(e => e.state === 'up' && other(e, cur) === j);
+    if (last) {
+      const hops = [{ e: last, from: cur, to: j }];
+      let c = cur;
+      while (prev.get(c)) { const p = prev.get(c); hops.unshift({ e: p.e, from: p.i, to: c }); c = p.i; }
+      if (hops.length > maxHops) return { err: `для этого класса только ${maxHops} прыж.` };
+      return { hops };
+    }
+    for (const e of N[cur].nb) {
+      if (e.state !== 'up') continue;
+      const k = other(e, cur);
+      if (prev.has(k) || N[k].owner !== o || N[k].infect > 0) continue;
+      prev.set(k, { i: cur, e });
+      q.push(k);
+    }
+  }
+  return { err: 'нет маршрута к цели по своим каналам' };
+}
 function nextHop(i, dest, o) {
   if (i === dest) return null;
-  const r = packetRoute(i, dest, o, 1e9);
+  const r = G.nodes[dest].owner === o ? packetRoute(i, dest, o, 1e9) : attackRoute(i, dest, o, 1e9);
   return r.hops ? r.hops[0] : null;
 }
-/* A send is a queue at the cable mouth. Packets leave the node at FLOW[tier] per second, in small pulses. */
-function enqueue(e, i, o, n, dest, sp, rate, transit) {
+/* A send is a queue at the cable mouth: packets leave the node one by one at flowRate() per second. */
+function enqueue(e, i, o, n, dest, tier) {
   if (n < 1 || e.state !== 'up') return false;
   const dir = dirFrom(e, i);
   if (!e.q) e.q = [];
-  const q = e.q.find(q => q.dir === dir && q.o === o && q.dest === dest && q.transit === transit);
-  if (q) q.left += n;
-  else e.q.push({ dir, left: n, o, dest, sp: sp || ARMY_SPEED, rate, acc: Math.min(n, PULSE), transit });
+  const q = e.q.find(q => q.dir === dir && q.o === o && q.dest === dest);
+  if (q) { q.left += n; q.rate = flowRate(tier, q.left); }
+  else e.q.push({ dir, left: n, o, dest, sp: edgeSpeed(e), rate: flowRate(tier, n), acc: 1 });
   return true;
 }
 function sendArmy(e, i, o, n, dest) {
@@ -832,31 +872,26 @@ function sendArmy(e, i, o, n, dest) {
   if (canSend(e, i, o, n) !== true) return false;
   const A = G.nodes[i];
   A.held = (A.held || 0) + n;
-  const sp = ARMY_SPEED * (1 + tierOf(A.v) * 0.08);
-  enqueue(e, i, o, n, dest, sp, FLOW[tierOf(A.v)], false);
+  enqueue(e, i, o, n, dest, tierOf(A.v));
   if (o === 1 && !G.demo) { SFX.flowOn(); if (G.tut === 2) { G.tut = 3; tutNext(); } }
   return true;
 }
+/* Put one packet on a cable. back spaces out packets released within the same step. */
+function launch(e, dir, o, dest, back) {
+  e.ar.push({ dir, d: startD(e, dir) - back, n: 1, o, dest, sp: edgeSpeed(e), seed: Math.floor(Math.random() * 1e6) });
+}
 function pumpQueue(e, q, dt) {
   const src = G.nodes[srcOf(e, q.dir)];
-  if (!q.transit && src.owner !== q.o) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; return; }
-  if (!q.transit && (src.held || 0) > src.v) trimHeld(src);
-  q.acc += q.rate * dt;
-  while (q.left >= 1 && q.acc >= 1) {
-    let n = Math.min(q.left, PULSE, q.acc);
-    if (!q.transit) n = Math.min(n, src.v);
-    if (n < 1) break;
-    if (!q.transit) { spend(src, n); src.held = Math.max(0, (src.held || 0) - n); }
-    q.acc -= n; q.left -= n;
-    e.ar.push({ dir: q.dir, d: startD(e, q.dir), n, o: q.o, dest: q.dest, sp: q.sp, hold: false, pow: n * CLASH, seed: Math.floor(Math.random() * 1e6) });
+  if (src.owner !== q.o) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; return; }
+  if ((src.held || 0) > src.v) trimHeld(src);
+  q.acc = Math.min(2, q.acc + q.rate * dt);
+  let k = 0;
+  while (q.left >= 1 && q.acc >= 1 && src.v >= 1) {
+    spend(src, 1); src.held = Math.max(0, (src.held || 0) - 1);
+    q.acc -= 1; q.left -= 1;
+    launch(e, q.dir, q.o, q.dest, k++ * q.sp / q.rate);
   }
-  if (q.left < 0.5) { if (!q.transit) src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; }
-}
-/* Each packet keeps the damage it had when it joined the fight, so a clash ends instead of fading forever. */
-function grind(dt, aN, aPow, bN, bPow) {
-  if (aN <= 0 || bN <= 0 || dt <= 0) return [Math.max(0, aN), Math.max(0, bN)];
-  const aDie = aPow > 0 ? bN / aPow : 1e9, bDie = bPow > 0 ? aN / bPow : 1e9, t = Math.min(dt, aDie, bDie);
-  return [Math.max(0, aN - bPow * t), Math.max(0, bN - aPow * t)];
+  if (q.left < 1) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; }
 }
 
 /* ---------- daemon ----------
@@ -930,28 +965,33 @@ function stepDaemon(dt) {
 }
 
 /* ---------- simulation ---------- */
-function burst(x, y, o, n) {
-  if (G.parts.length > 500) return;
-  for (let k = 0; k < n; k++) { const a = Math.random() * TAU, v = 15 + Math.random() * 40; G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 6, life: 0.7 + Math.random() * 0.5, max: 1.2, o, ch: GLYPHS[Math.floor(Math.random() * GLYPHS.length)] }); }
-  G.parts.push({ x, y, vx: 0, vy: 0, life: 0.3, max: 0.3, o, flash: true });
+function spark(x, y, o1, o2) {
+  if (G.parts.length > 600) return;
+  G.parts.push({ x, y, vx: 0, vy: 0, life: 0.25, max: 0.25, o: o1, flash: true });
+  for (const o of o2 == null ? [o1] : [o1, o2]) {
+    const a = Math.random() * TAU, v = 20 + Math.random() * 35;
+    G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 6, life: 0.5 + Math.random() * 0.3, max: 0.8, o, ch: GLYPHS[Math.floor(Math.random() * GLYPHS.length)] });
+  }
 }
-function arrive(B, n, o, x, y, dest, sp) {
+function arrive(B, n, o, x, y, dest) {
   if (B.owner === o) {
+    // relay: forward the packet straight onto the next hop, keeping the stream spacing
     if (dest != null && dest !== B.i) {
       const hop = nextHop(B.i, dest, o);
-      if (hop && enqueue(hop.e, B.i, o, n, dest, sp, FLOW[tierOf(B.v)], true)) return;
+      if (hop) { launch(hop.e, dirFrom(hop.e, B.i), o, dest, 0); return; }
     }
     B.v += n; B.base += n; B.fed = 0.6; return;
   }
+  // foreign node: the packet joins the siege swarm and waits for its duel
   if (!B.assault) B.assault = [];
   if (G.time - (B.lastHit || -99) > 4) B.base = B.v;
   B.lastHit = G.time;
   const s = B.assault.find(a => a.o === o);
-  if (s) { s.n += n; s.pow += n * CLASH; } else B.assault.push({ o, n, dest, sp, pow: n * CLASH });
+  if (s) s.n += n; else B.assault.push({ o, n });
   B.hurt = 1;
 }
 function releaseFlows(node) {
-  for (const e of node.nb) if (e.q) e.q = e.q.filter(q => q.transit || srcOf(e, q.dir) !== node.i);
+  for (const e of node.nb) if (e.q) e.q = e.q.filter(q => srcOf(e, q.dir) !== node.i);
   node.held = 0;
 }
 function trimHeld(node) {
@@ -959,74 +999,65 @@ function trimHeld(node) {
   let extra = node.held - Math.max(0, node.v);
   node.held = Math.max(0, node.v);
   for (const e of node.nb) if (e.q) for (const q of e.q) {
-    if (q.transit || srcOf(e, q.dir) !== node.i || extra <= 0) continue;
+    if (srcOf(e, q.dir) !== node.i || extra <= 0) continue;
     const cut = Math.min(q.left, extra); q.left -= cut; extra -= cut;
   }
 }
-function resolveCable(e, dt) {
-  const list = e.ar.filter(a => !a.dead && a.n >= 0.5);
-  for (const a of list) a.hold = false;
-  const seen = [];
-  for (const a of list) for (const b of list) {
-    if (a.dir >= b.dir || a.o === b.o || a.d + b.d < e.len - 8) continue;
-    if (!seen.includes(a)) seen.push(a);
-    if (!seen.includes(b)) seen.push(b);
-    a.hold = b.hold = true;
-    const extra = a.d + b.d - (e.len - 8);
-    if (extra > 0) { a.d = Math.max(0, a.d - extra / 2); b.d = Math.max(0, b.d - extra / 2); }
-  }
-  const fronts = [];
-  for (const a of seen) {
-    if (a.pow == null) a.pow = a.n * CLASH;
-    const g = fronts.find(f => f.o === a.o && f.dir === a.dir);
-    if (!g) fronts.push(a);
-    else { if (g.pow == null) g.pow = g.n * CLASH; g.pow += a.pow; g.n += a.n; a.dead = true; a.n = 0; if (a.d > g.d) g.d = a.d; }
-  }
-  for (let i = 0; i < fronts.length; i++) for (let j = i + 1; j < fronts.length; j++) {
-    const a = fronts[i], b = fronts[j];
-    if (a.dead || b.dead || a.o === b.o || a.dir === b.dir) continue;
-    if (a.pow == null) a.pow = a.n * CLASH;
-    if (b.pow == null) b.pow = b.n * CLASH;
-    const [na, nb] = grind(dt, a.n, a.pow, b.n, b.pow);
-    a.n = na; b.n = nb;
-    if (na < 0.5) { a.dead = true; b.hold = false; }
-    if (nb < 0.5) { b.dead = true; a.hold = false; }
-    if ((a.o === 1 || b.o === 1) && (!a.sfx || G.time - a.sfx > 0.4)) {
-      a.sfx = G.time; const [x, y] = posAt(e, a.dir, a.d); burst(x, y, na >= nb ? a.o : b.o, 3);
-      if (!G.demo && isVis(x, y)) SFX.hit();
+/* Head-on packets of different owners annihilate one for one where they meet. */
+function resolveCable(e) {
+  for (;;) {
+    let h0 = null, h1 = null;
+    for (const a of e.ar) {
+      if (a.dead) continue;
+      if (a.dir) { if (!h1 || a.d > h1.d) h1 = a; } else if (!h0 || a.d > h0.d) h0 = a;
     }
+    if (!h0 || !h1 || h0.o === h1.o || h0.d + h1.d < e.len) return;
+    h0.dead = h1.dead = true;
+    const [x, y] = posAt(e, 0, h0.d);
+    spark(x, y, h0.o, h1.o);
+    if (!G.demo && (h0.o === 1 || h1.o === 1) && isVis(x, y)) SFX.hit();
   }
+}
+/* Where the j-th of m besieging packets circles node p (world coords). Shared by the simulation and the renderer. */
+function siegePos(p, j, m, t) {
+  const a = j / m * TAU + t * 0.9 + (p.seed % 100) * 0.06, r = radiusFor(Math.min(p.vd, 200)) * 1.2 + 18 + (j % 3) * 6;
+  return [p.x + Math.cos(a) * r, p.y + Math.sin(a) * r];
+}
+/* A duel at a node: an attacker from the swarm dives into the node and both packets are gone on contact.
+   Visual only and throttled, so big sieges stay readable. */
+function duelFx(p, o) {
+  if (G.time - (p.diveT || -1) < 0.06) return;
+  p.diveT = G.time;
+  const tot = p.assault.reduce((s, a) => s + a.n, 0), m = Math.max(1, Math.min(SIEGE_SHOW, Math.ceil(tot)));
+  const [x1, y1] = siegePos(p, Math.floor(Math.random() * m), m, G.time);
+  const r = radiusFor(Math.min(p.vd, 200)) * 1.05, dx = x1 - p.x, dy = y1 - p.y, L = Math.hypot(dx, dy) || 1;
+  G.dives.push({ x1, y1, x2: p.x + dx / L * r, y2: p.y + dy / L * r, o, od: p.owner, life: 0.22, max: 0.22, vis: p.vis });
 }
 function resolveNodes(dt) {
   for (const p of G.nodes) {
-    if (!p.assault || !p.assault.length) continue;
+    if (!p.assault) continue;
     p.assault = p.assault.filter(a => a.n >= 0.5);
-    if (!p.assault.length) { p.assault = null; continue; }
-    trimHeld(p);
-    const garrison = Math.max(0, p.v - (p.held || 0));
-    const home = 1 + HOME[tierOf(garrison)];
-    if (p.defPow == null) p.defPow = garrison * CLASH * home;
-    for (const a of p.assault) if (a.pow == null) a.pow = a.n * CLASH;
-    const atk = p.assault.reduce((s, a) => s + a.n, 0);
-    const atkPow = p.assault.reduce((s, a) => s + a.pow, 0);
-    const [g, left] = grind(dt, garrison, p.defPow, atk, atkPow);
-    const scale = atk > 0 ? left / atk : 0;
-    for (const a of p.assault) a.n *= scale;
-    p.v = Math.max(0, g) + (p.held || 0);
-    trimHeld(p);
-    p.hurt = 1;
-    p.assault = p.assault.filter(a => a.n >= 0.5);
-    if (g <= 0.5 && p.assault.length) {
-      const win = p.assault.reduce((x, a) => a.n > x.n ? a : x);
-      const leftover = p.assault.filter(a => a.o === win.o).reduce((s, a) => s + a.n, 0);
-      const rest = p.assault.filter(a => a.o !== win.o);
-      p.defPow = null;
-      captureNode(p, win.o, leftover);
-      p.assault = rest.length ? rest : null;
-    } else if (!p.assault.length) { p.assault = null; p.defPow = null; }
-    if (p.assault && p.assault.length && (p.owner === 1 || p.assault.some(a => a.o === 1)) && (!p.sfx || G.time - p.sfx > 0.45)) {
-      p.sfx = G.time; burst(p.x, p.y, p.owner || p.assault[0].o, 3); if (!G.demo && p.vis) SFX.hit();
+    if (!p.assault.length) { p.assault = null; p.duel = 0; continue; }
+    const att = p.assault.reduce((s, a) => s + a.n, 0);
+    p.duel = Math.min(60, (p.duel || 0) + siegeRate(att, p.v) * dt);
+    while (p.duel >= 1 && p.v > 1e-3 && p.assault.length) {
+      p.duel -= 1;
+      // the attacker side is picked in proportion to its swarm
+      let r = Math.random() * p.assault.reduce((s, a) => s + a.n, 0), a = p.assault[0];
+      for (const x of p.assault) { r -= x.n; if (r <= 0) { a = x; break; } }
+      a.n -= 1;
+      p.v = Math.max(0, p.v - 1 / (1 + HOME[tierOf(p.v)]));
+      p.hurt = 1; p.lastHit = G.time;
+      duelFx(p, a.o);
+      p.assault = p.assault.filter(x => x.n >= 0.5);
     }
+    trimHeld(p);
+    if (p.assault.length && p.v <= 1e-3) {
+      const win = p.assault.reduce((x, a) => a.n > x.n ? a : x);
+      const rest = p.assault.filter(a => a !== win);
+      captureNode(p, win.o, win.n);
+      p.assault = rest.length ? rest : null; p.duel = 0;
+    } else if (!p.assault.length) { p.assault = null; p.duel = 0; }
   }
 }
 function captureNode(B, o, leftover) {
@@ -1075,12 +1106,12 @@ function step(dt) {
     if (!e.ar) e.ar = [];
     if (e.q && e.q.length) { for (const q of e.q) pumpQueue(e, q, dt); e.q = e.q.filter(q => q.left >= 1); }
     if (!e.ar.length) continue;
-    for (const a of e.ar) if (!a.hold) a.d += a.sp * dt;
-    resolveCable(e, dt);
+    for (const a of e.ar) a.d += a.sp * dt;
+    resolveCable(e);
     for (const a of e.ar) {
-      if (a.dead || a.hold) continue;
+      if (a.dead) continue;
       const end = endD(e, a.dir);
-      if (a.d >= end) { a.dead = true; const [x, y] = posAt(e, a.dir, end); arrive(N[dstOf(e, a.dir)], a.n, a.o, x, y, a.dest, a.sp); }
+      if (a.d >= end) { a.dead = true; const [x, y] = posAt(e, a.dir, end); arrive(N[dstOf(e, a.dir)], a.n, a.o, x, y, a.dest); }
     }
     e.ar = e.ar.filter(a => !a.dead);
   }
@@ -1098,6 +1129,11 @@ function step(dt) {
   for (const q of G.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.95; q.vy *= 0.95; q.life -= dt; }
   G.parts = G.parts.filter(q => q.life > 0);
   for (const w of G.waves) w.life -= dt; G.waves = G.waves.filter(w => w.life > 0);
+  for (const z of G.dives) {
+    z.life -= dt;
+    if (z.life <= 0) { spark(z.x2, z.y2, z.o, z.od); if (!G.demo && z.vis && (z.o === 1 || z.od === 1)) SFX.hit(); }
+  }
+  G.dives = G.dives.filter(z => z.life > 0);
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
   for (const ai of G.ais) {
     if (G.time < ai.next) continue;
@@ -1114,7 +1150,6 @@ const power = o => {
   for (const p of G.nodes) if (p.assault) for (const a of p.assault) if (a.o === o) s += a.n;
   for (const e of G.edges) {
     for (const a of e.ar) if (a.o === o) s += a.n;
-    for (const q of e.q || []) if (q.transit && q.o === o) s += q.left;
   }
   return Math.floor(s);
 };
@@ -1171,8 +1206,8 @@ function aiThink(o, D) {
   const scored = [];
   for (const [ti, srcs] of targets) {
     const T = N[ti], mineInc = sum(incomingArmies(ti, a => a.o === o));
-    const eta = Math.min(...srcs.map(s => s.e.len / ARMY_SPEED));
-    const need = Math.ceil((T.v + (T.owner ? TIERS[tierOf(T.v)].regen * eta : 0) + sum(incomingArmies(ti, a => a.o === T.owner && T.owner))) * D.margin + 2 - mineInc);
+    const eta = Math.min(...srcs.map(s => travelTime(s.e.len)));
+    const need = Math.ceil((T.v * (1 + HOME[tierOf(T.v)]) + (T.owner ? TIERS[tierOf(T.v)].regen * eta : 0) + sum(incomingArmies(ti, a => a.o === T.owner && T.owner))) * D.margin + 2 - mineInc);
     if (need <= 0) continue;
     const total = srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0);
     if (total < need) continue;
@@ -1259,6 +1294,48 @@ function doAction(i, j) {
   else if (a.kind === 'route') sendArmy(a.hops[0].e, i, 1, sendCount(i, G.pct), j);
   else sendArmy(a.e, i, 1, sendCount(i, G.pct));
 }
+/* Group command: every selected node sends its batch to node j along its own channels.
+   To a foreign node the batch goes through your network to a node that has a channel to it. Class rules still apply. */
+function groupPlan(j) {
+  const N = G.nodes, T = N[j], list = [];
+  let total = 0, skip = 0;
+  for (const i of G.group) {
+    const A = N[i];
+    if (i === j || A.owner !== 1) continue;
+    const n = sendCount(i, G.pct);
+    let r;
+    if (n < 1) r = { err: 1 };
+    else if (T.owner === 1) r = packetRoute(i, j, 1);
+    else if (T.owner !== 0 && tierOf(A.v) < 2) r = { err: 1 };
+    else r = attackRoute(i, j, 1, TIERS[tierOf(A.v)].hops);
+    if (!r.hops) { skip++; continue; }
+    list.push({ i, n, hops: r.hops }); total += n;
+  }
+  const verb = T.owner === 1 ? 'стянуть' : 'атаковать';
+  const label = list.length ? `${verb}: ${list.length} узл., ${total} пак.${skip ? ` · ${skip} без маршрута` : ''}` : 'ни у одного выделенного узла нет маршрута';
+  return { list, total, label };
+}
+function groupSend(j) {
+  const plan = groupPlan(j);
+  if (!plan.list.length) { SFX.error(); toast(plan.label, 2500); return; }
+  for (const it of plan.list) sendArmy(it.hops[0].e, it.i, 1, it.n, j);
+}
+function ownNodes() { return G.nodes.filter(p => p.owner === 1).map(p => p.i); }
+function selectAll() {
+  const own = ownNodes();
+  if (G.group.size && G.group.size >= own.length) { clearGroup(); return; }
+  G.group = new Set(own); G.sel = -1; SFX.select(); updateGroupBtn();
+}
+function clearGroup() { if (!G || !G.group.size) return; G.group.clear(); updateGroupBtn(); }
+function toggleGroup(i) {
+  if (G.group.has(i)) G.group.delete(i); else { G.group.add(i); SFX.select(); }
+  G.sel = -1; updateGroupBtn();
+}
+function boxSelect(x0, y0, x1, y1) {
+  const a = fromS(Math.min(x0, x1), Math.min(y0, y1)), b = fromS(Math.max(x0, x1), Math.max(y0, y1));
+  for (const p of G.nodes) if (p.owner === 1 && p.x >= a.x && p.x <= b.x && p.y >= a.y && p.y <= b.y) G.group.add(p.i);
+  G.sel = -1; if (G.group.size) SFX.select(); updateGroupBtn();
+}
 cv.addEventListener('wheel', e => {
   if (!G || G.demo) return; e.preventDefault(); closePop();
   const w = fromS(e.clientX, e.clientY), l = zoomLimits();
@@ -1268,7 +1345,7 @@ cv.addEventListener('wheel', e => {
 cv.addEventListener('contextmenu', e => { e.preventDefault(); if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; } });
 cv.addEventListener('pointerdown', e => {
   audioInit(); if (!G || G.demo) return;
-  if (e.button === 2) { if (ptr && ptr.mode === 'link') { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; closePop(); } return; }
+  if (e.button === 2) { if (ptr && ptr.mode === 'link') { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; clearGroup(); closePop(); } return; }
   cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [p1, p2] = [...pointers.values()];
@@ -1280,6 +1357,11 @@ cv.addEventListener('pointerdown', e => {
   const dp = interactive() && G.daemon && G.daemon.state === 'idle' ? daemonPos() : null;
   if (dp) { ts(dp.x, dp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 18) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'daemon', target: -1 }; return; } }
   const p = interactive() ? hit(w.x, w.y) : -1;
+  // shift: click toggles an own node in the group, drag on empty space draws a selection box
+  if (e.shiftKey && interactive()) {
+    if (p >= 0 && G.nodes[p].owner === 1) { toggleGroup(p); ptr = null; return; }
+    if (p < 0) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'box', target: -1 }; return; }
+  }
   ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
     mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1 };
 });
@@ -1302,7 +1384,7 @@ cv.addEventListener('pointermove', e => {
   ptr.x = e.clientX; ptr.y = e.clientY;
   if (!ptr.moved && Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 7) { ptr.moved = true; closePop(); }
   if (ptr.mode === 'link' || ptr.mode === 'daemon') { if (!ptr.cancel) { const h = hit(w.x, w.y); if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1; else if (h >= 0) ptr.target = h; } }
-  else if (ptr.moved) { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
+  else if (ptr.moved && ptr.mode === 'pan') { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
   ptr.lx = e.clientX; ptr.ly = e.clientY;
 });
 function endPtr(e, cancel) {
@@ -1312,17 +1394,22 @@ function endPtr(e, cancel) {
   const p = ptr; ptr = null;
   if (cancel || !interactive()) return;
   if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
+  if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
   if (!p.moved && !p.cancel) {
     if (p.p >= 0) return tapNode(p.p);
-    G.sel = -1; closePop(); return;
+    G.sel = -1; clearGroup(); closePop(); return;
   }
-  if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) { doAction(p.p, p.target); G.sel = -1; }
+  if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) {
+    if (G.group.has(p.p)) groupSend(p.target); else doAction(p.p, p.target);
+    G.sel = -1;
+  }
 }
 cv.addEventListener('pointerup', e => endPtr(e, false));
 cv.addEventListener('pointercancel', e => endPtr(e, true));
 function tapNode(i) {
   closePop();
   const p = G.nodes[i];
+  if (G.group.size) { groupSend(i); return; }
   if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { doAction(G.sel, i); G.sel = -1; return; }
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
@@ -1459,35 +1546,37 @@ function render(now) {
       const n = Math.min(12, Math.floor(vv / 8)), psz = Math.max(5, 10 * S);
       for (let j = 0; j < n; j++) { const hs = hash(p.seed + j * 17), a = (hs % 1000) / 1000 * TAU + t * (0.25 + (hs % 7) * 0.04), orr = (rd * 1.2 + 9 + (j % 4) * 4.5) * S; ctx.drawImage(PKT[ow], cx + Math.cos(a) * orr - psz / 2, cy + Math.sin(a) * orr - psz / 2, psz, psz); }
       if (p.assault && p.assault.length) {
-        const an = p.assault.reduce((s, a) => s + a.n, 0), ao = p.assault.reduce((x, a) => a.n > x.n ? a : x).o;
-        const m = Math.min(8, Math.max(2, Math.ceil(an / 8)));
-        for (let j = 0; j < m; j++) { const a = -t * 1.6 + j / m * TAU, orr = (rd * 0.45 + 5) * S; ctx.drawImage(PKT[ao], cx + Math.cos(a) * orr - psz / 2, cy + Math.sin(a) * orr - psz / 2, psz, psz); }
+        // the siege swarm: attackers circle the node, one sprite per packet (up to SIEGE_SHOW)
+        const an = p.assault.reduce((s, a) => s + a.n, 0), m = Math.max(1, Math.min(SIEGE_SHOW, Math.ceil(an))), dsz = Math.max(8, 14 * S);
+        let j = 0;
+        for (const a of p.assault) {
+          const k = Math.round(a.n / an * m);
+          for (let q = 0; q < k && j < m; q++, j++) { const [wx, wy] = siegePos(p, j, m, G.time); ts(wx, wy); ctx.drawImage(DOT[a.o], TX - dsz / 2, TY - dsz / 2, dsz, dsz); }
+        }
+        ts(p.x, p.y);
       }
       ctx.globalCompositeOperation = 'source-over';
     }
   }
   for (const w of G.waves) { if (!isVis(w.x, w.y)) continue; ts(w.x, w.y); const k = 1 - w.life / w.max, c = w.o < 0 ? dcol() : PAL.rgb[w.o], e = 1 - (1 - k) ** 3, r = w.r * S * (1.1 + e * (w.soft ? 0.6 : 1.4)); ctx.strokeStyle = rgba(c, (w.soft ? 0.35 : 0.7) * (1 - k) ** 1.5); ctx.lineWidth = 1; ctx.strokeRect(TX - r, TY - r, r * 2, r * 2); }
-  // armies: a swarm of packets with a head count
+  // duels at besieged nodes: an attacker packet dives from the swarm into the node and is gone on contact
   if (dark) ctx.globalCompositeOperation = 'lighter';
-  const sz = Math.max(7, 14 * S), armyLabels = [];
-  for (const e of G.edges) for (const a of e.ar) {
-    const [hx, hy] = posAt(e, a.dir, a.d); if (!isVis(hx, hy)) continue;
-    ts(hx, hy); if (TX < -60 || TX > V.w + 60 || TY < -60 || TY > V.h + 60) continue;
-    const [bx, by] = posAt(e, a.dir, a.d - 4), dx = hx - bx, dy = hy - by, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-    const k = Math.min(26, 3 + Math.floor(Math.sqrt(a.n) * 2.2)), sp = 5, shake = a.hold ? Math.sin(t * 22 + a.seed) * 5 : 0;
-    for (let j = k - 1; j >= 0; j--) {
-      const [px, py] = posAt(e, a.dir, Math.max(0, a.d - j * sp)), h = hash(a.seed + j * 13), off = ((h % 100) / 100 - 0.5) * Math.min(20, 6 + k * 0.8) + Math.sin(t * 6 + j) * 1.2;
-      ts(px + nx * off + shake, py + ny * off); const z = sz * (j === 0 ? 1.25 : 0.85);
-      ctx.drawImage(PKT[a.o], TX - z / 2, TY - z / 2, z, z);
-    }
-    ts(hx, hy); armyLabels.push([TX, TY, a]);
+  const dvz = Math.max(8, 14 * S);
+  for (const z of G.dives) {
+    if (!isVis(z.x2, z.y2)) continue;
+    const k = 1 - z.life / z.max, e2 = k * k;
+    ts(z.x1 + (z.x2 - z.x1) * e2, z.y1 + (z.y2 - z.y1) * e2);
+    ctx.drawImage(DOT[z.o], TX - dvz / 2, TY - dvz / 2, dvz, dvz);
   }
   ctx.globalCompositeOperation = 'source-over';
-  ctx.font = `600 11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const [x, y, a] of armyLabels) {
-    const txt = String(Math.max(1, Math.round(a.n))), w = ctx.measureText(txt).width + 8;
-    ctx.fillStyle = dark ? 'rgba(2,4,3,0.75)' : 'rgba(242,246,243,0.85)'; roundRect(x - w / 2, y - 21, w, 14, 3); ctx.fill();
-    ctx.fillStyle = PAL.lab[a.o]; ctx.fillText(txt, x, y - 13.5);
+  // packets in flight: one sprite per packet, a steady stream along the cable
+  if (dark) ctx.globalCompositeOperation = 'lighter';
+  const sz = Math.max(9, 16 * S);
+  for (const e of G.edges) for (const a of e.ar) {
+    if (a.d < startD(e, a.dir) - 0.5) continue;
+    const [hx, hy] = posAt(e, a.dir, a.d); if (!isVis(hx, hy)) continue;
+    ts(hx, hy); if (TX < -30 || TX > V.w + 30 || TY < -30 || TY > V.h + 30) continue;
+    ctx.drawImage(DOT[a.o], TX - sz / 2, TY - sz / 2, sz, sz);
   }
   ctx.globalCompositeOperation = 'source-over';
   ctx.font = `11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1517,6 +1606,11 @@ function render(now) {
     ctx.globalAlpha = 1;
     ctx.font = `500 13px ${FONT}`; ctx.fillStyle = ow ? PAL.lab[ow] : PAL.fg2;
     ctx.fillText(p.vis ? String(Math.floor(p.v)) : `~${Math.floor(p.lastV)}`, TX, y2);
+    if (p.vis && p.assault && p.assault.length) {
+      const top = TY - (p.capR * 1.2 + 22) * S - 8;
+      ctx.font = `500 11px ${FONT}`;
+      p.assault.forEach((a, k) => { ctx.fillStyle = PAL.lab[a.o]; ctx.fillText(`×${Math.round(a.n)}`, TX + (k - (p.assault.length - 1) / 2) * 36, top); });
+    }
   }
   // digital rain (hidden under fog)
   ctx.font = `12px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1541,6 +1635,15 @@ function render(now) {
     const rs = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (sel && sel.owner === 1 ? G.sel : -1);
     if (rs >= 0) { const A = N[rs]; ts(A.x, A.y); ctx.setLineDash([2, 6]); ctx.lineDashOffset = -t * 10; ctx.strokeStyle = rgba(PAL.rgb[1], 0.35); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(TX, TY, rangeOf(A.v) * S, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
     if (sel) { ts(sel.x, sel.y); const r = (radiusFor(sel.vd) * 1.2 + 16) * S + Math.sin(t * 4) * 1.5; ctx.strokeStyle = PAL.sel; ctx.lineWidth = 1.4; brackets(TX, TY, r, Math.max(8, r * 0.3)); }
+    if (G.group.size) {
+      ctx.strokeStyle = rgba(PAL.rgb[1], 0.85); ctx.lineWidth = 1.2;
+      for (const i of G.group) { const p = N[i]; if (!onScreen(p.x, p.y, 80)) continue; const r = (radiusFor(p.vd) * 1.2 + 12) * S; brackets(TX, TY, r, Math.max(5, r * 0.25)); }
+    }
+    if (ptr && ptr.mode === 'box' && ptr.moved) {
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.8); ctx.lineWidth = 1; ctx.fillStyle = rgba(PAL.rgb[1], 0.06);
+      const bx = Math.min(ptr.x0, ptr.x), by = Math.min(ptr.y0, ptr.y), bw = Math.abs(ptr.x - ptr.x0), bh = Math.abs(ptr.y - ptr.y0);
+      ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh); ctx.setLineDash([]);
+    }
     if (hover >= 0 && hover !== G.sel && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (radiusFor(p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
     if (G.daemon) {
       const D = G.daemon;
@@ -1559,9 +1662,14 @@ function render(now) {
         } else if (dp) { ts(dp.x, dp.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(ptr.x, ptr.y); ctx.setLineDash([2, 5]); ctx.strokeStyle = rgba(dcol(), 0.6); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); }
       }
     }
-    const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
-    const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
-    if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
+    const dragGroup = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel && G.group.has(ptr.p);
+    if (dragGroup && ptr.target >= 0) drawGroupPreview(ptr.target, ptr.x, ptr.y, t);
+    else if (!ptr && G.group.size && hover >= 0) drawGroupPreview(hover, null, null, t);
+    else {
+      const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
+      const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
+      if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
+    }
   }
 }
 function drawPreview(src, tgt, px, py, t) {
@@ -1582,6 +1690,17 @@ function drawPreview(src, tgt, px, py, t) {
   } else if (px != null) {
     ts(A.x, A.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
   }
+}
+function drawGroupPreview(tgt, px, py, t) {
+  const B = G.nodes[tgt], plan = groupPlan(tgt), ok = plan.list.length > 0, col = ok ? PAL.rgb[1] : PAL.rgb[2], S = cam.z;
+  ts(B.x, B.y); const rr = (radiusFor(B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
+  ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
+  const drawn = new Set();
+  for (const it of plan.list) for (const hp of it.hops) {
+    if (drawn.has(hp.e)) continue; drawn.add(hp.e);
+    if (pathRange(hp.e, rad(hp.e.a), hp.e.len - rad(hp.e.b))) { ctx.setLineDash([4, 6]); ctx.lineDashOffset = -t * 40 * (dirFrom(hp.e, hp.from) ? -1 : 1); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.6; ctx.stroke(); ctx.setLineDash([]); }
+  }
+  label(plan.label, px != null ? px : TX, py != null ? py : TY, ok);
 }
 function label(txt, x, y, ok, colRgb) {
   ctx.font = `500 11px ${FONT}`; const tw = ctx.measureText(txt).width + 16, lx = clamp(x + 14, 6, V.w - tw - 6), ly = clamp(y - 34, 6, V.h - 28);
@@ -1684,13 +1803,15 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие.', 'Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание по готовому каналу отправляет пачку: 50, 75 или 100% пакетов узла (внизу экрана или клавишами 1–3). В свой узел пачка вливается, чужой штурмует.', 'Пакеты выходят потоком, не одной пачкой. По своим каналам: ноутбук 1 прыжок, станция 2, сервер 3, мейнфрейм 4. Встречные дерутся, пока сторона не кончится: решает перевес. На чужом узле хозяин бьёт чуть сильнее — тем сильнее, чем крупнее узел. Серый отдаёт весь гарнизон, противник — половину. Атакуют только сервер и мейнфрейм.'],
+    'Перетаскивание по готовому каналу отправляет пачку: 50, 75 или 100% пакетов узла (внизу экрана или клавишами 1–3). В свой узел пачка вливается, чужой штурмует.', 'Пакеты выходят потоком, по одному, и проходят канал за 2–3 секунды. По своим каналам: ноутбук 1 прыжок, станция 2, сервер 3, мейнфрейм 4. Встречные пакеты разных сторон сталкиваются на канале и гасят друг друга один к одному. У чужого узла пакеты собираются в рой и по одному врезаются в узел: каждый выбивает одного защитника, крупный узел держится чуть лучше. Гарнизон кончился — узел ваш. Серый отдаёт весь гарнизон, противник — половину. Атакуют только сервер и мейнфрейм.'],
   ['<path d="M15 5l8.7 5v10L15 25l-8.7-5V10z" fill="none" stroke="currentColor"/><text x="15" y="18.5" text-anchor="middle" font-size="9" fill="currentColor" font-family="monospace">λ</text>',
     'Когда ваш узел впервые вырастет до мейнфрейма, откроется демон — синяя иконка λ. Перетащите его на вражеский узел, соединённый каналом с вашей сетью.', 'Заражённый узел теряет 20% пакетов, не растёт, не может отправлять пачки и тает 12 секунд. Демон перезаряжается 40 секунд.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><circle cx="24" cy="15" r="3" fill="currentColor"/><path d="M9 15h12" stroke="currentColor" stroke-dasharray="2 2"/>',
     'При перетаскивании достаточно один раз задеть цель: она запомнится. Отмена — правая кнопка мыши или возврат курсора на исходный узел.', 'Каналы двусторонние: противник может атаковать вас по вашему же каналу.'],
+  ['<rect x="3" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="17" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="3" y="17" width="10" height="10" fill="none" stroke="currentColor"/><circle cx="22" cy="22" r="3" fill="currentColor"/>',
+    'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Правила классов действуют: прыжки по классу, атакуют только сервер и мейнфрейм. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
-    'Туман скрывает сеть: видно то, что рядом с вашими узлами и на концах ваших каналов. Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Клавиши: 1–3 — размер пачки, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
+    'Туман скрывает сеть: видно то, что рядом с вашими узлами и на концах ваших каналов. Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Клавиши: 1–3 — размер пачки, Q — выделить все узлы, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
 ];
 $('#howList').innerHTML = HOW.map(([svg, a, b]) => `<div><svg viewBox="0 0 30 30">${svg}</svg><p>${a}<br><span class="muted">${b}</span></p></div>`).join('');
 $('#btnHowPlay').addEventListener('click', () => { SFX.ui(); startLevel(0); });
@@ -1700,6 +1821,13 @@ $('#btnResume').addEventListener('click', () => { SFX.ui(); resumeGame(); });
 $('#btnRestart').addEventListener('click', () => { SFX.ui(); restart(); });
 $('#btnQuit').addEventListener('click', () => { SFX.ui(); toMenu(); });
 $('#btnEndMenu').addEventListener('click', () => { SFX.ui(); toMenu(); });
+$('#btnAll').addEventListener('click', () => { SFX.ui(); if (G && !G.demo && !G.ended) selectAll(); });
+function updateGroupBtn() {
+  const b = $('#btnAll'), n = G && !G.demo ? G.group.size : 0;
+  b.setAttribute('aria-pressed', n ? 'true' : 'false');
+  b.innerHTML = n ? `выделено ${n}<span class="k">×</span>` : 'все узлы<span class="k">Q</span>';
+  b.setAttribute('aria-label', n ? `Выделено узлов: ${n}. Снять выделение` : 'Выделить все свои узлы');
+}
 $('#btnSpeed').addEventListener('click', () => { SFX.ui(); if (!G) return; G.speed = G.speed === 1 ? 2 : 1; $('#btnSpeed').textContent = 'x' + G.speed; });
 
 let toastTimer = 0;
@@ -1708,8 +1836,8 @@ function hideToast() { clearTimeout(toastTimer); $('#toast').classList.remove('s
 const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал, и по нему уйдёт пачка пакетов. канал стоит пакетов и остаётся навсегда.',
   2: 'канал готов. каждое перетаскивание по нему отправляет пачку. размер пачки — 50, 75 или 100% узла, внизу экрана или клавишами 1–3.',
-  3: 'пачка идёт потоком. встречные пакеты на канале дерутся, решает перевес. если атакующих больше гарнизона, узел будет захвачен.',
-  4: 'узел взломан и принёс свой гарнизон. копите пакеты, растите узлы до мейнфрейма — он откроет демона. взломайте пурпурные узлы.',
+  3: 'пакеты идут потоком. у чужого узла они по одному врезаются в гарнизон: каждый выбивает одного защитника. кончился гарнизон — узел ваш.',
+  4: 'узел взломан и принёс свой гарнизон. Q выделяет все ваши узлы — затем клик по цели, и отправят все. взломайте пурпурные узлы.',
 };
 function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
 
@@ -1719,10 +1847,12 @@ function setupHud() {
   const owners = [1].concat(G.ais.map(a => a.o));
   $('#popbar').innerHTML = owners.map(o => `<i data-o="${o}" style="background:${PAL.c[o]};flex-grow:1"></i>`).join('');
   $('#btnSpeed').textContent = 'x1';
+  updateGroupBtn();
 }
 function hudTick(now) {
   if (!G || G.demo || now - hudLast < 150) return;
   hudLast = now;
+  if (G.group.size) { let ch = false; for (const i of G.group) if (G.nodes[i].owner !== 1) { G.group.delete(i); ch = true; } if (ch) updateGroupBtn(); }
   const bars = document.querySelectorAll('#popbar i');
   if (G.fog) {
     // with fog on, only your own share is known
@@ -1762,7 +1892,7 @@ function restart() { if (!G) return; const m = G.meta; if (m.quick) startQuick()
 function toMenu() { hideToast(); startDemo(); show('scrMenu'); }
 let endAction = null;
 function finish(win) {
-  G.ended = true; G.sel = -1; ptr = null; closePop();
+  G.ended = true; G.sel = -1; G.group.clear(); ptr = null; closePop();
   const m = G.meta, stats = G.stats, time = G.time;
   if (win) SFX.win(); else SFX.lose();
   if (win && m.level >= 0) { store.done[m.level] = true; store.unlocked = Math.max(store.unlocked, Math.min(LEVELS.length, m.level + 2)); save(); }
@@ -1791,8 +1921,13 @@ $('#btnEndMain').addEventListener('click', () => { SFX.ui(); if (endAction) endA
 addEventListener('keydown', e => {
   if (!G || G.demo) return;
   const k = e.key.toLowerCase();
-  if (k === 'escape') { if (ptr && ptr.mode === 'link') { ptr.cancel = true; ptr.target = -1; return; } if (G.paused) resumeGame(); else pauseGame(); return; }
+  if (k === 'escape') {
+    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (!G.paused && G.group.size) { clearGroup(); return; }
+    if (G.paused) resumeGame(); else pauseGame(); return;
+  }
   if (G.paused) return;
+  if ((k === 'q' || k === 'й') && !e.repeat && !G.ended) selectAll();
   if (k === 'h' || k === 'р' || k === 'home') homeFocus(false);
   const pk = { '1': '0.5', '2': '0.75', '3': '1' }[k]; if (pk) { setPct(+pk); segPct.set(pk); }
   if (k === '+' || k === '=') { cam.z = clamp(cam.z * 1.2, zoomLimits().min, zoomLimits().max); clampCam(); }
@@ -1813,7 +1948,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, cam, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
+window.__root = { get G() { return G; }, cam, groupPlan, groupSend, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
 })();
 </script>
 </body>
