@@ -686,11 +686,6 @@ const edgeSpeed = e => Math.max(60, e.len - 80) / travelTime(e.len);
 const SPEED_MUL = [0.81, 0.9, 1, 1.1];
 /* Safety cap on how many times routes may carry one packet on. */
 const ORDER_TTL = 8;
-/* Outgoing throughput by class, packets/s: a base rate, a little faster for big batches, capped per class.
-   Mainframe is exactly 10% above server. Transit goes through the same queue, so a laptop is a bottleneck. */
-const FLOW = [3, 5, 7, 7.7];
-const FLOW_MAX = [4, 7, 12, 13.2];
-const flowRate = (tier, n) => Math.min(FLOW_MAX[tier], Math.max(FLOW[tier], n / 6));
 /* Defender bonus by class: the node's owner deals this much more damage per packet. */
 const HOME = [0.06, 0.12, 0.2, 0.32];
 /* Battles at a node, Solarmax-style: every side deals damage in proportion to its size (k per packet per second,
@@ -708,7 +703,7 @@ function buildGame(map, aiNames, meta) {
     return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, owner: d.o, v, vd: v, tier: tierOf(v), name, seed: Math.floor(Math.random() * 1e6),
       hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
   });
-  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], ghosts: [], morphs: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
+  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], ghosts: [], morphs: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
     pct: store.pct || 0.5,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0 };
@@ -869,41 +864,58 @@ function nextHop(i, dest, o) {
   const r = bestRoute(i, dest, o);
   return r.hops ? r.hops[0] : null;
 }
-/* A send is a queue at the cable mouth: packets leave the node one by one at flowRate() per second. */
-function enqueue(e, i, o, n, dest, tier, fw) {
-  if (n < 1 || e.state !== 'up') return false;
-  const dir = dirFrom(e, i);
-  if (!e.q) e.q = [];
-  const q = e.q.find(q => q.dir === dir && q.o === o && q.dest === dest);
-  const mul = SPEED_MUL[tier];
-  if (q) { q.left += n; q.rate = flowRate(tier, q.left); q.mul = mul; q.sp = edgeSpeed(e) * mul; q.fw = Math.max(q.fw || 0, fw || 0); }
-  else e.q.push({ dir, left: n, o, dest, sp: edgeSpeed(e) * mul, mul, rate: flowRate(tier, n), acc: 1, fw: fw || 0 });
-  return true;
-}
+/* A send is one bundle: it leaves at once, carries its count, and flies at the speed of the sender's class. */
 function sendArmy(e, i, o, n, dest) {
   n = Math.floor(n);
   if (canSend(e, i, o, n) !== true) return false;
   const A = G.nodes[i], tier = tierOf(A.v);
-  A.held = (A.held || 0) + n;
-  enqueue(e, i, o, n, dest, tier);
+  spend(A, n);
+  launch(e, dirFrom(e, i), o, dest, 0, SPEED_MUL[tier], 0, n);
   if (o === 1 && !G.demo) { SFX.flowOn(); if (G.tut === 2) { G.tut = 3; tutNext(); } }
   return true;
 }
-/* Put one packet on a cable. back spaces out packets released within the same step. */
-function launch(e, dir, o, dest, back, mul, fw) {
-  e.ar.push({ dir, d: startD(e, dir) - back, n: 1, o, dest, sp: edgeSpeed(e) * (mul || 1), fw: fw || 0, seed: Math.floor(Math.random() * 1e6) });
+/* Put a bundle of n packets on a cable. */
+function launch(e, dir, o, dest, back, mul, fw, n) {
+  e.ar.push({ dir, d: startD(e, dir) - back, n: n || 1, o, dest, sp: edgeSpeed(e) * (mul || 1), fw: fw || 0, seed: Math.floor(Math.random() * 1e6) });
 }
-function pumpQueue(e, q, dt) {
-  const src = G.nodes[srcOf(e, q.dir)];
-  if (src.owner !== q.o) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; return; }
-  if ((src.held || 0) > src.v) trimHeld(src);
-  // one outgoing budget per node, shared by all its queues and refilled in step() at the node's class rate
-  while (q.left >= 1 && src.flowAcc >= 1 && src.v >= 1) {
-    spend(src, 1); src.held = Math.max(0, (src.held || 0) - 1);
-    src.flowAcc -= 1; q.left -= 1;
-    launch(e, q.dir, q.o, q.dest, 0, SPEED_MUL[tierOf(src.v + 1)], q.fw);
+
+/* ---------- wi-fi ----------
+   Player only: a mainframe can throw a batch straight to any node in its range, over the air, ignoring channels
+   and the three-channel limit. Drag from the badge beside the mainframe; then it recharges. */
+const WIFI = { cd: 15 };
+const wifiPos = p => { const r = radiusFor(Math.min(p.vd, 200)) * 1.25 + 14; return { x: p.x + r * 0.75, y: p.y - r * 0.75 }; };
+const hasWifi = p => p.owner === 1 && tierOf(p.v) >= 3 && !(p.infect > 0);
+function wifiCheck(i, j) {
+  const A = G.nodes[i], T = G.nodes[j];
+  if (!T || j === i || !T.seen) return 'выберите узел';
+  if (!hasWifi(A)) return 'wi-fi есть только у мейнфрейма';
+  if (A.wifiCd > 0) return `wi-fi перезаряжается: ${Math.ceil(A.wifiCd)} с`;
+  const r = rangeOf(A.v);
+  if (Math.hypot(T.x - A.x, T.y - A.y) > r) return `слишком далеко: дальность ${r}`;
+  if (sendCount(i, G.pct) < 1) return 'в узле нет пакетов';
+  return true;
+}
+function sendWifi(i, j) {
+  const r = wifiCheck(i, j);
+  if (r !== true) { SFX.error(); toast(r, 2200); return false; }
+  const A = G.nodes[i], T = G.nodes[j], n = sendCount(i, G.pct), d = Math.hypot(T.x - A.x, T.y - A.y);
+  spend(A, n); A.wifiCd = WIFI.cd;
+  G.jumps.push({ o: 1, n, from: i, to: j, t: 0, dur: travelTime(d) / SPEED_MUL[3], h: Math.min(280, 60 + d * 0.3), seed: Math.floor(Math.random() * 1e6) });
+  SFX.daemon();
+  return true;
+}
+function jumpPos(J, u) {
+  const A = G.nodes[J.from], T = G.nodes[J.to];
+  return [A.x + (T.x - A.x) * u, A.y + (T.y - A.y) * u - Math.sin(Math.PI * u) * J.h];
+}
+function stepJumps(dt) {
+  for (const p of G.nodes) if (p.wifiCd > 0) p.wifiCd = Math.max(0, p.wifiCd - dt);
+  for (const J of G.jumps) {
+    J.t += dt;
+    if (J.t >= J.dur) { J.done = true; const T = G.nodes[J.to]; arrive(T, J.n, J.o, T.x, T.y - radiusFor(Math.min(T.vd, 200)), undefined, 0); }
   }
-  if (q.left < 1) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; }
+  G.jumps = G.jumps.filter(J => !J.done);
+  if (!G.demo && !store.wifihint && G.nodes.some(hasWifi)) { store.wifihint = 1; save(); toast('мейнфрейм открыл wi-fi: потяните от значка у мейнфрейма к любому узлу в радиусе — пачка перелетит без каналов.', 9000); }
 }
 
 /* ---------- daemon ----------
@@ -996,15 +1008,12 @@ function arrive(B, n, o, x, y, dest, fw) {
       if (dest != null && dest !== B.i) to = dest;
       else if (B.route != null && hops < ORDER_TTL) { to = B.route; hops++; }
     }
-    B.v += n; B.base += n; B.fed = 0.6;
     if (to >= 0 && to !== B.i) {
-      // everything that passes through leaves by this node's own queue: its class sets throughput and speed
+      // the bundle flies on at once, at the speed of this node's class
       const hop = nextHop(B.i, to, o);
-      if (hop) {
-        B.held = (B.held || 0) + n;
-        enqueue(hop.e, B.i, o, n, to, tierOf(B.v), hops);
-      }
+      if (hop) { launch(hop.e, dirFrom(hop.e, B.i), o, to, 0, SPEED_MUL[tierOf(B.v)], hops, n); B.fed = 0.6; return; }
     }
+    B.v += n; B.base += n; B.fed = 0.6;
     return;
   }
   // foreign node: the packet joins the siege swarm and waits for its duel
@@ -1014,7 +1023,7 @@ function arrive(B, n, o, x, y, dest, fw) {
   const s = B.assault.find(a => a.o === o);
   if (s) s.n += n; else B.assault.push({ o, n });
   B.hurt = 1;
-  if (!G.demo && B.vis && G.morphs.length < 220) G.morphs.push({ k: 'in', node: B.i, o, x, y, a: Math.random() * TAU, seed: Math.floor(Math.random() * 1e6), life: 0.5, max: 0.5 });
+  if (!G.demo && B.vis) for (let k = 0; k < Math.min(6, Math.ceil(n)) && G.morphs.length < 220; k++) G.morphs.push({ k: 'in', node: B.i, o, x, y, a: Math.random() * TAU, seed: Math.floor(Math.random() * 1e6), life: 0.45 + k * 0.05, max: 0.45 + k * 0.05 });
 }
 function releaseFlows(node) {
   for (const e of node.nb) if (e.q) e.q = e.q.filter(q => srcOf(e, q.dir) !== node.i);
@@ -1029,16 +1038,29 @@ function trimHeld(node) {
     const cut = Math.min(q.left, extra); q.left -= cut; extra -= cut;
   }
 }
-/* Head-on packets of different owners annihilate one for one where they meet. */
-function resolveCable(e) {
-  for (;;) {
-    let h0 = null, h1 = null;
-    for (const a of e.ar) {
-      if (a.dead) continue;
-      if (a.dir) { if (!h1 || a.d > h1.d) h1 = a; } else if (!h0 || a.d > h0.d) h0 = a;
-    }
-    if (!h0 || !h1 || h0.o === h1.o || h0.d + h1.d < e.len) return;
-    h0.dead = h1.dead = true;
+/* Head-on bundles of different owners stop where they meet and grind each other down the same way as at a node;
+   bundles of the same side that catch up with a held head join it. */
+function resolveCable(e, dt) {
+  let h0 = null, h1 = null;
+  for (const a of e.ar) {
+    if (a.dead) continue;
+    a.hold = false;
+    if (a.dir) { if (!h1 || a.d > h1.d) h1 = a; } else if (!h0 || a.d > h0.d) h0 = a;
+  }
+  if (!h0 || !h1 || h0.o === h1.o || h0.d + h1.d < e.len - 10) return;
+  const over = h0.d + h1.d - (e.len - 10);
+  if (over > 0) { h0.d -= over / 2; h1.d -= over / 2; }
+  h0.hold = h1.hold = true;
+  for (const a of e.ar) {
+    const h = a.dir ? h1 : h0;
+    if (!a.dead && a !== h && a.o === h.o && a.d >= h.d - 6) { h.n += a.n; a.dead = true; }
+  }
+  const d0 = (FIGHT.k * h1.n + FIGHT.base) * dt, d1 = (FIGHT.k * h0.n + FIGHT.base) * dt;
+  h0.n -= d0; h1.n -= d1;
+  if (h0.n < 0.5) { h0.dead = true; h1.hold = false; }
+  if (h1.n < 0.5) { h1.dead = true; h0.hold = false; }
+  if (!e.sfxT || G.time - e.sfxT > 0.22) {
+    e.sfxT = G.time;
     const [x, y] = posAt(e, 0, h0.d);
     spark(x, y, h0.o, h1.o);
     if (!G.demo && (h0.o === 1 || h1.o === 1) && isVis(x, y)) SFX.hit();
@@ -1115,14 +1137,15 @@ function feedRoutes(dt) {
     if (p.route == null) continue;
     if (p.owner !== 1) { p.route = null; continue; }
     p.routeT = (p.routeT || 0) + dt;
-    if (p.routeT < 0.25) continue;
+    if (p.routeT < 1.2) continue;
     p.routeT = 0;
     const free = Math.floor(p.v - (p.held || 0));
-    if (free < 1 || p.infect > 0) continue;
+    if (free < 1 || p.infect > 0 || (p.assault && p.assault.length)) continue;
     const hops = routePath(p.i, p.route, 1);
     if (!hops) continue;
-    p.held = (p.held || 0) + free;
-    enqueue(hops[0].e, p.i, 1, free, p.route, tierOf(p.v));
+    const tier = tierOf(p.v);
+    spend(p, free);
+    launch(hops[0].e, dirFrom(hops[0].e, p.i), 1, p.route, 0, SPEED_MUL[tier], 0, free);
   }
 }
 function setRoute(i, j) {
@@ -1168,10 +1191,8 @@ function step(dt) {
     if (p.owner && p.v < p.cap) { const add = Math.min(p.cap - p.v, TIERS[tierOf(p.v)].regen * dt); p.v += add; p.base += add; }
   }
   stepDaemon(dt);
+  if (!G.demo) stepJumps(dt);
   if (!G.demo) feedRoutes(dt);
-  // outgoing throughput is a property of the node: its class sets the rate, whatever the number of queues or transit
-  // an idle node keeps one packet ready; a busy one carries the fraction over so the rate is exact
-  for (const p of N) p.flowAcc = Math.min((p.held || 0) >= 1 ? 2 : 1, (p.flowAcc == null ? 1 : p.flowAcc) + flowRate(tierOf(p.v), p.held || 0) * dt);
   for (const e of G.edges) {
     if (e.state === 'grow') {
       const dir = dirFrom(e, e.from);
@@ -1183,10 +1204,9 @@ function step(dt) {
       }
     }
     if (!e.ar) e.ar = [];
-    if (e.q && e.q.length) { for (const q of e.q) pumpQueue(e, q, dt); e.q = e.q.filter(q => q.left >= 1); }
     if (!e.ar.length) continue;
-    for (const a of e.ar) a.d += a.sp * dt;
-    resolveCable(e);
+    for (const a of e.ar) if (!a.hold) a.d += a.sp * dt;
+    resolveCable(e, dt);
     for (const a of e.ar) {
       if (a.dead) continue;
       const end = endD(e, a.dir);
@@ -1224,12 +1244,11 @@ const power = o => {
   let s = 0;
   for (const p of G.nodes) if (p.owner === o) s += p.v;
   for (const p of G.nodes) if (p.assault) for (const a of p.assault) if (a.o === o) s += a.n;
-  for (const e of G.edges) {
-    for (const a of e.ar) if (a.o === o) s += a.n;
-  }
+  for (const e of G.edges) for (const a of e.ar) if (a.o === o) s += a.n;
+  for (const J of G.jumps) if (J.o === o) s += J.n;
   return Math.floor(s);
 };
-const alive = o => G.nodes.some(p => p.owner === o) || G.nodes.some(p => p.assault && p.assault.some(a => a.o === o)) || G.edges.some(e => e.ar.some(a => a.o === o) || (e.q || []).some(q => q.o === o && q.left >= 1));
+const alive = o => G.nodes.some(p => p.owner === o) || G.nodes.some(p => p.assault && p.assault.some(a => a.o === o)) || G.edges.some(e => e.ar.some(a => a.o === o)) || G.jumps.some(J => J.o === o);
 function checkEnd() {
   if (G.ended) return;
   if (G.demo) {
@@ -1246,7 +1265,6 @@ function incomingArmies(i, pred) {
   const out = [];
   for (const e of G.nodes[i].nb) {
     for (const a of e.ar) if (dstOf(e, a.dir) === i && pred(a)) out.push({ n: a.n, eta: Math.max(0, endD(e, a.dir) - a.d) / a.sp, o: a.o });
-    for (const q of e.q || []) if (dstOf(e, q.dir) === i && pred(q)) out.push({ n: q.left, eta: q.left / q.rate + e.len / q.sp, o: q.o });
   }
   for (const a of G.nodes[i].assault || []) if (pred(a)) out.push({ n: a.n, eta: 0, o: a.o });
   return out;
@@ -1373,10 +1391,10 @@ function doAction(i, j) {
 }
 /* Group command: every selected node sends its batch to node j along its own channels.
    To a foreign node the batch goes through your network to a node that has a channel to it. Class rules still apply. */
-function groupPlan(j) {
+function groupPlan(j, set) {
   const N = G.nodes, T = N[j], list = [];
   let total = 0, skip = 0;
-  for (const i of G.group) {
+  for (const i of set || G.group) {
     const A = N[i];
     if (i === j || A.owner !== 1) continue;
     const n = sendCount(i, G.pct);
@@ -1391,8 +1409,8 @@ function groupPlan(j) {
   const label = list.length ? `${verb}: ${list.length} узл., ${total} пак.${skip ? ` · ${skip} без маршрута` : ''}` : 'ни у одного выделенного узла нет маршрута';
   return { list, total, label };
 }
-function groupSend(j) {
-  const plan = groupPlan(j);
+function groupSend(j, set) {
+  const plan = groupPlan(j, set);
   if (!plan.list.length) { SFX.error(); toast(plan.label, 2500); return; }
   for (const it of plan.list) sendArmy(it.hops[0].e, it.i, 1, it.n, j);
 }
@@ -1432,6 +1450,11 @@ cv.addEventListener('pointerdown', e => {
   const w = fromS(e.clientX, e.clientY);
   const dp = interactive() && G.daemon && G.daemon.state === 'idle' ? daemonPos() : null;
   if (dp) { ts(dp.x, dp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 18) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'daemon', target: -1 }; return; } }
+  if (interactive()) for (const q of G.nodes) {
+    if (!hasWifi(q)) continue;
+    const wp = wifiPos(q); ts(wp.x, wp.y);
+    if (Math.hypot(TX - e.clientX, TY - e.clientY) < 16) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: q.i, moved: false, mode: 'wifi', target: -1 }; return; }
+  }
   const p = interactive() ? hit(w.x, w.y) : -1;
   // shift: click toggles an own node in the group, drag on empty space draws a selection box
   if (e.shiftKey && interactive()) {
@@ -1439,7 +1462,7 @@ cv.addEventListener('pointerdown', e => {
     if (p < 0) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'box', target: -1 }; return; }
   }
   ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
-    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1 };
+    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1, chain: p >= 0 ? [p] : [] };
 });
 cv.addEventListener('pointermove', e => {
   if (!G) return;
@@ -1453,13 +1476,24 @@ cv.addEventListener('pointermove', e => {
   const w = fromS(e.clientX, e.clientY);
   hover = interactive() ? hit(w.x, w.y) : -1;
   let overD = false; if (!ptr && interactive() && G.daemon && G.daemon.state === 'idle') { const dp = daemonPos(); ts(dp.x, dp.y); overD = Math.hypot(TX - e.clientX, TY - e.clientY) < 18; }
+  if (!ptr && interactive()) for (const q of G.nodes) { if (!hasWifi(q)) continue; const wp = wifiPos(q); ts(wp.x, wp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 16) overD = true; }
   G.overDaemon = overD;
   cv.style.cursor = hover >= 0 || overD ? 'pointer' : ptr && ptr.mode === 'pan' && ptr.moved ? 'grabbing' : 'default';
   if (!ptr || ptr.id !== e.pointerId) return;
-  if ((ptr.mode === 'link' || ptr.mode === 'daemon') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
+  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
   ptr.x = e.clientX; ptr.y = e.clientY;
   if (!ptr.moved && Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 7) { ptr.moved = true; closePop(); }
-  if (ptr.mode === 'link' || ptr.mode === 'daemon') { if (!ptr.cancel) { const h = hit(w.x, w.y); if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1; else if (h >= 0) ptr.target = h; } }
+  if (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') {
+    if (!ptr.cancel) {
+      const h = hit(w.x, w.y);
+      if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1;
+      else if (h >= 0) {
+        ptr.target = h;
+        // dragging over own nodes gathers them: all of them send to where the drag ends
+        if (ptr.mode === 'link' && G.nodes[h].owner === 1 && !ptr.chain.includes(h)) { ptr.chain.push(h); SFX.select(); }
+      }
+    }
+  }
   else if (ptr.moved && ptr.mode === 'pan') { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
   ptr.lx = e.clientX; ptr.ly = e.clientY;
 });
@@ -1471,16 +1505,22 @@ function endPtr(e, cancel) {
   if (cancel || !interactive()) return;
   if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
   if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
+  if (p.mode === 'wifi') { if (!p.cancel && p.target >= 0) sendWifi(p.p, p.target); return; }
   if (!p.moved && !p.cancel) {
     if (p.p >= 0) return tapNode(p.p);
     G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); return;
   }
   if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) {
+    const srcs = chainSources(p);
     if (G.routeFrom === p.p) setRoute(p.p, p.target);
-    else if (G.group.has(p.p)) groupSend(p.target); else doAction(p.p, p.target);
+    else if (G.group.has(p.p)) groupSend(p.target);
+    else if (srcs.length > 1) groupSend(p.target, new Set(srcs));
+    else doAction(p.p, p.target);
     G.sel = -1;
   }
 }
+/* Own nodes gathered by a drag, except the one the drag ends on. */
+const chainSources = p => (p.chain || []).filter(k => k !== p.target && G.nodes[k].owner === 1);
 cv.addEventListener('pointerup', e => endPtr(e, false));
 cv.addEventListener('pointercancel', e => endPtr(e, true));
 function tapNode(i) {
@@ -1694,16 +1734,45 @@ function render(now) {
     ctx.globalAlpha = k * k * 0.8; ctx.fillStyle = PAL.mute[g.o]; ctx.fillText(glyph(g.seed + Math.floor(t * 20)), TX, TY);
   }
   ctx.globalAlpha = 1;
-  // packets in flight: one sprite per packet, a steady stream along the cable
+  // bundles in flight: a small swarm of packets with a head count
   if (dark) ctx.globalCompositeOperation = 'lighter';
-  const sz = Math.max(9, 16 * S);
+  const sz = Math.max(7, 12 * S), heads = [];
   for (const e of G.edges) for (const a of e.ar) {
-    if (a.d < startD(e, a.dir) - 0.5) continue;
     const [hx, hy] = posAt(e, a.dir, a.d); if (!isVis(hx, hy)) continue;
-    ts(hx, hy); if (TX < -30 || TX > V.w + 30 || TY < -30 || TY > V.h + 30) continue;
-    ctx.drawImage(DOT[a.o], TX - sz / 2, TY - sz / 2, sz, sz);
+    ts(hx, hy); if (TX < -60 || TX > V.w + 60 || TY < -60 || TY > V.h + 60) continue;
+    const [bx, by] = posAt(e, a.dir, a.d - 4), dx = hx - bx, dy = hy - by, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+    const k = Math.min(22, 2 + Math.floor(Math.sqrt(a.n) * 2)), shake = a.hold ? Math.sin(t * 22 + a.seed) * 3 : 0, s0 = startD(e, a.dir);
+    for (let j = k - 1; j >= 0; j--) {
+      const [px, py] = posAt(e, a.dir, Math.max(s0, a.d - j * 5)), h = hash(a.seed + j * 13), off = ((h % 100) / 100 - 0.5) * Math.min(16, 5 + k * 0.7) + Math.sin(t * 6 + j) * 1.2;
+      ts(px + nx * off + shake, py + ny * off); const z = sz * (j === 0 ? 1.2 : 0.85);
+      ctx.drawImage(DOT[a.o], TX - z / 2, TY - z / 2, z, z);
+    }
+    ts(hx, hy); heads.push([TX, TY, a.n, a.o]);
+  }
+  // wi-fi jumps: a bundle on a parabola over the map
+  for (const J of G.jumps) {
+    const u = J.t / J.dur, [hx, hy] = jumpPos(J, u);
+    if (!isVis(hx, hy) && !isVis(G.nodes[J.from].x, G.nodes[J.from].y)) continue;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = rgba(PAL.rgb[J.o], 0.22); ctx.lineWidth = 1; ctx.beginPath();
+    for (let q = 0; q <= 24; q++) { const [x, y] = jumpPos(J, u * q / 24); ts(x, y); if (q) ctx.lineTo(TX, TY); else ctx.moveTo(TX, TY); }
+    ctx.stroke();
+    if (dark) ctx.globalCompositeOperation = 'lighter';
+    const k = Math.min(22, 2 + Math.floor(Math.sqrt(J.n) * 2));
+    for (let j = k - 1; j >= 0; j--) {
+      const [px, py] = jumpPos(J, Math.max(0, u - j * 0.006)), h = hash(J.seed + j * 13), ox = ((h % 100) / 100 - 0.5) * 12, oy = ((h >> 8) % 100 / 100 - 0.5) * 12;
+      ts(px + ox, py + oy); const z = sz * (j === 0 ? 1.2 : 0.85);
+      ctx.drawImage(DOT[J.o], TX - z / 2, TY - z / 2, z, z);
+    }
+    ts(hx, hy); heads.push([TX, TY, J.n, J.o]);
   }
   ctx.globalCompositeOperation = 'source-over';
+  ctx.font = `600 11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const [x, y, n, o] of heads) {
+    const txt = String(Math.max(1, Math.round(n))), w = ctx.measureText(txt).width + 8;
+    ctx.fillStyle = dark ? 'rgba(2,4,3,0.75)' : 'rgba(242,246,243,0.85)'; roundRect(x - w / 2, y - 21, w, 14, 3); ctx.fill();
+    ctx.fillStyle = PAL.lab[o]; ctx.fillText(txt, x, y - 13.5);
+  }
   ctx.font = `11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (const q of G.parts) {
     if (!isVis(q.x, q.y)) continue; ts(q.x, q.y); const a = Math.max(0, q.life / q.max);
@@ -1776,6 +1845,7 @@ function render(now) {
       ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh); ctx.setLineDash([]);
     }
     if (hover >= 0 && hover !== G.sel && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (radiusFor(p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
+    for (const q of N) if (hasWifi(q) && q.vis) drawWifiBadge(q, t);
     if (G.daemon) {
       const D = G.daemon;
       if (D.state === 'move' || D.state === 'idle') {
@@ -1796,6 +1866,12 @@ function render(now) {
     const dragGroup = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel && G.group.has(ptr.p);
     if (G.routeFrom >= 0) drawRoutePreview(G.routeFrom, ptr && ptr.mode === 'link' ? ptr.target : hover, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
     else if (dragGroup && ptr.target >= 0) drawGroupPreview(ptr.target, ptr.x, ptr.y, t);
+    else if (ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel && chainSources(ptr).length > 1) {
+      ctx.strokeStyle = rgba(PAL.rgb[1], 0.85); ctx.lineWidth = 1.2;
+      for (const k of chainSources(ptr)) { const q = N[k]; ts(q.x, q.y); const r = (radiusFor(q.vd) * 1.2 + 12) * S; brackets(TX, TY, r, Math.max(5, r * 0.25)); }
+      if (ptr.target >= 0) drawGroupPreview(ptr.target, ptr.x, ptr.y, t, new Set(chainSources(ptr)));
+    }
+    else if (ptr && ptr.mode === 'wifi' && !ptr.cancel) drawWifiPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
     else if (!ptr && G.group.size && hover >= 0) drawGroupPreview(hover, null, null, t);
     else {
       const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
@@ -1823,6 +1899,33 @@ function drawPreview(src, tgt, px, py, t) {
     ts(A.x, A.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
   }
 }
+function drawWifiBadge(p, t) {
+  const wp = wifiPos(p); ts(wp.x, wp.y);
+  const x = TX, y = TY, c = PAL.rgb[1], ready = !(p.wifiCd > 0), r = 9;
+  ctx.save();
+  ctx.fillStyle = PAL.dark ? 'rgba(4,10,8,0.92)' : 'rgba(242,246,243,0.95)';
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = rgba(c, ready ? 0.95 : 0.3); ctx.lineWidth = 1.2; ctx.stroke();
+  if (!ready) { ctx.strokeStyle = rgba(c, 0.9); ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - p.wifiCd / WIFI.cd)); ctx.stroke(); }
+  // the wi-fi sign: a dot and two arcs
+  ctx.globalAlpha = ready ? 1 : 0.4; ctx.strokeStyle = rgba(c, 1); ctx.fillStyle = rgba(c, 1); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(x, y + 3.5, 1.3, 0, TAU); ctx.fill();
+  for (const rr of [3.6, 6.2]) { ctx.beginPath(); ctx.arc(x, y + 3.5, rr, -Math.PI * 0.78, -Math.PI * 0.22); ctx.stroke(); }
+  ctx.restore();
+}
+function drawWifiPreview(src, tgt, px, py, t) {
+  const A = G.nodes[src], S = cam.z;
+  ts(A.x, A.y); ctx.strokeStyle = rgba(PAL.rgb[1], 0.25); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(TX, TY, rangeOf(A.v) * S, 0, TAU); ctx.stroke();
+  if (tgt < 0) { const wp = wifiPos(A); ts(wp.x, wp.y); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.stroke(); return; }
+  const B = G.nodes[tgt], r = wifiCheck(src, tgt), ok = r === true, col = ok ? PAL.rgb[1] : PAL.rgb[2];
+  const J = { from: src, to: tgt, h: Math.min(280, 60 + Math.hypot(B.x - A.x, B.y - A.y) * 0.3) };
+  ctx.strokeStyle = rgba(col, 0.8); ctx.lineWidth = 1.4; ctx.beginPath();
+  for (let q = 0; q <= 32; q++) { const [x, y] = jumpPos(J, q / 32); ts(x, y); if (q) ctx.lineTo(TX, TY); else ctx.moveTo(TX, TY); }
+  ctx.stroke();
+  ts(B.x, B.y); const rr = (radiusFor(B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
+  ctx.strokeStyle = rgba(col, 1); brackets(TX, TY, rr, Math.max(8, rr * 0.3));
+  label(ok ? `wi-fi: отправить ${sendCount(src, G.pct)}` : r, px, py, ok);
+}
 function drawRoutePreview(src, tgt, px, py, t) {
   const A = G.nodes[src], S = cam.z;
   ts(A.x, A.y); ctx.setLineDash([3, 5]); ctx.lineDashOffset = -t * 12; ctx.strokeStyle = rgba(PAL.rgb[1], 0.8); ctx.lineWidth = 1.2;
@@ -1834,8 +1937,8 @@ function drawRoutePreview(src, tgt, px, py, t) {
   if (hops) for (const hp of hops) if (pathRange(hp.e, rad(hp.e.a), hp.e.len - rad(hp.e.b))) { ctx.setLineDash([1, 9]); ctx.lineDashOffset = -t * 24 * (dirFrom(hp.e, hp.from) ? -1 : 1); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = Math.max(2.5, 3.5 * S); ctx.stroke(); ctx.setLineDash([]); }
   label(hops ? `пересылать всё → ${B.name}` : 'нет пути по вашим каналам', px != null ? px : TX, py != null ? py : TY, !!hops);
 }
-function drawGroupPreview(tgt, px, py, t) {
-  const B = G.nodes[tgt], plan = groupPlan(tgt), ok = plan.list.length > 0, col = ok ? PAL.rgb[1] : PAL.rgb[2], S = cam.z;
+function drawGroupPreview(tgt, px, py, t, set) {
+  const B = G.nodes[tgt], plan = groupPlan(tgt, set), ok = plan.list.length > 0, col = ok ? PAL.rgb[1] : PAL.rgb[2], S = cam.z;
   ts(B.x, B.y); const rr = (radiusFor(B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
   ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
   const drawn = new Set();
@@ -1946,9 +2049,11 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие.', 'Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание отправляет пачку: 50, 75 или 100% пакетов, которые сейчас в узле (внизу экрана или клавишами 1–3). По своим каналам пачка дойдёт в любой конец сети, без ограничения прыжков. Для постоянной переброски на фронт — маршрутизация.', 'Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пакеты остаются в нём и встают в оборону. Класс узла задаёт пропускную способность и скорость: ноутбук выпускает до 4 пакетов в секунду, станция до 7, сервер до 12, мейнфрейм до 13; мейнфрейм летает на 10% быстрее сервера, станция и ноутбук медленнее. Транзит тоже идёт через узел с его темпом — слабый узел в цепочке копит пакеты. Встречные пакеты гасят друг друга. Атакуют только сервер и мейнфрейм.'],
+    'Перетаскивание отправляет пачку: 50, 75 или 100% пакетов, которые сейчас в узле (внизу экрана или клавишами 1–3). Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: мейнфрейм на 10% быстрее сервера, станция и ноутбук медленнее. Встречные пачки на канале останавливаются и перемалывают друг друга.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
-    'Долетев до узла, где идёт бой, пакет превращается в символ и встаёт в кольцо вокруг узла; после боя уцелевшие символы снова становятся пакетами и уходят в узел. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
+    'Долетев до узла, где идёт бой, пакеты пачки превращаются в символы и встаёт в кольцо вокруг узла; после боя уцелевшие символы снова становятся пакетами и уходят в узел. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
+  ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+    'Wi-Fi мейнфрейма: у вашего мейнфрейма есть значок. Потяните от него к любому узлу в радиусе — пачка перелетит по воздуху, без каналов и без лимита в 3 канала.', 'Так можно достать узел, к которому не проложить канал. После прыжка wi-fi перезаряжается 15 секунд.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M10 15h10" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><path d="M17 12l3 3-3 3" fill="none" stroke="currentColor"/>',
     'Маршрутизация, со 2-го уровня: дважды нажмите на свой узел, затем на другой — узел будет сам пересылать туда все свои пакеты, и накопленные, и новые.', 'Так строятся цепочки снабжения к фронту. Цель может быть своим узлом или чужим, если к нему есть канал из вашей сети. Снять маршрут: дважды нажать на узел и затем на него же.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><circle cx="24" cy="15" r="3" fill="currentColor"/><path d="M9 15h12" stroke="currentColor" stroke-dasharray="2 2"/>',
@@ -2067,7 +2172,7 @@ addEventListener('keydown', e => {
   if (!G || G.demo) return;
   const k = e.key.toLowerCase();
   if (k === 'escape') {
-    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi')) { ptr.cancel = true; ptr.target = -1; return; }
     if (!G.paused && G.routeFrom >= 0) { G.routeFrom = -1; return; }
     if (!G.paused && G.group.size) { clearGroup(); return; }
     if (G.paused) resumeGame(); else pauseGame(); return;
@@ -2094,6 +2199,6 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
+window.__root = { get G() { return G; }, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
 })();
 </script>
