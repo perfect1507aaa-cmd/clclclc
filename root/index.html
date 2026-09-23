@@ -488,7 +488,6 @@ function readPalette() {
     dark: g('--dark') === '1', c: [g('--c0'), g('--c1'), g('--c2'), g('--c3'), g('--c4')] };
   PAL.rgb = PAL.c.map(hexToRgb);
   PAL.lab = PAL.rgb.map(c => rgba(PAL.dark ? mix(c, [255, 255, 255], 0.1) : mix(c, [0, 0, 0], 0.12), 1));
-  PAL.mute = PAL.rgb.map(c => rgba(PAL.dark ? mix(c, [110, 124, 118], 0.4) : mix(c, [120, 128, 124], 0.35), 1));
   PKT = PAL.rgb.map(c => makePacket(c, 0.13)); DOT = PAL.rgb.map(c => makePacket(c, 0.22));
   nCache.clear(); bgDirty = true; updatePopbarColors();
 }
@@ -630,7 +629,8 @@ function genMap(spec) {
   const regions = spec.regions || [];
   const nearestReg = (x, y) => { let b = -1, bd = 1e9; regions.forEach((r, k) => { const d = Math.hypot(r.fx * W - x, r.fy * H - y); if (d < bd) { bd = d; b = k; } }); return b; };
   (spec.homes || []).forEach((h, k) => { const x = clamp(h[0] * W, M, W - M), y = clamp(h[1] * H, M, H - M); add(x, y, 'l', k + 1, k === 0 && spec.playerV ? spec.playerV : 24, nearestReg(x, y)); });
-  (spec.extra || []).forEach(e => add(e.fx * W, e.fy * H, e.sz, 0, e.g, e.reg != null ? e.reg : nearestReg(e.fx * W, e.fy * H)));
+  // extra nodes: placed by hand, in map fractions (fx, fy) or in pixels (x, y); o gives a node to a player from the start
+  (spec.extra || []).forEach(e => { const x = e.x != null ? e.x : e.fx * W, y = e.y != null ? e.y : e.fy * H; add(x, y, e.sz, e.o || 0, e.g, e.reg != null ? e.reg : nearestReg(x, y)); });
   if (spec.grid) {
     const { cols, rows } = spec.grid;
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
@@ -655,6 +655,10 @@ function genMap(spec) {
   }
   return { W, H, nodes };
 }
+/* Level-building helpers, in pixels: nodes along a line or around a centre. sz and g may be lists that repeat. */
+const pick = (v, k) => Array.isArray(v) ? v[k % v.length] : v;
+const linePx = (x0, y0, x1, y1, n, sz, g) => Array.from({ length: n }, (_, k) => { const u = n > 1 ? k / (n - 1) : 0.5; return { x: x0 + (x1 - x0) * u, y: y0 + (y1 - y0) * u, sz: pick(sz, k), g: pick(g, k) }; });
+const ringPx = (cx, cy, r, n, a0, sz, g) => Array.from({ length: n }, (_, k) => { const a = a0 + k * TAU / n; return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, sz: pick(sz, k), g: pick(g, k) }; });
 const LEVELS = [
   { name: 'Первое подключение', ai: ['easy'], spec: { W: 2200, H: 1300, seed: 11, homes: [[0.06, 0.5], [0.94, 0.5]], count: 13, maxLen: 520 } },
   { name: 'Периметр', ai: ['easy'], spec: { W: 2400, H: 1600, seed: 22, homes: [[0.08, 0.5], [0.92, 0.5]], ring: { n: 14, rx: 0.42, ry: 0.4 }, regions: [{ fx: 0.5, fy: 0.5, r: 0.2, n: 4 }], maxLen: 480 } },
@@ -670,6 +674,42 @@ const LEVELS = [
     regions: [{ fx: 0.17, fy: 0.76, r: 0.17, n: 6 }, { fx: 0.83, fy: 0.24, r: 0.17, n: 6 }, { fx: 0.17, fy: 0.24, r: 0.17, n: 6 }, { fx: 0.83, fy: 0.76, r: 0.17, n: 6 }, { fx: 0.5, fy: 0.5, r: 0.14, n: 5 }] } },
   { name: 'DDoS', ai: ['easy', 'normal', 'easy'], spec: { W: 3000, H: 2000, seed: 99, homes: [[0.5, 0.5], [0.06, 0.1], [0.94, 0.1], [0.5, 0.94]], playerV: 40, count: 30, maxLen: 500 } },
   { name: 'Нулевой день', ai: ['hard', 'hard', 'hard'], spec: { W: 3600, H: 2400, seed: 1010, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], count: 38, maxLen: 520 } },
+  // ---- second act: each map is built around one idea ----
+  { name: 'Ретранслятор', ai: ['easy', 'easy'], hint: 'в центре — крупный узел. вырастите мейнфрейм (60+ пакетов): у него появится wi-fi, и пачки полетят по воздуху, мимо каналов.',
+    spec: { W: 2800, H: 1900, seed: 112, homes: [[0.5, 0.9], [0.08, 0.12], [0.92, 0.12]],
+      extra: [{ x: 1400, y: 820, sz: 'x', g: 40 }].concat(ringPx(1400, 820, 330, 6, Math.PI / 6, 's', 6)), count: 24 } },
+  { name: 'Кольцо', ai: ['normal'], hint: 'внешнее кольцо ведёт к противнику, центр — к самому ценному узлу карты. кто возьмёт центр, дотянется до всех.',
+    spec: { W: 2400, H: 2400, seed: 113, homes: [[0.1, 0.5], [0.9, 0.5]],
+      extra: [{ x: 1200, y: 1200, sz: 'x', g: 45 }].concat(ringPx(1200, 1200, 470, 4, Math.PI / 4, 'm', 12)),
+      ring: { n: 14, rx: 0.4, ry: 0.4 } } },
+  { name: 'Две линии', ai: ['normal'], hint: 'две линии идут к противнику параллельно и сходятся лишь на двух перекрёстках. перекрёстки решают, чья линия устоит.',
+    spec: { W: 4000, H: 1300, seed: 115, homes: [[0.04, 0.5], [0.96, 0.5]],
+      extra: linePx(500, 260, 3500, 260, 9, ['s', 'm', 's', 'l'], [5, 10, 6, 20]).concat(linePx(500, 1040, 3500, 1040, 9, ['s', 'l', 's', 'm'], [5, 20, 6, 10]),
+        [{ x: 1400, y: 650, sz: 'l', g: 24 }, { x: 2600, y: 650, sz: 'l', g: 24 }]) } },
+  { name: 'Мост', ai: ['normal'], hint: 'две сети сходятся в одну цепочку посередине. удерживайте центр: захват узла уничтожает все пачки, что шли через него дальше.',
+    spec: { W: 3000, H: 1500, seed: 111, homes: [[0.06, 0.5], [0.94, 0.5]],
+      extra: linePx(1200, 750, 1800, 750, 3, ['m', 'l', 'm'], [12, 28, 12]),
+      regions: [{ fx: 0.2, fy: 0.5, r: 0.27, n: 8 }, { fx: 0.8, fy: 0.5, r: 0.27, n: 8 }] } },
+  { name: 'Узловая', ai: ['easy', 'easy', 'normal'], hint: 'четыре игрока и один узел в центре. центр связывает всех — и всех к себе притягивает.',
+    spec: { W: 2800, H: 2800, seed: 114, homes: [[0.07, 0.93], [0.07, 0.07], [0.93, 0.07], [0.93, 0.93]],
+      extra: [{ x: 1400, y: 1400, sz: 'l', g: 30 }].concat(ringPx(1400, 1400, 360, 8, 0, 's', [4, 8]), ringPx(1400, 1400, 820, 4, Math.PI / 4, 'm', 12)),
+      regions: [{ fx: 0.12, fy: 0.88, r: 0.1, n: 4 }, { fx: 0.12, fy: 0.12, r: 0.1, n: 4 }, { fx: 0.88, fy: 0.12, r: 0.1, n: 4 }, { fx: 0.88, fy: 0.88, r: 0.1, n: 4 }] } },
+  { name: 'Архипелаг', ai: ['normal', 'normal'], hint: 'острова разделены проливами: станция через них не дотянется. нужен сервер (30+ пакетов) — или мейнфрейм с wi-fi.',
+    spec: { W: 3100, H: 2100, seed: 116, homes: [[450 / 3100, 1650 / 2100], [2650 / 3100, 1650 / 2100], [0.5, 550 / 2100]],
+      extra: [].concat(ringPx(450, 1650, 190, 3, -Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]), ringPx(2650, 1650, 190, 3, -Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]),
+        ringPx(1550, 550, 190, 3, Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]), [{ x: 1550, y: 1650, sz: 'x', g: 40 }], ringPx(1550, 1650, 200, 3, -Math.PI / 2, 'm', 10)) } },
+  { name: 'Паутина', ai: ['normal', 'normal', 'hard'], hint: 'плотная сеть мелких узлов. маршруты, протяжка через несколько узлов и выделение всех (Q) сэкономят сотни кликов.',
+    spec: { W: 3200, H: 2000, seed: 119, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], grid: { cols: 8, rows: 5 }, weights: { s: 0.5, m: 0.35, l: 0.12, x: 0.03 } } },
+  { name: 'Клещи', ai: ['normal', 'normal'], hint: 'двое противников сверху, вы — снизу. они дерутся и друг с другом: выберите, кого добивать первым.',
+    spec: { W: 3000, H: 2000, seed: 118, homes: [[0.5, 0.92], [0.08, 0.1], [0.92, 0.1]], playerV: 30, extra: [{ x: 1500, y: 1000, sz: 'l', g: 26 }],
+      regions: [{ fx: 0.14, fy: 0.2, r: 0.12, n: 3 }, { fx: 0.86, fy: 0.2, r: 0.12, n: 3 }, { fx: 0.22, fy: 0.58, r: 0.18, n: 4 }, { fx: 0.78, fy: 0.58, r: 0.18, n: 4 }, { fx: 0.5, fy: 0.2, r: 0.13, n: 3 }, { fx: 0.5, fy: 0.76, r: 0.14, n: 4 }] } },
+  { name: 'Крепость', ai: ['normal'], hint: 'противник окопался в крепости. копите силы на своей половине и бейте одной большой пачкой — мелкие вылазки крепость перемелет.',
+    spec: { W: 3000, H: 1800, seed: 117, homes: [[0.06, 0.5], [0.93, 0.5]], playerV: 30,
+      extra: [{ x: 2450, y: 520, sz: 'x', g: 20, o: 2 }, { x: 2450, y: 1280, sz: 'x', g: 20, o: 2 }, { x: 2250, y: 900, sz: 'l', g: 30 }],
+      regions: [{ fx: 0.12, fy: 0.5, r: 0.16, n: 4 }, { fx: 0.34, fy: 0.5, r: 0.38, n: 11 }, { fx: 0.62, fy: 0.5, r: 0.2, n: 4 }] } },
+  { name: 'Корень', ai: ['hard', 'hard', 'normal'], hint: 'корневой доступ — в центре карты: три мейнфрейма вокруг ядра. возьмите их, и сеть ваша.',
+    spec: { W: 3800, H: 2600, seed: 120, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], playerV: 30,
+      extra: [{ x: 1900, y: 1300, sz: 'l', g: 35 }].concat(ringPx(1900, 1300, 420, 3, -Math.PI / 2, 'x', 50)), count: 34 } },
 ];
 function quickSpec(opp, map) {
   const size = [{ W: 2200, H: 1400, count: 15 }, { W: 2800, H: 1800, count: 24 }, { W: 3600, H: 2300, count: 36 }][map];
@@ -692,7 +732,6 @@ const HOME = [0.06, 0.12, 0.2, 0.32];
    plus a small base so tiny fights end), split among its foes by their size. The bigger side kills faster and
    keeps more: 100 against 30 leaves about 95, not 70. */
 const FIGHT = { k: 0.12, base: 0.35 };
-const SHOW_ATT = 36, SHOW_DEF = 24;
 function buildGame(map, aiNames, meta) {
   const used = new Set();
   const nodes = map.nodes.map((d, i) => {
@@ -703,7 +742,7 @@ function buildGame(map, aiNames, meta) {
     return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, owner: d.o, v, vd: v, tier: tierOf(v), name, seed: Math.floor(Math.random() * 1e6),
       hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
   });
-  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], ghosts: [], morphs: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
+  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
     pct: store.pct || 0.5,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0 };
@@ -1023,7 +1062,6 @@ function arrive(B, n, o, x, y, dest, fw) {
   const s = B.assault.find(a => a.o === o);
   if (s) s.n += n; else B.assault.push({ o, n });
   B.hurt = 1;
-  if (!G.demo && B.vis) for (let k = 0; k < Math.min(6, Math.ceil(n)) && G.morphs.length < 220; k++) G.morphs.push({ k: 'in', node: B.i, o, x, y, a: Math.random() * TAU, seed: Math.floor(Math.random() * 1e6), life: 0.45 + k * 0.05, max: 0.45 + k * 0.05 });
 }
 function releaseFlows(node) {
   for (const e of node.nb) if (e.q) e.q = e.q.filter(q => srcOf(e, q.dir) !== node.i);
@@ -1066,34 +1104,11 @@ function resolveCable(e, dt) {
     if (!G.demo && (h0.o === 1 || h1.o === 1) && isVis(x, y)) SFX.hit();
   }
 }
-/* At a foreign node packets turn into glyphs circling it: attackers on the outer ring, the node's own packets on the inner one.
-   Shared by the simulation (where a fallen glyph fades) and the renderer. */
-function siegePos(p, j, m, t) {
-  const a = j / m * TAU + t * 0.45 + (p.seed % 100) * 0.06, r = radiusFor(Math.min(p.vd, 200)) * 1.2 + 21 + (j % 2) * 7;
-  return [p.x + Math.cos(a) * r, p.y + Math.sin(a) * r];
-}
-function defPos(p, j, m, t) {
-  const a = j / m * TAU - t * 0.3 + (p.seed % 37) * 0.1, r = radiusFor(Math.min(p.vd, 200)) * 1.2 + 11;
-  return [p.x + Math.cos(a) * r, p.y + Math.sin(a) * r];
-}
-/* A fallen packet: its glyph stays where it stood, scrambles and fades. Nothing flies anywhere. */
-function fall(p, n, o, def) {
-  n = Math.min(n, 3);
+/* A packet fell at node p: the battle counts under the node flicker into glyphs for a moment. */
+function fall(p, n, o) {
   if (n <= 0) return;
-  const tot = def ? p.v : p.assault.reduce((s, a) => s + a.n, 0), m = Math.max(1, Math.min(def ? SHOW_DEF : SHOW_ATT, Math.ceil(tot) + n));
-  for (let k = 0; k < n && G.ghosts.length < 240; k++) {
-    const [x, y] = (def ? defPos : siegePos)(p, Math.floor(Math.random() * m), m, G.time);
-    G.ghosts.push({ x, y, o, seed: Math.floor(Math.random() * 1e6), life: 0.8, max: 0.8 });
-  }
+  p.numGlitch = Math.min(1, (p.numGlitch || 0) + 0.35 * n);
   if (o === 1 || p.owner === 1 || p.assault.some(a => a.o === 1)) SFX.hit();
-}
-/* End of a battle: the survivors' glyphs turn back into packets and sink into the node. */
-function settle(p, n, o, posFn) {
-  const m = Math.min(posFn === defPos ? SHOW_DEF : SHOW_ATT, Math.ceil(n - 1e-6));
-  for (let j = 0; j < m && G.morphs.length < 260; j++) {
-    const [x, y] = posFn(p, j, m, G.time);
-    G.morphs.push({ k: 'out', node: p.i, o, x, y, seed: p.seed + j * 53, life: 0.55 + j * 0.012, max: 0.55 + j * 0.012 });
-  }
 }
 function resolveNodes(dt) {
   const up = n => Math.ceil(n - 1e-6);
@@ -1113,18 +1128,17 @@ function resolveNodes(dt) {
     }
     const show = !G.demo && p.vis;
     const d0 = up(p.v); p.v = Math.max(0, p.v - dmg[0]);
-    if (show) fall(p, d0 - up(p.v), p.owner, true);
-    p.assault.forEach((a, k) => { const b0 = up(a.n); a.n = Math.max(0, a.n - dmg[k + 1]); if (show) fall(p, b0 - up(a.n), a.o, false); });
+    if (show) fall(p, d0 - up(p.v), p.owner);
+    p.assault.forEach((a, k) => { const b0 = up(a.n); a.n = Math.max(0, a.n - dmg[k + 1]); if (show) fall(p, b0 - up(a.n), a.o); });
     p.hurt = 1; p.lastHit = G.time;
     trimHeld(p);
     p.assault = p.assault.filter(a => a.n > 0.01);
     if (p.assault.length && p.v <= 0.01) {
       const win = p.assault.reduce((x, a) => a.n > x.n ? a : x);
       const rest = p.assault.filter(a => a !== win);
-      if (show) settle(p, win.n, win.o, siegePos);
       captureNode(p, win.o, win.n);
       p.assault = rest.length ? rest : null;
-    } else if (!p.assault.length) { if (show) settle(p, p.v, p.owner, defPos); p.assault = null; }
+    } else if (!p.assault.length) p.assault = null;
   }
 }
 /* Routing (Kiomet-style): a node with a route keeps forwarding every packet it has to its target. */
@@ -1165,10 +1179,30 @@ function captureNode(B, o, leftover) {
   B.route = null;
   B.owner = o; B.v = Math.max(0, leftover || 0) + bounty; if (B.v < 1) B.v = 1; B.pop = 1; B.glitch = 0.9; B.hurt = 0; B.base = B.v; B.held = 0; B.infect = 0;
   if (bounty > 0) G.floats.push({ x: B.x, y: B.y, txt: `+${bounty}`, o, life: 1.6, max: 1.6 });
+  cutOff();
   G.waves.push({ x: B.x, y: B.y, r: radiusFor(Math.min(B.v, 200)), life: 1.3, max: 1.3, o });
   if (G.demo) return;
   if (o === 1) { G.stats.captured++; SFX.capture(); if (G.tut && G.tut < 4) { G.tut = 4; tutNext(); } }
   else if (old === 1) SFX.lost();
+}
+/* Cutting the network: once a node changes hands, every bundle whose way on went through it is cut off and lost.
+   Bundles flying straight into that node still arrive and fight for it. */
+function cutOff() {
+  const N = G.nodes;
+  for (const e of G.edges) for (const a of e.ar) {
+    if (a.dead) continue;
+    const Y = dstOf(e, a.dir), fin = a.dest != null ? a.dest : Y;
+    if (Y === fin) continue;
+    if (N[Y].owner === a.o && bestRoute(Y, fin, a.o).hops) continue;
+    a.dead = true;
+    const [x, y] = posAt(e, a.dir, a.d);
+    for (let k = 0; k < Math.min(8, Math.ceil(a.n)) && G.parts.length < 600; k++) {
+      const ang = Math.random() * TAU, v = 10 + Math.random() * 30;
+      G.parts.push({ x, y, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 8, life: 0.8 + Math.random() * 0.5, max: 1.3, o: a.o, ch: GLYPHS[Math.floor(Math.random() * GLYPHS.length)] });
+    }
+    G.floats.push({ x, y, txt: `−${Math.round(a.n)}`, o: a.o, life: 1.4, max: 1.4 });
+    if (!G.demo && a.o === 1 && isVis(x, y)) SFX.cut();
+  }
 }
 function updateVision() {
   const N = G.nodes;
@@ -1228,8 +1262,7 @@ function step(dt) {
   for (const q of G.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.95; q.vy *= 0.95; q.life -= dt; }
   G.parts = G.parts.filter(q => q.life > 0);
   for (const w of G.waves) w.life -= dt; G.waves = G.waves.filter(w => w.life > 0);
-  for (const g of G.ghosts) g.life -= dt; G.ghosts = G.ghosts.filter(g => g.life > 0);
-  for (const m of G.morphs) m.life -= dt; G.morphs = G.morphs.filter(m => m.life > 0);
+  for (const p of N) if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6);
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
   for (const ai of G.ais) {
     if (G.time < ai.next) continue;
@@ -1682,62 +1715,14 @@ function render(now) {
         ctx.setLineDash([3, 4]); ctx.lineDashOffset = t * 12; ctx.strokeStyle = rgba(dc, 0.8); ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.arc(cx, cy, rr2, -Math.PI / 2, -Math.PI / 2 + TAU * p.infect / DAEMON.infect); ctx.stroke(); ctx.setLineDash([]);
       }
-      if (p.assault && p.assault.length) {
-        // battle: each packet at the node is a quiet glyph circling it; they re-roll slowly
-        ctx.font = `${Math.max(8, Math.round(10.5 * S))}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.globalAlpha = 0.85;
-        const md = Math.min(SHOW_DEF, Math.ceil(p.v - 1e-6));
-        ctx.fillStyle = PAL.mute[p.owner];
-        for (let j = 0; j < md; j++) { const [wx, wy] = defPos(p, j, md, G.time); ts(wx, wy); ctx.fillText(glyph(p.seed + j * 31 + Math.floor(G.time * 0.35 + j * 0.61)), TX, TY); }
-        const an = p.assault.reduce((s, a) => s + a.n, 0), m = Math.max(1, Math.min(SHOW_ATT, Math.ceil(an - 1e-6)));
-        let j = 0;
-        for (const a of p.assault) {
-          const coming = G.morphs.reduce((s, x) => s + (x.k === 'in' && x.node === p.i && x.o === a.o ? 1 : 0), 0);
-          const k = Math.max(0, Math.round(a.n / an * m) - coming);
-          ctx.fillStyle = PAL.mute[a.o];
-          for (let q = 0; q < k && j < m; q++, j++) { const [wx, wy] = siegePos(p, j, m, G.time); ts(wx, wy); ctx.fillText(glyph(a.o * 977 + p.seed + j * 53 + Math.floor(G.time * 0.35 + j * 0.47)), TX, TY); }
-        }
-        ctx.globalAlpha = 1;
-      }
     }
   }
   for (const w of G.waves) { if (!isVis(w.x, w.y)) continue; ts(w.x, w.y); const k = 1 - w.life / w.max, c = w.o < 0 ? dcol() : PAL.rgb[w.o], e = 1 - (1 - k) ** 3, r = w.r * S * (1.1 + e * (w.soft ? 0.6 : 1.4)); ctx.strokeStyle = rgba(c, (w.soft ? 0.35 : 0.7) * (1 - k) ** 1.5); ctx.lineWidth = 1; ctx.strokeRect(TX - r, TY - r, r * 2, r * 2); }
-  // morphs: a packet reaching a battle becomes a glyph on its way to the ring; after the battle glyphs become packets again
-  {
-    const gsz = Math.max(8, Math.round(10.5 * S)), dz = Math.max(8, 13 * S);
-    ctx.font = `${gsz}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    for (const m of G.morphs) {
-      const P = N[m.node], u = 1 - m.life / m.max;
-      let x, y, glyphA;
-      if (m.k === 'in') {
-        const r = radiusFor(Math.min(P.vd, 200)) * 1.2 + 21, a = m.a + G.time * 0.45, e = 1 - (1 - u) ** 2;
-        x = m.x + (P.x + Math.cos(a) * r - m.x) * e; y = m.y + (P.y + Math.sin(a) * r - m.y) * e;
-        glyphA = clamp((u - 0.3) / 0.5, 0, 1);
-      } else {
-        const e = u * u;
-        x = m.x + (P.x - m.x) * e; y = m.y + (P.y - m.y) * e;
-        glyphA = clamp(1 - u / 0.45, 0, 1);
-      }
-      if (!isVis(x, y)) continue;
-      ts(x, y);
-      const fade = m.k === 'out' ? clamp((1 - u) / 0.3, 0, 1) : 1;
-      if (glyphA < 1) { ctx.globalAlpha = (1 - glyphA) * fade; ctx.drawImage(DOT[m.o], TX - dz / 2, TY - dz / 2, dz, dz); }
-      if (glyphA > 0) { ctx.globalAlpha = glyphA * 0.85; ctx.fillStyle = PAL.mute[m.o]; ctx.fillText(glyph(m.seed), TX, TY); }
-    }
-    ctx.globalAlpha = 1;
-  }
-  // fallen packets: the glyph scrambles and fades where it stood
-  ctx.font = `${Math.max(8, Math.round(10.5 * S))}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const g of G.ghosts) {
-    if (!isVis(g.x, g.y)) continue;
-    const k = g.life / g.max; ts(g.x, g.y);
-    ctx.globalAlpha = k * k * 0.8; ctx.fillStyle = PAL.mute[g.o]; ctx.fillText(glyph(g.seed + Math.floor(t * 20)), TX, TY);
-  }
-  ctx.globalAlpha = 1;
   // bundles in flight: a small swarm of packets with a head count
   if (dark) ctx.globalCompositeOperation = 'lighter';
   const sz = Math.max(7, 12 * S), heads = [];
   for (const e of G.edges) for (const a of e.ar) {
+    if (a.dead) continue;
     const [hx, hy] = posAt(e, a.dir, a.d); if (!isVis(hx, hy)) continue;
     ts(hx, hy); if (TX < -60 || TX > V.w + 60 || TY < -60 || TY > V.h + 60) continue;
     const [bx, by] = posAt(e, a.dir, a.d - 4), dx = hx - bx, dy = hy - by, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
@@ -1785,7 +1770,7 @@ function render(now) {
     if (!p.seen || !onScreen(p.x, p.y, 120)) continue;
     ts(p.x, p.y);
     const fight = p.vis && p.assault && p.assault.length;
-    const ow = shownOwner(p), y1 = TY + (p.capR * 1.2 + (fight ? 34 : 22)) * S + 6, y2 = y1 + 15;
+    const ow = shownOwner(p), y1 = TY + (p.capR * 1.2 + 22) * S + 6, y2 = y1 + 15;
     let amount = 0, atk = 1;
     if (p.vis && p.hurt > 0.05) {
       amount = clamp(1 - p.v / Math.max(6, p.cap * 0.3), 0.05, 1) * Math.min(1, p.hurt * 2.5);
@@ -1801,11 +1786,20 @@ function render(now) {
     ctx.globalAlpha = 1;
     ctx.font = `500 13px ${FONT}`;
     if (fight) {
-      const parts = [[Math.ceil(p.v - 1e-6), p.owner]].concat(p.assault.map(a => [Math.ceil(a.n - 1e-6), a.o])), gapW = 12;
-      const ws = parts.map(([v]) => ctx.measureText(String(v)).width), total = ws.reduce((s, w) => s + w, 0) + gapW * (parts.length - 1);
-      let x = TX - total / 2; ctx.textAlign = 'left';
-      parts.forEach(([v, o], k) => { ctx.fillStyle = o ? PAL.lab[o] : PAL.fg2; ctx.fillText(String(v), x, y2); x += ws[k] + gapW; });
-      ctx.textAlign = 'center';
+      // the battle counts; now and then, and whenever packets fall, their digits flicker into glyphs
+      const parts = [[Math.ceil(p.v - 1e-6), p.owner]].concat(p.assault.map(a => [Math.ceil(a.n - 1e-6), a.o])), gapW = 12, cw = ctx.measureText('0').width;
+      const total = parts.reduce((s, [v]) => s + String(v).length * cw, 0) + gapW * (parts.length - 1), tick = Math.floor(t * 14), prob = 0.04 + 0.5 * (p.numGlitch || 0);
+      let x = TX - total / 2;
+      parts.forEach(([v, o], k) => {
+        const str = String(v);
+        for (let c = 0; c < str.length; c++) {
+          const h = hash(p.seed + k * 131 + c * 17 + tick * 7919), on = (h % 1000) / 1000 < prob;
+          ctx.fillStyle = o ? PAL.lab[o] : PAL.fg2; ctx.globalAlpha = on ? 0.75 : 1;
+          ctx.fillText(on ? glyph(h) : str[c], x + cw / 2, y2); x += cw;
+        }
+        x += gapW;
+      });
+      ctx.globalAlpha = 1;
     } else {
       ctx.fillStyle = ow ? PAL.lab[ow] : PAL.fg2;
       ctx.fillText(p.vis ? String(Math.floor(p.v)) : `~${Math.floor(p.lastV)}`, TX, y2);
@@ -2049,9 +2043,9 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие.', 'Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание отправляет пачку: 50, 75 или 100% пакетов, которые сейчас в узле (внизу экрана или клавишами 1–3). Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: мейнфрейм на 10% быстрее сервера, станция и ноутбук медленнее. Встречные пачки на канале останавливаются и перемалывают друг друга.'],
+    'Перетаскивание отправляет пачку: 50, 75 или 100% пакетов, которые сейчас в узле (внизу экрана или клавишами 1–3). Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: мейнфрейм на 10% быстрее сервера, станция и ноутбук медленнее. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: все пачки, что шли через него дальше, погибают.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
-    'Долетев до узла, где идёт бой, пакеты пачки превращаются в символы и встаёт в кольцо вокруг узла; после боя уцелевшие символы снова становятся пакетами и уходят в узел. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
+    'У чужого узла пачка вступает в бой с гарнизоном. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
     'Wi-Fi мейнфрейма: у вашего мейнфрейма есть значок. Потяните от него к любому узлу в радиусе — пачка перелетит по воздуху, без каналов и без лимита в 3 канала.', 'Так можно достать узел, к которому не проложить канал. После прыжка wi-fi перезаряжается 15 секунд.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M10 15h10" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><path d="M17 12l3 3-3 3" fill="none" stroke="currentColor"/>',
@@ -2119,6 +2113,7 @@ function startLevel(i) {
   enterGame();
   if (i === 0) setTimeout(() => { if (G && G.tut === 1) tutNext(); }, 700);
   if (i === 1) setTimeout(() => { if (G && G.meta.level === 1 && !G.ended) toast('новое: маршрутизация. дважды нажмите на свой узел, затем на другой — узел будет пересылать туда все свои пакеты.', 9000); }, 900);
+  if (L.hint) setTimeout(() => { if (G && G.meta.level === i && !G.ended) toast(L.hint, 9000); }, 900);
 }
 function startQuick() {
   const q = store.quick;
