@@ -686,10 +686,11 @@ const SPEED_MUL = [0.81, 0.9, 1, 1.1];
 /* A send order keeps working this long after the last packet went through the node. */
 const ORDER_GRACE = 2.5;
 const ORDER_TTL = 8;
-/* Emission: base packets/s by class, faster for big batches so a send never drags on. */
-const FLOW = [4, 6, 8, 10];
-const FLOW_MAX = 24;
-const flowRate = (tier, n) => Math.min(FLOW_MAX, Math.max(FLOW[tier], n / 4));
+/* Outgoing throughput by class, packets/s: a base rate, a little faster for big batches, capped per class.
+   Mainframe is exactly 10% above server. Transit goes through the same queue, so a laptop is a bottleneck. */
+const FLOW = [3, 5, 7, 7.7];
+const FLOW_MAX = [4, 7, 12, 13.2];
+const flowRate = (tier, n) => Math.min(FLOW_MAX[tier], Math.max(FLOW[tier], n / 6));
 /* Defender bonus by class: the node's owner deals this much more damage per packet. */
 const HOME = [0.06, 0.12, 0.2, 0.32];
 /* Battles at a node, Solarmax-style: every side deals damage in proportion to its size (k per packet per second,
@@ -864,14 +865,14 @@ function nextHop(i, dest, o) {
   return r.hops ? r.hops[0] : null;
 }
 /* A send is a queue at the cable mouth: packets leave the node one by one at flowRate() per second. */
-function enqueue(e, i, o, n, dest, tier) {
+function enqueue(e, i, o, n, dest, tier, fw) {
   if (n < 1 || e.state !== 'up') return false;
   const dir = dirFrom(e, i);
   if (!e.q) e.q = [];
   const q = e.q.find(q => q.dir === dir && q.o === o && q.dest === dest);
   const mul = SPEED_MUL[tier];
-  if (q) { q.left += n; q.rate = flowRate(tier, q.left); q.mul = mul; q.sp = edgeSpeed(e) * mul; }
-  else e.q.push({ dir, left: n, o, dest, sp: edgeSpeed(e) * mul, mul, rate: flowRate(tier, n), acc: 1 });
+  if (q) { q.left += n; q.rate = flowRate(tier, q.left); q.mul = mul; q.sp = edgeSpeed(e) * mul; q.fw = Math.max(q.fw || 0, fw || 0); }
+  else e.q.push({ dir, left: n, o, dest, sp: edgeSpeed(e) * mul, mul, rate: flowRate(tier, n), acc: 1, fw: fw || 0 });
   return true;
 }
 /* A send order from node i: besides its own stock, the same share of every packet that reaches i while the order holds
@@ -879,6 +880,22 @@ function enqueue(e, i, o, n, dest, tier) {
 function setOrder(i, j, n) {
   const A = G.nodes[i], tier = tierOf(A.v);
   A.fwd = { dest: j, pct: G.pct, acc: 0, until: G.time + (n > 0 ? n / flowRate(tier, n) : 0) + 3.6 + ORDER_GRACE };
+  breakLoop(i, j);
+}
+/* The node the player pointed at is where the packets stop: if the chain of orders going on from j
+   would lead back into itself, j's own order is dropped, so nothing bounces between nodes. */
+function breakLoop(i, j) {
+  const N = G.nodes, seen = new Set();
+  const nextOf = P => P.route != null ? P.route : (P.fwd && P.fwd.until > G.time ? P.fwd.dest : null);
+  for (let k = j; k != null; k = nextOf(N[k])) {
+    if (seen.has(k) || (k === i && seen.size)) {
+      const T = N[j];
+      if (T.route != null) { T.route = null; toast(`маршрут от ${T.name} снят: он замкнул бы кольцо`, 2500); }
+      T.fwd = null;
+      return;
+    }
+    seen.add(k);
+  }
 }
 /* Packets of o whose trip ends at node i: in flight and still queued at their source. */
 function incomingTo(i, o) {
@@ -909,12 +926,11 @@ function pumpQueue(e, q, dt) {
   const src = G.nodes[srcOf(e, q.dir)];
   if (src.owner !== q.o) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; return; }
   if ((src.held || 0) > src.v) trimHeld(src);
-  q.acc = Math.min(2, q.acc + q.rate * dt);
-  let k = 0;
-  while (q.left >= 1 && q.acc >= 1 && src.v >= 1) {
+  // one outgoing budget per node, shared by all its queues and refilled in step() at the node's class rate
+  while (q.left >= 1 && src.flowAcc >= 1 && src.v >= 1) {
     spend(src, 1); src.held = Math.max(0, (src.held || 0) - 1);
-    q.acc -= 1; q.left -= 1;
-    launch(e, q.dir, q.o, q.dest, k++ * q.sp / q.rate, q.mul);
+    src.flowAcc -= 1; q.left -= 1;
+    launch(e, q.dir, q.o, q.dest, 0, SPEED_MUL[tierOf(src.v + 1)], q.fw);
   }
   if (q.left < 1) { src.held = Math.max(0, (src.held || 0) - q.left); q.left = 0; }
 }
@@ -1002,30 +1018,28 @@ function spark(x, y, o1, o2) {
 }
 function arrive(B, n, o, x, y, dest, fw) {
   if (B.owner === o) {
-    const mul = SPEED_MUL[tierOf(B.v)];
-    // relay: forward the packet straight onto the next hop, keeping the stream spacing
-    if (dest != null && dest !== B.i) {
-      const hop = nextHop(B.i, dest, o);
-      if (hop) { launch(hop.e, dirFrom(hop.e, B.i), o, dest, 0, mul, fw); return; }
-    }
-    // the packet is home: a route or an active send order at this node carries it on
-    if ((fw || 0) < ORDER_TTL) {
-      let to = -1;
+    // relay (the packet is addressed further) or home with a route / active send order at this node
+    let to = -1, hops = fw || 0;
+    if (dest != null && dest !== B.i) to = dest;
+    else if (hops < ORDER_TTL) {
       if (B.route != null) to = B.route;
       else if (B.fwd && B.fwd.until > G.time) {
         B.fwd.acc += B.fwd.pct;
         if (B.fwd.acc >= 1 - 1e-9) { B.fwd.acc -= 1; to = B.fwd.dest; }
       }
-      if (to >= 0 && to !== B.i) {
-        const hop = nextHop(B.i, to, o);
-        if (hop) {
-          launch(hop.e, dirFrom(hop.e, B.i), o, to, 0, mul, (fw || 0) + 1);
-          if (B.fwd && B.fwd.dest === to) B.fwd.until = Math.max(B.fwd.until, G.time + ORDER_GRACE);
-          return;
-        }
+      if (to >= 0) hops++;
+    }
+    B.v += n; B.base += n; B.fed = 0.6;
+    if (to >= 0 && to !== B.i) {
+      // everything that passes through leaves by this node's own queue: its class sets throughput and speed
+      const hop = nextHop(B.i, to, o);
+      if (hop) {
+        B.held = (B.held || 0) + n;
+        enqueue(hop.e, B.i, o, n, to, tierOf(B.v), hops);
+        if (B.fwd && B.fwd.dest === to) B.fwd.until = Math.max(B.fwd.until, G.time + ORDER_GRACE);
       }
     }
-    B.v += n; B.base += n; B.fed = 0.6; return;
+    return;
   }
   // foreign node: the packet joins the siege swarm and waits for its duel
   if (!B.assault) B.assault = [];
@@ -1180,6 +1194,9 @@ function step(dt) {
   }
   stepDaemon(dt);
   if (!G.demo) feedRoutes(dt);
+  // outgoing throughput is a property of the node: its class sets the rate, whatever the number of queues or transit
+  // an idle node keeps one packet ready; a busy one carries the fraction over so the rate is exact
+  for (const p of N) p.flowAcc = Math.min((p.held || 0) >= 1 ? 2 : 1, (p.flowAcc == null ? 1 : p.flowAcc) + flowRate(tierOf(p.v), p.held || 0) * dt);
   for (const e of G.edges) {
     if (e.state === 'grow') {
       const dir = dirFrom(e, e.from);
@@ -1934,7 +1951,7 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие.', 'Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание по готовому каналу отправляет пачку: 50, 75 или 100% пакетов узла (внизу экрана или клавишами 1–3). Приказ действует и на поток: та же доля пакетов, что летят в узел сейчас или прилетят следом, не задерживаясь идёт дальше по приказу.', 'Так пакеты перетягиваются на фронт цепочкой: А→Б, Б→С — и всё из А долетит до С. Приказ гаснет через пару секунд после того, как поток через узел кончился. Скорость пакетов зависит от класса узла, который их выпустил: мейнфрейм быстрее всех, ноутбук медленнее. По своим каналам: ноутбук 1 прыжок, станция 2, сервер 3, мейнфрейм 4. Встречные пакеты гасят друг друга. Атакуют только сервер и мейнфрейм.'],
+    'Перетаскивание по готовому каналу отправляет пачку: 50, 75 или 100% пакетов узла (внизу экрана или клавишами 1–3). Приказ действует и на поток: та же доля пакетов, что летят в узел сейчас или прилетят следом, не задерживаясь идёт дальше по приказу.', 'Так пакеты перетягиваются на фронт цепочкой: А→Б, Б→С — и всё из А долетит до С. Приказ гаснет через пару секунд после того, как поток через узел кончился. Класс узла задаёт пропускную способность и скорость: ноутбук выпускает до 4 пакетов в секунду, станция до 7, сервер до 12, мейнфрейм до 13; мейнфрейм летает на 10% быстрее сервера, станция и ноутбук медленнее. Транзит тоже идёт через узел с его темпом — слабый узел в цепочке копит пакеты. Если приказы замкнули бы кольцо, пакеты останавливаются в узле, на который вы указали последним. По своим каналам: ноутбук 1 прыжок, станция 2, сервер 3, мейнфрейм 4. Встречные пакеты гасят друг друга. Атакуют только сервер и мейнфрейм.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пакеты превращаются в символы и кружат вокруг него. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M10 15h10" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><path d="M17 12l3 3-3 3" fill="none" stroke="currentColor"/>',
