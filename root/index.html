@@ -772,14 +772,9 @@ const KIND_LIST = Object.keys(KINDS);
 const FORTIFY = { share: 0.3, min: 8, time: 15, cd: 30, def: 2 };
 /* Cutting your own channel gives back half of what it cost; bundles on it are lost. */
 const CUT_REFUND = 0.5;
-/* Ports: either end of a channel can be shut for a while; nothing passes a shut port, arriving bundles bounce back.
-   A laptop cannot shut ports, and the recharge is shared by all of a player's nodes.
-   Bandwidth: a channel lets a bundle up to its width pass at full speed; bigger bundles squeeze through slower. */
-const PORT = { time: 12, cd: 25, share: 0.1, min: 5 };
+/* Bandwidth: a channel lets a bundle up to its width pass at full speed; bigger bundles squeeze through slower. */
 const BW = [0, 40, 120, 300], BW_NAME = ['', 'медь', 'оптоволокно', 'магистраль'], BW_COST = [0, 0, 20, 45];
 const bwMul = (e, n) => n <= BW[e.lvl || 1] ? 1 : Math.sqrt(BW[e.lvl || 1] / n);
-const portShut = (e, i) => e.close ? e.close[e.a === i ? 0 : 1] > 0 : false;
-const shutAny = e => e.close ? e.close[0] > 0 || e.close[1] > 0 : false;
 /* Safety cap on how many times routes may carry one packet on. */
 const ORDER_TTL = 8;
 /* Defender bonus by class: the node's owner deals this much more damage per packet. */
@@ -894,7 +889,6 @@ function canSend(e, i, o, n) {
   const A = G.nodes[i];
   if (A.owner !== o) return 'это не ваш узел';
   if (A.sendCd > 0) return 'узел перезаряжается';
-  if (shutAny(e)) return 'порт канала закрыт';
   if (e.state !== 'up') return 'канал ещё прокладывается';
   if (A.infect > 0) return 'узел заражён демоном';
   if (n < 1 || A.v - (A.held || 0) < n) return 'в узле нет пакетов';
@@ -911,7 +905,7 @@ function packetRoute(i, j, o, maxHops, throughFights) {
   while (q.length) {
     const cur = q.shift();
     for (const e of N[cur].nb) {
-      if (e.state !== 'up' || shutAny(e)) continue;
+      if (e.state !== 'up') continue;
       const k = other(e, cur);
       if (dist.has(k) || N[k].owner !== o) continue;
       if (k !== j && (N[k].infect > 0 || (!throughFights && N[k].assault && N[k].assault.length))) continue;
@@ -934,7 +928,7 @@ function attackRoute(i, j, o, maxHops, throughFights) {
   const prev = new Map([[i, null]]), q = [i];
   while (q.length) {
     const cur = q.shift();
-    const last = N[cur].nb.find(e => e.state === 'up' && !shutAny(e) && other(e, cur) === j);
+    const last = N[cur].nb.find(e => e.state === 'up' && other(e, cur) === j);
     if (last) {
       const hops = [{ e: last, from: cur, to: j }];
       let c = cur;
@@ -943,7 +937,7 @@ function attackRoute(i, j, o, maxHops, throughFights) {
       return { hops };
     }
     for (const e of N[cur].nb) {
-      if (e.state !== 'up' || shutAny(e)) continue;
+      if (e.state !== 'up') continue;
       const k = other(e, cur);
       if (prev.has(k) || N[k].owner !== o || N[k].infect > 0 || (!throughFights && N[k].assault && N[k].assault.length)) continue;
       prev.set(k, { i: cur, e });
@@ -1345,29 +1339,6 @@ function fortify(i, o) {
   if (o === 1) SFX.tier();
   return true;
 }
-/* Shut the port of own node i on channel e for a while. */
-function portCheck(e, i, o) {
-  const A = G.nodes[i];
-  if (!A || A.owner !== o || (e.a !== i && e.b !== i)) return 'это не ваш узел';
-  if (portShut(e, i)) return 'порт уже закрыт';
-  if (tierN(A) < 1) return 'ноутбук не может закрывать порты';
-  const cd = G.portCd && G.portCd[o] || 0;
-  if (cd > 0) return `порты перезаряжаются: ${Math.ceil(cd)} с`;
-  const cost = Math.max(PORT.min, Math.ceil(A.v * PORT.share));
-  if (A.v < cost + 1) return `нужно ${cost + 1} пакетов`;
-  return cost;
-}
-function closePort(e, i, o) {
-  const r = portCheck(e, i, o);
-  if (typeof r === 'string') { if (o === 1) { SFX.error(); toast(r, 2000); } return false; }
-  const A = G.nodes[i];
-  spend(A, r); if (!G.portCd) G.portCd = {}; G.portCd[o] = PORT.cd;
-  if (!e.close) e.close = [0, 0];
-  e.close[e.a === i ? 0 : 1] = PORT.time;
-  G.floats.push({ x: A.x, y: A.y, txt: `порт закрыт −${r}`, o, life: 1.4, max: 1.4 });
-  if (o === 1) SFX.flowOff();
-  return true;
-}
 /* Upgrade a channel one step (copper -> fibre -> trunk), paid by the richest own end. */
 function upgradeCheck(e, o) {
   const N = G.nodes, lvl = e.lvl || 1;
@@ -1524,8 +1495,6 @@ function step(dt) {
   stepDaemon(dt);
   if (!G.demo) stepJumps(dt);
   for (const p of N) { if (p.shield > 0) p.shield = Math.max(0, p.shield - dt); if (p.fortCd > 0) p.fortCd = Math.max(0, p.fortCd - dt); }
-  if (G.portCd) for (const o in G.portCd) G.portCd[o] = Math.max(0, G.portCd[o] - dt);
-  for (const e of G.edges) if (e.close) { e.close[0] = Math.max(0, e.close[0] - dt); e.close[1] = Math.max(0, e.close[1] - dt); }
   if (!G.demo) {
     if (G.meta.endless) stepLive(dt);
     G.warnT = (G.warnT || 0) + dt;
@@ -1551,15 +1520,6 @@ function step(dt) {
       const end = endD(e, a.dir);
       if (a.d >= end) {
         const dst = dstOf(e, a.dir);
-        if (portShut(e, dst)) {
-          // a shut port: the bundle bounces and flies back to where it came from; if that end is shut too, it is lost
-          const [x, y] = posAt(e, a.dir, end);
-          if (portShut(e, srcOf(e, a.dir))) { a.dead = true; G.floats.push({ x, y, txt: `−${Math.round(a.n)}`, o: a.o, life: 1.2, max: 1.2 }); continue; }
-          a.dir = 1 - a.dir; a.d = e.len - end; a.dest = undefined; a.fw = (a.fw || 0) + 1;
-          G.floats.push({ x, y, txt: '⛔', o: N[dst].owner || a.o, life: 0.9, max: 0.9 });
-          if (!G.demo && (a.o === 1 || N[dst].owner === 1)) SFX.error();
-          continue;
-        }
         a.dead = true; const [x, y] = posAt(e, a.dir, end); arrive(N[dst], a.n, a.o, x, y, a.dest, a.fw, a.mul);
       }
     }
@@ -1670,12 +1630,6 @@ function aiThink(o, D, reflexOnly) {
     const deficit = threat - (freeOf(A) + help);
     if (deficit <= 0) continue;
     if (D.smart && typeof fortifyCheck(A.i, o) === 'number' && deficit < freeOf(A) * 1.5) { fortify(A.i, o); actions--; continue; }
-    if (D.v2 && D.smart) {
-      // a wave it cannot meet: shut the port it comes through and let it bounce
-      let worst = null, wn = 0;
-      for (const e of A.nb) { let n = 0; for (const a of e.ar) if (!a.dead && a.o !== o && dstOf(e, a.dir) === A.i) n += a.n; if (n > wn) { wn = n; worst = e; } }
-      if (worst && wn > freeOf(A) + help && !portShut(worst, A.i) && typeof portCheck(worst, A.i, o) === 'number') { closePort(worst, A.i, o); actions--; continue; }
-    }
     if (D.v2) {
       // help from anywhere within reach, nearest first; the first hop is the edge towards A
       const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...incomingArmies(A.i, a => a.o !== o).map(a => a.eta), 99);
@@ -2017,20 +1971,18 @@ function tapNode(i) {
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
 }
-/* The channel panel: shut the port at your end nearest to where you tapped, upgrade the channel, cut it. */
+/* The channel panel: upgrade the channel or cut it. */
 function openChanPop(e, d) {
   const N = G.nodes, el = $('#chanPop'), lvl = e.lvl || 1;
   G.chanSel = e;
-  const ends = [e.a, e.b].filter(i => N[i].owner === 1).sort((x, y) => Math.abs((x === e.a ? 0 : e.len) - d) - Math.abs((y === e.a ? 0 : e.len) - d));
-  const port = ends[0], pc = port != null ? portCheck(e, port, 1) : 'нет вашего конца', uc = upgradeCheck(e, 1), refund = Math.floor((e.cost || 0) * CUT_REFUND);
-  el.innerHTML = `<div class="pt">${N[e.a].name} — ${N[e.b].name} · ${BW_NAME[lvl]}, пропуск ${BW[lvl]}${shutAny(e) ? ' · порт закрыт' : ''}</div>`
-    + `<button data-act="port" ${typeof pc === 'string' ? 'disabled' : ''}>закрыть порт у ${port != null ? N[port].name : '—'} на ${PORT.time} с${typeof pc === 'string' ? ` — ${pc}` : ` (−${pc})`}</button>`
+  const uc = upgradeCheck(e, 1), refund = Math.floor((e.cost || 0) * CUT_REFUND);
+  el.innerHTML = `<div class="pt">${N[e.a].name} — ${N[e.b].name} · ${BW_NAME[lvl]}, пропуск ${BW[lvl]}</div>`
     + (lvl < 3 ? `<button data-act="up" ${typeof uc === 'string' ? 'disabled' : ''}>улучшить до «${BW_NAME[lvl + 1]}», пропуск ${BW[lvl + 1]}${typeof uc === 'string' ? ` — ${uc}` : ` (−${uc.cost})`}</button>` : '')
     + `<button data-act="cut">перерезать канал (+${refund}, пачки на нём пропадут)</button>`;
   el.querySelectorAll('button').forEach(b => b.addEventListener('click', ev => {
     ev.stopPropagation(); SFX.ui();
     const act = b.dataset.act;
-    if (act === 'port') closePort(e, port, 1); else if (act === 'up') upgradeChannel(e, 1); else cutChannel(e, 1);
+    if (act === 'up') upgradeChannel(e, 1); else cutChannel(e, 1);
     closePop();
   }));
   el.hidden = false; placeChanPop(); SFX.select();
@@ -2134,15 +2086,6 @@ function render(now) {
   if (G.chanSel && G.edges.includes(G.chanSel)) {
     const e = G.chanSel;
     if (pathRange(e, rad(e.a), e.len - rad(e.b))) { ctx.strokeStyle = rgba(PAL.rgb[1], 0.25 + 0.15 * Math.sin(t * 6)); ctx.lineWidth = Math.max(5, 8 * S); ctx.stroke(); }
-  }
-  // shut ports: a bar across the channel at that end, shrinking as the time runs out
-  for (const e of G.edges) if (e.close) for (const k of [0, 1]) {
-    if (!(e.close[k] > 0)) continue;
-    const i = k ? e.b : e.a, P = N[i]; if (!P.seen) continue;
-    const dd = k ? e.len - rad(i) - 6 : rad(i) + 6, [x, y] = ptAt(e, dd), [x2, y2] = ptAt(e, k ? dd - 4 : dd + 4), L = Math.hypot(x2 - x, y2 - y) || 1, nx = -(y2 - y) / L, ny = (x2 - x) / L;
-    const half = (7 + 5 * e.close[k] / PORT.time) * Math.max(0.7, S), c = PAL.rgb[P.owner || 2];
-    ts(x, y); ctx.strokeStyle = rgba(c, 0.95); ctx.lineWidth = Math.max(2.5, 3.5 * S); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(TX - nx * half, TY - ny * half); ctx.lineTo(TX + nx * half, TY + ny * half); ctx.stroke(); ctx.lineCap = 'butt';
   }
   // routes: a dotted trail moving from the forwarding node to its target
   if (!G.demo) for (const p of N) {
@@ -2575,7 +2518,7 @@ const HOW = [
   ['<rect x="3" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="17" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="3" y="17" width="10" height="10" fill="none" stroke="currentColor"/><circle cx="22" cy="22" r="3" fill="currentColor"/>',
     'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Атакуют только сервер и мейнфрейм. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
   ['<path d="M6 24L24 6M9 6l3 3M18 21l3 3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="15" cy="15" r="3" fill="none" stroke="currentColor"/>',
-    'Нажмите на свой канал (или правой кнопкой) — откроется панель канала. Закрыть порт: 12 секунд через этот конец канала ничего не проходит, вражеские пачки отскакивают обратно, стоит 10% пакетов узла, потом 25 с перезарядки. Улучшить: медь пропускает пачку до 40 без замедления, оптоволокно до 120, магистраль до 300; пачка больше пропускной способности ползёт медленнее. Перерезать: вернётся половина стоимости, освободится слот, пачки на канале пропадут.', 'Укрепить узел — F или кнопка «укрепить» внизу: за 30% пакетов узел 15 секунд защищается вдвое сильнее, потом 30 секунд перезарядки. Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
+    'Нажмите на свой канал (или правой кнопкой) — откроется панель канала. Улучшить: медь пропускает пачку до 40 без замедления, оптоволокно до 120, магистраль до 300; пачка больше пропускной способности ползёт медленнее. Перерезать: вернётся половина стоимости, освободится слот, пачки на канале пропадут.', 'Укрепить узел — F или кнопка «укрепить» внизу: за 30% пакетов узел 15 секунд защищается вдвое сильнее, потом 30 секунд перезарядки. Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
      'Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Над вашим узлом мигает ▼ с числом и временем, если к нему летит вражеская пачка. Клавиши: Shift — пачка 50%, Q — выделить все узлы, F — укрепить узел, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
 ];
@@ -2721,6 +2664,6 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, DIFF, closePort, upgradeChannel, fortify, cutChannel, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
+window.__root = { get G() { return G; }, DIFF, upgradeChannel, fortify, cutChannel, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
 })();
 </script>
