@@ -1246,10 +1246,10 @@ function cutValue(X) {
   return splitParts(X, X.owner).slice(1).reduce((s, p) => s + p.v + 15 * p.comp.length, 0);
 }
 /* Encirclement: when node X is taken from `old`, every part of old's network that X was holding together and that is
-   now cut off from the largest part passes to the captor, nodes and packets. Bundles of old flying into any node
-   that changed hands are taken over too. */
+   now cut off from the largest part passes to the captor, nodes and the packets inside them.
+   Bundles in flight never change hands: one flying into a node that is no longer its owner's attacks it. */
 function encircle(X, old, o) {
-  const N = G.nodes, taken = [X.i];
+  const N = G.nodes;
   if (old >= 1) {
     const lost = splitParts(X, old).slice(1);
     let nodes = 0, packets = 0;
@@ -1260,20 +1260,12 @@ function encircle(X, old, o) {
       if (P.assault) { for (const a of P.assault) if (a.o === o) P.v += a.n; P.assault = P.assault.filter(a => a.o !== o); if (!P.assault.length) P.assault = null; }
       G.waves.push({ x: P.x, y: P.y, r: radiusFor(Math.min(P.v, 200)), life: 1.3, max: 1.3, o });
       G.floats.push({ x: P.x, y: P.y, txt: 'отрезан', o, life: 1.8, max: 1.8 });
-      taken.push(i);
     }
     if (nodes && !G.demo) {
       if (old === 1) { SFX.lost(); toast(`сеть разорвана: ${nodes} узл. и ${Math.round(packets)} пакетов отрезаны и перешли противнику`, 4000); }
       else if (o === 1) { SFX.capture(); G.stats.captured += nodes; toast(`вы отрезали ${nodes} узл. противника: +${Math.round(packets)} пакетов`, 4000); }
     }
   }
-  for (const i of taken) for (const e of N[i].nb) for (const a of e.ar) {
-    if (a.dead || a.o !== old || dstOf(e, a.dir) !== i) continue;
-    a.o = o; a.dest = i; a.hold = false;
-    const [x, y] = posAt(e, a.dir, a.d);
-    G.floats.push({ x, y, txt: `⇄${Math.round(a.n)}`, o, life: 1.4, max: 1.4 });
-  }
-  for (const J of G.jumps) if (J.o === old && taken.includes(J.to)) J.o = o;
 }
 function updateVision() {
   const N = G.nodes;
@@ -2157,7 +2149,7 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. После отправки узлу нужна перезарядка — у ноутбука 4 с, у станции 2,8, у сервера 2, у мейнфрейма 1,4 с: чёрточки под числом превращаются в заполняющуюся полоску. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты — переходит к захватившему, как и пачки, летевшие в эти узлы.'],
+    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. После отправки узлу нужна перезарядка — у ноутбука 4 с, у станции 2,8, у сервера 2, у мейнфрейма 1,4 с: чёрточки под числом превращаются в заполняющуюся полоску. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты в них — переходит к захватившему. Пачки в полёте владельца не меняют.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
