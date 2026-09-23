@@ -361,9 +361,9 @@ const RANGE = [480, 620, 800, 1050];
 const rangeN = p => RANGE[tierN(p)];
 const GROW_SPEED = 270;
 const DIFF = {
-  easy:   { think: 3.6, actions: 1, defend: false, supply: false, reserve: 6, minV: 12, noise: 0.8,  margin: 1.0, hunt: 0.3 },
-  normal: { think: 2.2, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.35, margin: 1.15, smart: true, hunt: 0.7 },
-  hard:   { think: 1.2, actions: 3, defend: true,  supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.25, smart: true, hunt: 1.1 },
+  easy:   { think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
+  normal: { think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
+  hard:   { think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
 };
 const COLOR_NAME = ['', 'зелёные', 'пурпурные', 'янтарные', 'голубые'];
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ日月火水木金土田电网零壱弐参ΣΔΨΩλ01#$%&@<>/=+*';
@@ -1490,6 +1490,8 @@ function step(dt) {
   for (const p of N) { if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6); if (p.sendCd > 0) p.sendCd = Math.max(0, p.sendCd - dt); }
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
   for (const ai of G.ais) {
+    // reflexes: threats are answered twice as often as plans are made
+    if (ai.d.reflex && G.time >= (ai.nextR || 0)) { ai.nextR = G.time + ai.d.think * ai.d.reflex; if (G.time < ai.next && alive(ai.o)) aiThink(ai.o, ai.d, true); }
     if (G.time < ai.next) continue;
     ai.next = G.time + ai.d.think * (0.8 + Math.random() * 0.4) * (G.demo ? 1 : 1 - THREAT.think * G.threat);
     if (alive(ai.o)) aiThink(ai.o, ai.d);
@@ -1543,7 +1545,25 @@ function incomingArmies(i, pred) {
   for (const a of G.nodes[i].assault || []) if (pred(a)) out.push({ n: a.n, eta: 0, o: a.o });
   return out;
 }
-function aiThink(o, D) {
+/* The AI's view of its own network: for every own node within `depth` hops of the gateways, the edge it should send
+   along, the number of hops and the length of the way. Nodes under attack are no way through (transit stops there). */
+function aiReach(o, gates, depth) {
+  const N = G.nodes, reach = new Map(), q = [];
+  for (const g of gates) if (!reach.has(g)) { reach.set(g, { hops: 0, len: 0, e: null }); q.push(g); }
+  while (q.length) {
+    const i = q.shift(), r = reach.get(i);
+    if (r.hops >= depth || (N[i].assault && N[i].assault.length && r.hops > 0)) continue;
+    for (const e of N[i].nb) {
+      if (e.state !== 'up') continue;
+      const k = other(e, i);
+      if (reach.has(k) || N[k].owner !== o || N[k].infect > 0) continue;
+      reach.set(k, { hops: r.hops + 1, len: r.len + e.len, e });
+      q.push(k);
+    }
+  }
+  return reach;
+}
+function aiThink(o, D, reflexOnly) {
   const N = G.nodes, mine = N.filter(p => p.owner === o && p.infect <= 0);
   if (!mine.length) return;
   const sum = arr => arr.reduce((s, a) => s + a.n, 0);
@@ -1558,6 +1578,25 @@ function aiThink(o, D) {
     const deficit = threat - (freeOf(A) + help);
     if (deficit <= 0) continue;
     if (D.smart && typeof fortifyCheck(A.i, o) === 'number' && deficit < freeOf(A) * 1.5) { fortify(A.i, o); actions--; continue; }
+    if (D.v2) {
+      // help from anywhere within reach, nearest first; the first hop is the edge towards A
+      const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...incomingArmies(A.i, a => a.o !== o).map(a => a.eta), 99);
+      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 3 && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])]) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
+      let rest = deficit * 1.2 + 2;
+      for (const [k, r] of helpers) {
+        if (rest <= 0) break;
+        const kk = Math.min(avail.get(k), Math.ceil(rest));
+        if (sendArmy(r.e, k, o, kk, A.i)) { avail.set(k, avail.get(k) - kk); rest -= kk; }
+      }
+      // what cannot be held is not thrown away: the garrison leaves for the strongest safe neighbour
+      // never empty a chokepoint: losing it for free would cut off a whole part of the network
+      if (rest > freeOf(A) * 0.5 && A.v >= 6 && !(A.sendCd > 0) && cutValue(A) === 0) {
+        const safe = A.nb.filter(e => e.state === 'up' && N[other(e, A.i)].owner === o && !sum(incomingArmies(other(e, A.i), a => a.o !== o))).sort((x, y) => N[other(y, A.i)].v - N[other(x, A.i)].v)[0];
+        if (safe && sendArmy(safe, A.i, o, Math.floor(freeOf(A)))) avail.set(A.i, 0);
+      }
+      actions--;
+      continue;
+    }
     for (const e of A.nb) {
       if (e.state !== 'up' || deficit <= 0) continue;
       const F = N[other(e, A.i)]; if (F.owner !== o) continue;
@@ -1565,18 +1604,29 @@ function aiThink(o, D) {
       if (k >= 3 && sendArmy(e, F.i, o, k)) { avail.set(F.i, avail.get(F.i) - k); actions--; }
     }
   }
+  if (reflexOnly) return;
   // 2. attack: coordinate all own neighbours of a target
   const targets = new Map();
   for (const A of mine) for (const e of A.nb) {
     if (e.state !== 'up') continue;
     const T = N[other(e, A.i)]; if (T.owner === o || (T.owner && tierN(A) < 2)) continue;
     if (!targets.has(T.i)) targets.set(T.i, []);
-    targets.get(T.i).push({ A, e });
+    targets.get(T.i).push({ A, e, len: e.len });
+  }
+  if (D.v2) for (const [ti, srcs] of targets) {
+    // rear nodes join in: their bundles fly through the network to a node linked to the target
+    const T = N[ti], gates = srcs.filter(s => !(s.A.assault && s.A.assault.length)).map(s => s.A.i);
+    if (!gates.length) continue;
+    for (const [k, r] of aiReach(o, gates, D.depth)) {
+      if (r.hops === 0 || srcs.some(s => s.A.i === k)) continue;
+      const A = N[k]; if (T.owner && tierN(A) < 2) continue;
+      srcs.push({ A, e: r.e, len: r.len + 400, dest: ti });
+    }
   }
   const scored = [];
   for (const [ti, srcs] of targets) {
     const T = N[ti], mineInc = sum(incomingArmies(ti, a => a.o === o));
-    const eta = Math.min(...srcs.map(s => travelTime(s.e.len)));
+    const eta = Math.min(...srcs.map(s => travelTime(s.len || s.e.len)));
     // one bundle against a garrison: the square law of the fight, so the bonus counts as its square root
     const guard = T.v + (T.owner ? TIERS[tierN(T)].regen * eta : 0) + sum(incomingArmies(ti, a => a.o === T.owner && T.owner));
     const need = Math.ceil(guard * Math.sqrt(T.owner ? defMult(T) : 1 + HOME[tierN(T)]) * D.margin + 2 - mineInc);
@@ -1588,6 +1638,7 @@ function aiThink(o, D) {
     if (T.owner === 1) score *= 1 + (D.hunt || 0);                                   // it is you it wants
     if (T.lostFrom === o && G.time - (T.lostAt || -99) < 40) score *= 1.6;           // take back what was just lost
     if (T.kind) score *= 1.3;
+    if (D.v2 && T.owner && T.sendCd > 0 && T.v < T.cap * 0.35) score *= 1.5;       // it has just emptied itself: punish it
     if (D.smart) {
       const cut = cutValue(T);
       if (cut > 0) score *= 1 + cut / (need + 20);                                  // a chokepoint: taking it cuts off a part of the enemy
@@ -1601,14 +1652,15 @@ function aiThink(o, D) {
     let rem = t.need;
     let srcs = t.srcs.slice().sort((a, b) => (avail.get(b.A.i) || 0) - (avail.get(a.A.i) || 0));
     // one strong bundle beats a trickle: when a single node can do it, it goes alone, from the nearest such node
-    if (t.solo) srcs = srcs.filter(s => (avail.get(s.A.i) || 0) >= rem).sort((a, b) => a.e.len - b.e.len).slice(0, 1);
+    if (t.solo) srcs = srcs.filter(s => (avail.get(s.A.i) || 0) >= rem).sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len)).slice(0, 1);
+    else if (D.v2) srcs.sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len));      // a joint strike: nearest first so the bundles land close together
     const total = srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0); if (total < rem) continue;
     for (const s of srcs) {
       if (rem <= 0) break;
       const have = avail.get(s.A.i) || 0;
       // in this fight an overwhelming bundle loses almost nothing: an experienced player hits with a wide margin so the prize holds
       const k = Math.min(have, D.smart && t.solo ? Math.max(rem + 2, Math.floor(have * 0.75)) : rem + 2);
-      if (k >= 1 && sendArmy(s.e, s.A.i, o, k)) { avail.set(s.A.i, have - k); rem -= k; }
+      if (k >= 1 && sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); rem -= k; }
     }
     actions--;
   }
@@ -1621,7 +1673,7 @@ function aiThink(o, D) {
       if (T === A || T.owner === o || (T.owner && tierN(A) < 2) || edgeBetween(A.i, T.i)) continue;
       const d = Math.hypot(T.x - A.x, T.y - A.y); if (d > rangeN(A)) continue;
       const cost = costOf(Math.max(80, d * 1.15 - 60)); if (A.v - cost < D.reserve + T.v * 0.5) continue;
-      cands.push({ T, score: (T.cap / 40) * (T.owner ? 1.2 : 1) * (T.owner === 1 ? 1 + (D.hunt || 0) : 1) * (T.kind ? 1.3 : 1) / (cost + T.v + 6) * (1 + (Math.random() - 0.5) * D.noise) });
+      cands.push({ T, score: (T.cap / 40) * (T.owner ? 1.2 : 1) * (T.owner === 1 ? 1 + (D.hunt || 0) : 1) * (T.kind ? 1.3 : 1) * (D.v2 && T.owner ? 1 + cutValue(T) / 60 : 1) / (cost + T.v + 6) * (1 + (Math.random() - 0.5) * D.noise) });
     }
     cands.sort((a, b) => b.score - a.score);
     for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { actions--; break; }
@@ -1632,9 +1684,17 @@ function aiThink(o, D) {
     for (const p of mine) if (p.nb.some(e => N[other(e, p.i)].owner !== o)) { front.set(p.i, 0); q.push(p.i); }
     while (q.length) { const i = q.shift(); for (const e of N[i].nb) { if (e.state !== 'up') continue; const j = other(e, i); if (N[j].owner === o && !front.has(j)) { front.set(j, front.get(i) + 1); q.push(j); } } }
     for (const A of mine) {
-      const f = front.get(A.i); if (f == null || f < 1 || A.v < A.cap * 0.8) continue;
+      const f = front.get(A.i); if (f == null || f < 1 || A.v < A.cap * (D.v2 ? 0.55 : 0.8)) continue;
       const e = A.nb.find(e => e.state === 'up' && N[other(e, A.i)].owner === o && front.get(other(e, A.i)) === f - 1);
-      if (e) sendArmy(e, A.i, o, Math.floor(freeOf(A) * 0.6));
+      if (!e) continue;
+      if (D.v2) {
+        // straight to the front node under the most pressure, not just one step closer
+        let goal = null, best = -1;
+        for (const [k, d] of front) if (d === 0) { const th = sum(incomingArmies(k, a => a.o !== o)) + N[k].nb.filter(x => N[other(x, k)].owner && N[other(x, k)].owner !== o).length * 10; if (th > best) { best = th; goal = k; } }
+        const rt = goal != null ? bestRoute(A.i, goal, o) : null;
+        if (rt && rt.hops) { sendArmy(rt.hops[0].e, A.i, o, Math.floor(freeOf(A) * 0.7), goal); continue; }
+      }
+      sendArmy(e, A.i, o, Math.floor(freeOf(A) * 0.6));
     }
   }
 }
