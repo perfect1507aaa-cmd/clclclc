@@ -773,6 +773,7 @@ const FORTIFY = { share: 0.3, min: 8, time: 15, cd: 30, def: 2 };
 /* Cutting your own channel gives back half of what it cost; bundles on it are lost. */
 const CUT_REFUND = 0.5;
 /* Ports: either end of a channel can be shut for a while; nothing passes a shut port, arriving bundles bounce back.
+   A laptop cannot shut ports, and the recharge is shared by all of a player's nodes.
    Bandwidth: a channel lets a bundle up to its width pass at full speed; bigger bundles squeeze through slower. */
 const PORT = { time: 12, cd: 25, share: 0.1, min: 5 };
 const BW = [0, 40, 120, 300], BW_NAME = ['', 'медь', 'оптоволокно', 'магистраль'], BW_COST = [0, 0, 20, 45];
@@ -988,24 +989,36 @@ function launch(e, dir, o, dest, back, mul, fw, n) {
 /* ---------- live network ----------
    An endless mode: the playable area keeps growing, new neutral nodes keep appearing, and bots join the network,
    one by one, stronger each time. Beaten bots come back later. You play until your network is gone. */
-const LIVE = { W: 8400, H: 5600, start: [2600, 1700], grow: 6, node: [6, 11], firstBot: 35, bot: [50, 80] };
+const LIVE = { W: 8400, H: 5600, start: [2600, 1700], grow: 6, node: [3.5, 6], firstBot: 20, bot: [28, 40], botDist: [850, 1400] };
 const liveBounds = () => G.area || { x0: 0, y0: 0, x1: G.W, y1: G.H };
-function liveSpot(minGap, farFrom) {
-  const A = G.area, N = G.nodes;
-  let best = null, bestScore = -1;
+/* A free place: inside the grown area, clear of other nodes and of channels. */
+function liveFree(x, y, minGap) {
+  const A = G.area;
+  if (x < A.x0 + 100 || x > A.x1 - 100 || y < A.y0 + 100 || y > A.y1 - 100) return false;
+  if (G.nodes.some(q => Math.hypot(q.x - x, q.y - y) < q.capR + minGap)) return false;
+  for (const [, list] of G.hash) for (const q of list) if (Math.hypot(q[0] - x, q[1] - y) < 90) return false;
+  return true;
+}
+/* A place near the edge of the grown area, so the map keeps spreading outwards. */
+function liveEdgeSpot(minGap) {
+  const A = G.area;
   for (let k = 0; k < 40; k++) {
-    // most new nodes appear near the edge of the grown area, so the network spreads outwards
-    const edge = Math.random() < 0.65, u = Math.random(), v = Math.random();
+    const u = Math.random(), v = Math.random();
     let x = A.x0 + 120 + u * (A.x1 - A.x0 - 240), y = A.y0 + 120 + v * (A.y1 - A.y0 - 240);
-    if (edge) { if (Math.random() < 0.5) x = Math.random() < 0.5 ? A.x0 + 120 + u * 260 : A.x1 - 120 - u * 260; else y = Math.random() < 0.5 ? A.y0 + 120 + v * 260 : A.y1 - 120 - v * 260; }
-    if (N.some(q => Math.hypot(q.x - x, q.y - y) < q.capR + minGap)) continue;
-    let blocked = false;
-    for (const [key, list] of G.hash) { for (const q of list) if (Math.hypot(q[0] - x, q[1] - y) < 90) { blocked = true; break; } if (blocked) break; }
-    if (blocked) continue;
-    const sc = farFrom ? Math.min(...N.filter(q => q.owner === farFrom).map(q => Math.hypot(q.x - x, q.y - y)), 5000) : 1 + Math.random();
-    if (sc > bestScore) { bestScore = sc; best = { x, y }; }
+    if (Math.random() < 0.5) x = Math.random() < 0.5 ? A.x0 + 120 + u * 260 : A.x1 - 120 - u * 260; else y = Math.random() < 0.5 ? A.y0 + 120 + v * 260 : A.y1 - 120 - v * 260;
+    if (liveFree(x, y, minGap)) return { x, y };
   }
-  return best;
+  return null;
+}
+/* A place within reach of one of owner o's nodes: new ground to grab next to every network, bots included. */
+function liveNearSpot(o, minGap) {
+  const own = G.nodes.filter(q => q.owner === o);
+  for (let k = 0; k < 40 && own.length; k++) {
+    const P = own[Math.floor(Math.random() * own.length)], a = Math.random() * TAU, d = 300 + Math.random() * 300;
+    const x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
+    if (liveFree(x, y, minGap)) return { x, y };
+  }
+  return null;
 }
 function liveNode(x, y, sz, o, g, kind) {
   const P = makeNode({ x, y, sz, o, g, kind }, G.nodes.length, G.used);
@@ -1014,21 +1027,41 @@ function liveNode(x, y, sz, o, g, kind) {
   return P;
 }
 function spawnNeutral() {
-  const at = liveSpot(150); if (!at) return;
+  // most new nodes grow next to a network — every player's in turn, bots as much as you — the rest at the edge
+  const owners = [1].concat(G.ais.map(a => a.o).filter(o => o !== 1 && alive(o)));
+  const at = Math.random() < 0.7 ? liveNearSpot(owners[Math.floor(Math.random() * owners.length)], 140) || liveEdgeSpot(150) : liveEdgeSpot(150);
+  if (!at) return;
   const r = Math.random(), sz = r < 0.36 ? 's' : r < 0.72 ? 'm' : r < 0.92 ? 'l' : 'x';
   const grow = 1 + G.time / 300, g = Math.round({ s: 4, m: 10, l: 18, x: 32 }[sz] * grow * (0.7 + Math.random() * 0.6));
   liveNode(at.x, at.y, sz, 0, g, Math.random() < 0.14 ? KIND_LIST[Math.floor(Math.random() * KIND_LIST.length)] : null);
 }
+/* Where a new bot joins: at a middle distance from your network, so it comes into play soon, and away from other bots. */
+function liveBotSpot() {
+  const mine = G.nodes.filter(q => q.owner === 1), bots = G.nodes.filter(q => q.owner > 1);
+  let best = null, bestScore = -1e9;
+  for (let k = 0; k < 80; k++) {
+    const P = mine.length ? mine[Math.floor(Math.random() * mine.length)] : { x: (G.area.x0 + G.area.x1) / 2, y: (G.area.y0 + G.area.y1) / 2 };
+    const a = Math.random() * TAU, d = LIVE.botDist[0] + Math.random() * (LIVE.botDist[1] - LIVE.botDist[0]), x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
+    if (!liveFree(x, y, 220)) continue;
+    const dm = Math.min(...mine.map(q => Math.hypot(q.x - x, q.y - y)), 1e4), db = Math.min(...bots.map(q => Math.hypot(q.x - x, q.y - y)), 1e4);
+    if (dm < LIVE.botDist[0] * 0.8) continue;
+    const sc = -Math.abs(dm - 1100) + Math.min(db, 900) * 0.5;
+    if (sc > bestScore) { bestScore = sc; best = { x, y }; }
+  }
+  return best || liveEdgeSpot(260);
+}
 function spawnBot() {
   const busy = new Set(G.ais.map(a => a.o)), o = [2, 3, 4].find(k => !busy.has(k) && !alive(k));
   if (!o) return false;
-  const at = liveSpot(260, 1); if (!at) return false;
-  const level = 'normal';
+  const at = liveBotSpot(); if (!at) return false;
   G.botsMade++;
   liveNode(at.x, at.y, 'l', o, 30, null);
-  const own = 0;
-  for (let k = 0; k < 2 + own; k++) { const a = Math.random() * TAU, d = 230 + Math.random() * 120; if (!G.nodes.some(q => Math.hypot(q.x - (at.x + Math.cos(a) * d), q.y - (at.y + Math.sin(a) * d)) < q.capR + 120)) liveNode(at.x + Math.cos(a) * d, at.y + Math.sin(a) * d, Math.random() < 0.5 ? 's' : 'm', k < own ? o : 0, k < own ? Math.round(12 + G.time / 20) : 6, null); }
-  G.ais.push({ o, d: DIFF[level], next: G.time + 2 });
+  // a few free nodes around its home so it can start growing at once
+  for (let k = 0, made = 0; k < 12 && made < 3; k++) {
+    const a = Math.random() * TAU, d = 240 + Math.random() * 150, x = at.x + Math.cos(a) * d, y = at.y + Math.sin(a) * d;
+    if (liveFree(x, y, 110)) { liveNode(x, y, Math.random() < 0.5 ? 's' : 'm', 0, 5 + Math.floor(Math.random() * 5), null); made++; }
+  }
+  G.ais.push({ o, d: DIFF.normal, next: G.time + 2 });
   setupHud();
   toast(`в сети появился новый бот: ${COLOR_NAME[o]}`, 3500); SFX.alarm();
   return true;
@@ -1044,7 +1077,7 @@ function stepLive(dt) {
   G.ais = G.ais.filter(a => { if (alive(a.o)) return true; G.stats.kills++; toast(`бот уничтожен (${COLOR_NAME[a.o]}). он ещё вернётся`, 3000); return false; });
   if (G.ais.length !== before) setupHud();
   G.botT -= dt;
-  const cap = Math.min(3, 1 + Math.floor(G.time / 180));
+  const cap = G.time < 150 ? 2 : 3;
   if (G.botT <= 0) { if (G.ais.filter(a => a.o !== 1).length < cap) spawnBot(); G.botT = LIVE.bot[0] + Math.random() * (LIVE.bot[1] - LIVE.bot[0]); }
 }
 function startLive() {
@@ -1317,7 +1350,9 @@ function portCheck(e, i, o) {
   const A = G.nodes[i];
   if (!A || A.owner !== o || (e.a !== i && e.b !== i)) return 'это не ваш узел';
   if (portShut(e, i)) return 'порт уже закрыт';
-  if (A.portCd > 0) return `порты узла перезаряжаются: ${Math.ceil(A.portCd)} с`;
+  if (tierN(A) < 1) return 'ноутбук не может закрывать порты';
+  const cd = G.portCd && G.portCd[o] || 0;
+  if (cd > 0) return `порты перезаряжаются: ${Math.ceil(cd)} с`;
   const cost = Math.max(PORT.min, Math.ceil(A.v * PORT.share));
   if (A.v < cost + 1) return `нужно ${cost + 1} пакетов`;
   return cost;
@@ -1326,7 +1361,7 @@ function closePort(e, i, o) {
   const r = portCheck(e, i, o);
   if (typeof r === 'string') { if (o === 1) { SFX.error(); toast(r, 2000); } return false; }
   const A = G.nodes[i];
-  spend(A, r); A.portCd = PORT.cd;
+  spend(A, r); if (!G.portCd) G.portCd = {}; G.portCd[o] = PORT.cd;
   if (!e.close) e.close = [0, 0];
   e.close[e.a === i ? 0 : 1] = PORT.time;
   G.floats.push({ x: A.x, y: A.y, txt: `порт закрыт −${r}`, o, life: 1.4, max: 1.4 });
@@ -1488,7 +1523,8 @@ function step(dt) {
   }
   stepDaemon(dt);
   if (!G.demo) stepJumps(dt);
-  for (const p of N) { if (p.shield > 0) p.shield = Math.max(0, p.shield - dt); if (p.fortCd > 0) p.fortCd = Math.max(0, p.fortCd - dt); if (p.portCd > 0) p.portCd = Math.max(0, p.portCd - dt); }
+  for (const p of N) { if (p.shield > 0) p.shield = Math.max(0, p.shield - dt); if (p.fortCd > 0) p.fortCd = Math.max(0, p.fortCd - dt); }
+  if (G.portCd) for (const o in G.portCd) G.portCd[o] = Math.max(0, G.portCd[o] - dt);
   for (const e of G.edges) if (e.close) { e.close[0] = Math.max(0, e.close[0] - dt); e.close[1] = Math.max(0, e.close[1] - dt); }
   if (!G.demo) {
     if (G.meta.endless) stepLive(dt);
