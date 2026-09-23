@@ -85,7 +85,8 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   padding:0 14px calc(env(safe-area-inset-bottom,0px) + 14px);
 }
 .pill{ pointer-events:auto; border-radius:10px; padding:5px; display:flex; align-items:center; gap:12px; }
-.pill-label{ font-size:11px; color:var(--fg2); white-space:nowrap; }
+.pill-label{ font-size:11px; color:var(--fg2); white-space:nowrap; padding-right:9px; }
+.pill-label.half{ color:var(--c1); }
 .grp{
   height:28px; border:1px solid var(--line); border-radius:6px; background:transparent; font-size:12px; padding:0 10px;
   cursor:pointer; white-space:nowrap; transition:border-color .15s ease, color .15s ease, background .15s ease;
@@ -236,8 +237,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   <div class="hud-bottom">
     <div class="pill panel">
       <button class="grp" id="btnAll" aria-pressed="false"></button>
-      <span class="pill-label">пачка</span>
-      <div class="seg" id="segPct" style="--n:3"><button data-v="0.5">50%</button><button data-v="0.75">75%</button><button data-v="1">100%</button></div>
+      <span class="pill-label" id="pctLabel">пачка 100% · shift — 50%</span>
     </div>
   </div>
   <canvas id="mini" class="panel" aria-label="Мини-карта"></canvas>
@@ -372,6 +372,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- storage ---------- */
 const STORE_KEY = 'root:v3';
+/* Batch size: everything by default, half while Shift is held. */
+let shiftHeld = false;
+function setShift(on) {
+  if (on === shiftHeld) return;
+  shiftHeld = on;
+  if (G) G.pct = on ? 0.5 : 1;
+  const el = document.getElementById('pctLabel');
+  if (el) { el.textContent = on ? 'пачка 50%' : 'пачка 100% · shift — 50%'; el.classList.toggle('half', on); }
+}
 let store = { unlocked: 1, done: {}, music: true, sfx: true, pct: 0.5, quick: { opp: 1, diff: 'normal', map: 1, fog: 1 } };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); o.quick = Object.assign({}, store.quick, o.quick || {}); store = Object.assign(store, o); } } catch (e) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} }
@@ -759,7 +768,7 @@ function buildGame(map, aiNames, meta) {
       hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
   });
   G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
-    pct: store.pct || 0.5,
+    pct: shiftHeld ? 0.5 : 1,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0 };
   if (G.demo) G.ais = aiNames.map((d, k) => ({ o: k + 1, d: DIFF[d], next: 0.5 + k * 0.4 }));
@@ -1484,7 +1493,7 @@ function dragAction(i, j) {
   }
   if (!e) {
     const r = canBuild(i, j, 1); if (typeof r === 'string') return { ok: false, label: r };
-    return { ok: true, kind: 'build', plan: r, label: `канал −${r.cost}, затем ${Math.floor((N[i].v - r.cost) * G.pct)}` };
+    return { ok: true, kind: 'build', plan: r, label: `проложить канал −${r.cost}` };
   }
   if (e.state === 'grow') return { ok: false, e, label: 'канал прокладывается' };
   const r = canSend(e, i, 1, n); return r === true ? { ok: true, kind: 'send', e, label: `отправить ${n}` } : { ok: false, e, label: r };
@@ -1492,7 +1501,7 @@ function dragAction(i, j) {
 function doAction(i, j) {
   const a = dragAction(i, j);
   if (!a.ok) { SFX.error(); return; }
-  if (a.kind === 'build') build(i, j, 1, true);
+  if (a.kind === 'build') build(i, j, 1, false);
   else if (a.kind === 'route') sendArmy(a.hops[0].e, i, 1, sendCount(i, G.pct), j);
   else sendArmy(a.e, i, 1, sendCount(i, G.pct));
 }
@@ -1564,12 +1573,12 @@ cv.addEventListener('pointerdown', e => {
   }
   const p = interactive() ? hit(w.x, w.y) : -1;
   // shift: click toggles an own node in the group, drag on empty space draws a selection box
+  setShift(e.shiftKey);
   if (e.shiftKey && interactive()) {
-    if (p >= 0 && G.nodes[p].owner === 1) { toggleGroup(p); ptr = null; return; }
     if (p < 0) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'box', target: -1 }; return; }
   }
   ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
-    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1, chain: p >= 0 ? [p] : [] };
+    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1, chain: p >= 0 ? [p] : [], shift: e.shiftKey };
 });
 cv.addEventListener('pointermove', e => {
   if (!G) return;
@@ -1606,6 +1615,7 @@ cv.addEventListener('pointermove', e => {
 });
 function endPtr(e, cancel) {
   pointers.delete(e.pointerId);
+  if (e.shiftKey != null) setShift(e.shiftKey);
   if (pinch) { if (pointers.size < 2) pinch = null; return; }
   if (!ptr || ptr.id !== e.pointerId) return;
   const p = ptr; ptr = null;
@@ -1614,6 +1624,7 @@ function endPtr(e, cancel) {
   if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
   if (p.mode === 'wifi') { if (!p.cancel && p.target >= 0) sendWifi(p.p, p.target); return; }
   if (!p.moved && !p.cancel) {
+    if (p.shift && p.p >= 0 && G.nodes[p.p].owner === 1) { toggleGroup(p.p); return; }
     if (p.p >= 0) return tapNode(p.p);
     G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); return;
   }
@@ -1644,6 +1655,16 @@ function tapNode(i) {
     return;
   }
   if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { doAction(G.sel, i); G.sel = -1; return; }
+  // a tap on a foreign node sends a bundle from every own node linked to it by a finished channel
+  if (p.owner !== 1) {
+    const from = p.nb.filter(e => e.state === 'up' && G.nodes[other(e, i)].owner === 1);
+    if (from.length) {
+      let sent = 0, why = '';
+      for (const e of from) { const k = other(e, i), n = sendCount(k, G.pct), r = canSend(e, k, 1, n); if (r === true) { sendArmy(e, k, 1, n); sent++; } else why = r; }
+      if (!sent) { SFX.error(); toast(why, 2200); }
+      G.sel = -1; return;
+    }
+  }
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
 }
@@ -2104,8 +2125,6 @@ makeSeg($('#segOpp'), v => { store.quick.opp = +v; save(); }, store.quick.opp);
 makeSeg($('#segDiff'), v => { store.quick.diff = v; save(); }, store.quick.diff);
 makeSeg($('#segMap'), v => { store.quick.map = +v; save(); }, store.quick.map);
 makeSeg($('#segFog'), v => { store.quick.fog = +v; save(); }, store.quick.fog);
-function setPct(v) { store.pct = v; save(); if (G) G.pct = v; }
-const segPct = makeSeg($('#segPct'), v => setPct(+v), String(store.pct || 0.5));
 function setToggle(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'false'); el.querySelector('.state').textContent = on ? '[вкл]' : '[выкл]'; }
 const tgM = $('#tgMusic'), tgS = $('#tgSfx');
 setToggle(tgM, store.music); setToggle(tgS, store.sfx);
@@ -2128,7 +2147,7 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание отправляет пачку: 50, 75 или 100% пакетов, которые сейчас в узле (внизу экрана или клавишами 1–3). Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: мейнфрейм примерно на 20% быстрее сервера, станция и ноутбук медленнее. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты — переходит к захватившему, как и пачки, летевшие в эти узлы.'],
+    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: мейнфрейм примерно на 20% быстрее сервера, станция и ноутбук медленнее. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты — переходит к захватившему, как и пачки, летевшие в эти узлы.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
@@ -2140,7 +2159,7 @@ const HOW = [
   ['<rect x="3" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="17" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="3" y="17" width="10" height="10" fill="none" stroke="currentColor"/><circle cx="22" cy="22" r="3" fill="currentColor"/>',
     'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Атакуют только сервер и мейнфрейм. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
-    'Туман скрывает сеть: видно то, что рядом с вашими узлами и на концах ваших каналов. Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Клавиши: 1–3 — размер пачки, Q — выделить все узлы, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
+    'Туман скрывает сеть: видно то, что рядом с вашими узлами и на концах ваших каналов. Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Клавиши: Shift — пачка 50%, Q — выделить все узлы, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
 ];
 $('#howList').innerHTML = HOW.map(([svg, a, b]) => `<div><svg viewBox="0 0 30 30">${svg}</svg><p>${a}<br><span class="muted">${b}</span></p></div>`).join('');
 $('#btnHowPlay').addEventListener('click', () => { SFX.ui(); startLevel(0); });
@@ -2163,8 +2182,8 @@ let toastTimer = 0;
 function toast(msg, ms = 3500) { const el = $('#toast'); el.classList.add('show'); decode(el, msg, Math.min(700, 200 + msg.length * 6)); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
 function hideToast() { clearTimeout(toastTimer); $('#toast').classList.remove('show'); }
 const TUT = {
-  1: 'потяните от зелёного узла к серому: проложится канал, и по нему уйдёт пачка пакетов. канал стоит пакетов и остаётся навсегда.',
-  2: 'канал готов. каждое перетаскивание по нему отправляет пачку. размер пачки — 50, 75 или 100% узла, внизу экрана или клавишами 1–3.',
+  1: 'потяните от зелёного узла к серому: проложится канал. канал стоит пакетов и остаётся навсегда.',
+  2: 'канал готов. нажмите на серый узел — с вашего узла по каналу уйдёт пачка: все пакеты, с зажатым Shift — половина.',
   3: 'у чужого узла пакеты становятся символами и бьются с гарнизоном. чем больше сторона, тем быстрее она побеждает — кольцо вокруг узла показывает баланс.',
   4: 'узел взломан и принёс свой гарнизон. Q выделяет все ваши узлы — затем клик по цели, и отправят все. взломайте пурпурные узлы.',
 };
@@ -2260,13 +2279,13 @@ addEventListener('keydown', e => {
   if (G.paused) return;
   if ((k === 'q' || k === 'й') && !e.repeat && !G.ended) selectAll();
   if (k === 'h' || k === 'р' || k === 'home') homeFocus(false);
-  const pk = { '1': '0.5', '2': '0.75', '3': '1' }[k]; if (pk) { setPct(+pk); segPct.set(pk); }
   if (k === '+' || k === '=') { cam.z = clamp(cam.z * 1.2, zoomLimits().min, zoomLimits().max); clampCam(); }
   if (k === '-' || k === '_') { cam.z = clamp(cam.z / 1.2, zoomLimits().min, zoomLimits().max); clampCam(); }
   keys.add(k);
 });
-addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
-addEventListener('blur', () => keys.clear());
+addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); if (e.key === 'Shift') setShift(false); });
+addEventListener('keydown', e => { if (e.key === 'Shift') setShift(true); });
+addEventListener('blur', () => { keys.clear(); setShift(false); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { pauseGame(); if (AC) AC.suspend(); } else if (AC) AC.resume(); });
 addEventListener('resize', resize);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readPalette);
