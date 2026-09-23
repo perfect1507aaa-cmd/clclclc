@@ -362,10 +362,13 @@ const RANGE = [480, 620, 800, 1050];
 const rangeN = p => RANGE[tierN(p)];
 const GROW_SPEED = 230;
 const DIFF = {
-  easy:   { think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
-  normal: { think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
-  hard:   { think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
+  easy:   { apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
+  normal: { apm: 16, react: 1.1, think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
+  hard:   { apm: 24, react: 0.8, think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
 };
+/* A bot plays with human hands: apm orders a minute at most (a group strike counts as one), up to AI_HANDS_MAX saved up,
+   and it notices an incoming bundle only after it has been on its way for `react` seconds. */
+const AI_HANDS_MAX = 3;
 const COLOR_NAME = ['', 'зелёные', 'пурпурные', 'янтарные', 'голубые'];
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ日月火水木金土田电网零壱弐参ΣΔΨΩλ01#$%&@<>/=+*';
 const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = Math.imul(n, 9); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); n ^= n >>> 15; return n >>> 0; };
@@ -753,13 +756,10 @@ function quickSpec(opp, map) {
 let G = null;
 /* Bundles move at one steady speed on every channel, whatever its length; only the sender's class changes it.
    Station (class 2) is 0.9 of the base, a mainframe exactly twice as fast as a station. */
-const BASE_SPEED = 120;
+const BASE_SPEED = 105;
 const edgeSpeed = () => BASE_SPEED;
 const travelTime = len => len / BASE_SPEED;
 const SPEED_MUL = [0.75, 0.9, 1.25, 1.8];
-/* After a node sends a bundle it needs a recharge before it can send again, much shorter for higher classes:
-   laptop 4 s, station 2.8 s, server 2 s, mainframe 1.4 s. Transit does not count. */
-const SEND_CD = [4, 2.8, 2, 1.4];
 /* Special nodes: a few neutral nodes on every map carry a property worth fighting for. */
 const KINDS = {
   firewall: { tag: 'фаервол', hint: 'гарнизон бьёт в 1,8 раза сильнее' },
@@ -888,7 +888,6 @@ const sendCount = (i, pct) => Math.floor((G.nodes[i].v - (G.nodes[i].held || 0))
 function canSend(e, i, o, n) {
   const A = G.nodes[i];
   if (A.owner !== o) return 'это не ваш узел';
-  if (A.sendCd > 0) return 'узел перезаряжается';
   if (e.state !== 'up') return 'канал ещё прокладывается';
   if (A.infect > 0) return 'узел заражён демоном';
   if (n < 1 || A.v - (A.held || 0) < n) return 'в узле нет пакетов';
@@ -962,7 +961,7 @@ function sendArmy(e, i, o, n, dest) {
   n = Math.floor(n);
   if (canSend(e, i, o, n) !== true) return false;
   const A = G.nodes[i], tier = tierN(A);
-  spend(A, n); A.sendCd = A.sendCdMax = SEND_CD[tier];
+  spend(A, n); A.sentAt = G.time;
   launch(e, dirFrom(e, i), o, dest, 0, SPEED_MUL[tier] * (A.kind === 'boost' ? 1.3 : 1), 0, n);
   if (o === 1 && !G.demo) { SFX.flowOn(); if (G.tut === 2) { G.tut = 3; tutNext(); } }
   return true;
@@ -1392,11 +1391,11 @@ function feedRoutes(dt) {
     if (p.routeT < 1.2) continue;
     p.routeT = 0;
     const free = Math.floor(p.v - (p.held || 0));
-    if (free < 1 || p.infect > 0 || p.sendCd > 0 || (p.assault && p.assault.length)) continue;
+    if (free < 1 || p.infect > 0 || (p.assault && p.assault.length)) continue;
     const hops = routePath(p.i, p.route, 1);
     if (!hops) continue;
     const tier = tierN(p);
-    spend(p, free); p.sendCd = p.sendCdMax = SEND_CD[tier];
+    spend(p, free); p.sentAt = G.time;
     launch(hops[0].e, dirFrom(hops[0].e, p.i), 1, p.route, 0, SPEED_MUL[tier], 0, free);
   }
 }
@@ -1539,14 +1538,16 @@ function step(dt) {
   for (const q of G.parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.95; q.vy *= 0.95; q.life -= dt; }
   G.parts = G.parts.filter(q => q.life > 0);
   for (const w of G.waves) w.life -= dt; G.waves = G.waves.filter(w => w.life > 0);
-  for (const p of N) { if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6); if (p.sendCd > 0) p.sendCd = Math.max(0, p.sendCd - dt); }
+  for (const p of N) { if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6); }
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
   for (const ai of G.ais) {
+    // hands: like a person, a bot gives only so many orders a minute; unused ones pile up a little
+    ai.hands = Math.min(AI_HANDS_MAX, (ai.hands ?? 1) + ai.d.apm / 60 * dt);
     // reflexes: threats are answered twice as often as plans are made
-    if (ai.d.reflex && G.time >= (ai.nextR || 0)) { ai.nextR = G.time + ai.d.think * ai.d.reflex; if (G.time < ai.next && alive(ai.o)) aiThink(ai.o, ai.d, true); }
+    if (ai.d.reflex && G.time >= (ai.nextR || 0)) { ai.nextR = G.time + ai.d.think * ai.d.reflex; if (G.time < ai.next && alive(ai.o)) aiThink(ai.o, ai.d, true, ai); }
     if (G.time < ai.next) continue;
     ai.next = G.time + ai.d.think * (0.8 + Math.random() * 0.4);
-    if (alive(ai.o)) aiThink(ai.o, ai.d);
+    if (alive(ai.o)) aiThink(ai.o, ai.d, false, ai);
   }
   G.visTimer += dt; if (G.visTimer > 0.12) { G.visTimer = 0; updateVision(); }
   if (!G.demo) { const pw = power(1); if (pw > G.stats.peak) G.stats.peak = pw; }
@@ -1592,9 +1593,9 @@ function checkEnd() {
 function incomingArmies(i, pred) {
   const out = [];
   for (const e of G.nodes[i].nb) {
-    for (const a of e.ar) if (dstOf(e, a.dir) === i && pred(a)) out.push({ n: a.n, eta: Math.max(0, endD(e, a.dir) - a.d) / a.sp, o: a.o });
+    for (const a of e.ar) if (dstOf(e, a.dir) === i && pred(a)) out.push({ n: a.n, eta: Math.max(0, endD(e, a.dir) - a.d) / a.sp, age: (a.d - startD(e, a.dir)) / a.sp, o: a.o });
   }
-  for (const a of G.nodes[i].assault || []) if (pred(a)) out.push({ n: a.n, eta: 0, o: a.o });
+  for (const a of G.nodes[i].assault || []) if (pred(a)) out.push({ n: a.n, eta: 0, age: 99, o: a.o });
   return out;
 }
 /* The AI's view of its own network: for every own node within `depth` hops of the gateways, the edge it should send
@@ -1615,36 +1616,40 @@ function aiReach(o, gates, depth) {
   }
   return reach;
 }
-function aiThink(o, D, reflexOnly) {
+function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const N = G.nodes, mine = N.filter(p => p.owner === o && p.infect <= 0);
   if (!mine.length) return;
   const sum = arr => arr.reduce((s, a) => s + a.n, 0);
   const freeOf = A => A.v - (A.held || 0);
+  // what it has noticed coming; one order = one bundle it sends, if it has a free hand
+  const seen = i => incomingArmies(i, a => a.o !== o).filter(x => x.age >= D.react);
+  const order = (e, i, n, dest) => { if (ai.hands < 1 || !sendArmy(e, i, o, n, dest)) return false; ai.hands--; return true; };
   // an experienced player keeps a guard on the nodes that hold its network together
-  const reserveOf = A => { const th = sum(incomingArmies(A.i, a => a.o !== o)); if (th > 0) return th * 1.1; return D.smart ? Math.max(D.reserve, Math.min(freeOf(A) * 0.5, cutValue(A) * 0.25)) : D.reserve; };
+  const reserveOf = A => { const th = sum(seen(A.i)); if (th > 0) return th * 1.1; return D.smart ? Math.max(D.reserve, Math.min(freeOf(A) * 0.5, cutValue(A) * 0.25)) : D.reserve; };
   const avail = new Map(mine.map(A => [A.i, Math.max(0, Math.floor(freeOf(A) - reserveOf(A)))]));
   let actions = D.actions;
   // 1. defence: reinforce own nodes that are about to fall
   if (D.defend) for (const A of mine) {
-    const threat = sum(incomingArmies(A.i, a => a.o !== o)), help = sum(incomingArmies(A.i, a => a.o === o));
+    if (ai.hands < 1) break;
+    const threat = sum(seen(A.i)), help = sum(incomingArmies(A.i, a => a.o === o));
     const deficit = threat - (freeOf(A) + help);
     if (deficit <= 0) continue;
-    if (D.smart && typeof fortifyCheck(A.i, o) === 'number' && deficit < freeOf(A) * 1.5) { fortify(A.i, o); actions--; continue; }
+    if (D.smart && typeof fortifyCheck(A.i, o) === 'number' && deficit < freeOf(A) * 1.5) { if (fortify(A.i, o)) ai.hands--; actions--; continue; }
     if (D.v2) {
       // help from anywhere within reach, nearest first; the first hop is the edge towards A
-      const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...incomingArmies(A.i, a => a.o !== o).map(a => a.eta), 99);
-      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 3 && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])]) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
+      const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...seen(A.i).map(a => a.eta), 99);
+      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 5 && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])]) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
       let rest = deficit * 1.2 + 2;
       for (const [k, r] of helpers) {
         if (rest <= 0) break;
         const kk = Math.min(avail.get(k), Math.ceil(rest));
-        if (sendArmy(r.e, k, o, kk, A.i)) { avail.set(k, avail.get(k) - kk); rest -= kk; }
+        if (order(r.e, k, kk, A.i)) { avail.set(k, avail.get(k) - kk); rest -= kk; }
       }
       // what cannot be held is not thrown away: the garrison leaves for the strongest safe neighbour
       // never empty a chokepoint: losing it for free would cut off a whole part of the network
-      if (rest > freeOf(A) * 0.5 && A.v >= 6 && !(A.sendCd > 0) && cutValue(A) === 0) {
+      if (rest > freeOf(A) * 0.5 && A.v >= 6 && cutValue(A) === 0) {
         const safe = A.nb.filter(e => e.state === 'up' && N[other(e, A.i)].owner === o && !sum(incomingArmies(other(e, A.i), a => a.o !== o))).sort((x, y) => N[other(y, A.i)].v - N[other(x, A.i)].v)[0];
-        if (safe && sendArmy(safe, A.i, o, Math.floor(freeOf(A)))) avail.set(A.i, 0);
+        if (safe && order(safe, A.i, Math.floor(freeOf(A)))) avail.set(A.i, 0);
       }
       actions--;
       continue;
@@ -1653,7 +1658,7 @@ function aiThink(o, D, reflexOnly) {
       if (e.state !== 'up' || deficit <= 0) continue;
       const F = N[other(e, A.i)]; if (F.owner !== o) continue;
       const k = Math.min(avail.get(F.i) || 0, Math.ceil(deficit * 1.2) + 2);
-      if (k >= 3 && sendArmy(e, F.i, o, k)) { avail.set(F.i, avail.get(F.i) - k); actions--; }
+      if (k >= 5 && order(e, F.i, k)) { avail.set(F.i, avail.get(F.i) - k); actions--; }
     }
   }
   if (reflexOnly) return;
@@ -1691,7 +1696,7 @@ function aiThink(o, D, reflexOnly) {
     if (T.owner === 1) score *= 1 + (D.hunt || 0);                                   // it is you it wants
     if (T.lostFrom === o && G.time - (T.lostAt || -99) < 40) score *= 1.6;           // take back what was just lost
     if (T.kind) score *= 1.3;
-    if (D.v2 && T.owner && T.sendCd > 0 && T.v < T.cap * 0.35) score *= 1.5;       // it has just emptied itself: punish it
+    if (D.v2 && T.owner && G.time - (T.sentAt ?? -99) < 3 && T.v < T.cap * 0.35) score *= 1.5;       // it has just emptied itself: punish it
     if (D.smart) {
       const cut = cutValue(T);
       if (cut > 0) score *= 1 + cut / (need + 20);                                  // a chokepoint: taking it cuts off a part of the enemy
@@ -1701,12 +1706,13 @@ function aiThink(o, D, reflexOnly) {
   }
   scored.sort((a, b) => b.score - a.score);
   for (const t of scored) {
-    if (actions <= 0) break;
+    if (actions <= 0 || ai.hands < 1) break;
     let rem = t.need;
     let srcs = t.srcs.slice().sort((a, b) => (avail.get(b.A.i) || 0) - (avail.get(a.A.i) || 0));
     // one strong bundle beats a trickle: when a single node can do it, it goes alone, from the nearest such node
     if (t.solo) srcs = srcs.filter(s => (avail.get(s.A.i) || 0) >= rem).sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len)).slice(0, 1);
     else if (D.v2) srcs.sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len));      // a joint strike: nearest first so the bundles land close together
+    if (!t.solo) { srcs = srcs.slice(0, 3); if (srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0) < rem) continue; }   // a person groups a few nodes, not the whole network
     const total = srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0); if (total < rem) continue;
     for (const s of srcs) {
       if (rem <= 0) break;
@@ -1714,14 +1720,14 @@ function aiThink(o, D, reflexOnly) {
       // in this fight an overwhelming bundle loses almost nothing: an experienced player hits with a wide margin so the prize holds
       const k = Math.min(have, D.smart && t.solo ? Math.max(rem + 2, Math.floor(have * 0.75)) : rem + 2);
       // a big bundle on a thin channel crawls: an experienced player widens the channel first
-      if (D.smart && !s.dest && k > BW[s.e.lvl || 1] * 1.5 && typeof upgradeCheck(s.e, o) === 'object' && have >= k + BW_COST[(s.e.lvl || 1) + 1] + 2) upgradeChannel(s.e, o);
+      if (D.smart && !s.dest && k > BW[s.e.lvl || 1] * 1.5 && typeof upgradeCheck(s.e, o) === 'object' && have >= k + BW_COST[(s.e.lvl || 1) + 1] + 2 && ai.hands >= 2 && upgradeChannel(s.e, o)) ai.hands--;
       if (k >= 1 && sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); rem -= k; }
     }
-    actions--;
+    ai.hands--; actions--;
   }
   // 3. expand: build trunks from rich nodes
   for (const A of mine.slice().sort(() => Math.random() - 0.5)) {
-    if (actions <= 0) break;
+    if (actions <= 0 || ai.hands < 1) break;
     if (A.v < D.minV + 6) continue;
     const cands = [];
     for (const T of N) {
@@ -1731,26 +1737,26 @@ function aiThink(o, D, reflexOnly) {
       cands.push({ T, score: (T.cap / 40) * (T.owner ? 1.2 : 1) * (T.owner === 1 ? 1 + (D.hunt || 0) : 1) * (T.kind ? 1.3 : 1) * (D.v2 && T.owner ? 1 + cutValue(T) / 60 : 1) / (cost + T.v + 6) * (1 + (Math.random() - 0.5) * D.noise) });
     }
     cands.sort((a, b) => b.score - a.score);
-    for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { actions--; break; }
+    for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { ai.hands--; actions--; break; }
   }
-  // 4. supply: rear nodes near cap push armies towards the front
-  if (D.supply) {
+  // 4. supply: one order at a time: the fullest rear nodes (two at most, grouped) send a big bundle to the front
+  if (D.supply && ai.hands >= 1) {
     const front = new Map(), q = [];
     for (const p of mine) if (p.nb.some(e => N[other(e, p.i)].owner !== o)) { front.set(p.i, 0); q.push(p.i); }
     while (q.length) { const i = q.shift(); for (const e of N[i].nb) { if (e.state !== 'up') continue; const j = other(e, i); if (N[j].owner === o && !front.has(j)) { front.set(j, front.get(i) + 1); q.push(j); } } }
-    for (const A of mine) {
-      const f = front.get(A.i); if (f == null || f < 1 || A.v < A.cap * (D.v2 ? 0.55 : 0.8)) continue;
+    const rear = mine.filter(A => { const f = front.get(A.i); return f != null && f >= 1 && A.v >= A.cap * 0.8 && freeOf(A) * 0.75 >= 25; }).sort((x, y) => y.v / y.cap - x.v / x.cap).slice(0, 2);
+    let goal = null, best = -1;
+    // the front node under the most pressure: what it can see coming plus the enemy nodes next to it
+    if (D.v2) for (const [k, d] of front) if (d === 0) { const th = sum(seen(k)) + N[k].nb.filter(x => N[other(x, k)].owner && N[other(x, k)].owner !== o).length * 10; if (th > best) { best = th; goal = k; } }
+    let sent = false;
+    for (const A of rear) {
+      const f = front.get(A.i), n = Math.floor(freeOf(A) * 0.75);
+      const rt = goal != null ? bestRoute(A.i, goal, o) : null;
+      if (rt && rt.hops) { if (sendArmy(rt.hops[0].e, A.i, o, n, goal)) sent = true; continue; }
       const e = A.nb.find(e => e.state === 'up' && N[other(e, A.i)].owner === o && front.get(other(e, A.i)) === f - 1);
-      if (!e) continue;
-      if (D.v2) {
-        // straight to the front node under the most pressure, not just one step closer
-        let goal = null, best = -1;
-        for (const [k, d] of front) if (d === 0) { const th = sum(incomingArmies(k, a => a.o !== o)) + N[k].nb.filter(x => N[other(x, k)].owner && N[other(x, k)].owner !== o).length * 10; if (th > best) { best = th; goal = k; } }
-        const rt = goal != null ? bestRoute(A.i, goal, o) : null;
-        if (rt && rt.hops) { sendArmy(rt.hops[0].e, A.i, o, Math.floor(freeOf(A) * 0.7), goal); continue; }
-      }
-      sendArmy(e, A.i, o, Math.floor(freeOf(A) * 0.6));
+      if (e && sendArmy(e, A.i, o, n)) sent = true;
     }
+    if (sent) ai.hands--;
   }
 }
 
@@ -1782,7 +1788,6 @@ function dragAction(i, j) {
     const route = bestRoute(i, j, N[i].owner);
     if (route.err) return { ok: false, label: e && e.state !== 'up' ? 'канал прокладывается' : route.err };
     if (n < 1) return { ok: false, label: 'в узле нет пакетов' };
-    if (N[i].sendCd > 0) return { ok: false, label: 'узел перезаряжается' };
     const h = route.hops.length;
     return { ok: true, kind: 'route', hops: route.hops, label: h === 1 ? `отправить ${n}` : `${h} прыж., отправить ${n}` };
   }
@@ -1810,7 +1815,7 @@ function groupPlan(j, set) {
     if (i === j || A.owner !== 1) continue;
     const n = sendCount(i, G.pct);
     let r;
-    if (n < 1 || A.sendCd > 0) r = { err: 1 };
+    if (n < 1) r = { err: 1 };
     else if (T.owner !== 1 && T.owner !== 0 && tierN(A) < 2) r = { err: 1 };
     else r = bestRoute(i, j, 1);
     if (!r.hops) { skip++; continue; }
@@ -2256,11 +2261,7 @@ function render(now) {
       // class steps: laptop, station, server, mainframe; filled up to the node's current class
       const cur = Math.min(tierOf(p.vis ? p.v : p.lastV), p.maxT), n = p.maxT + 1, w = 5, gap = 3, x0 = TX - (n * w + (n - 1) * gap) / 2, yy = y2 + 10;
       const col = ow ? PAL.rgb[ow] : (dark ? [214, 238, 226] : [13, 19, 17]);
-      if (p.owner === 1 && p.sendCd > 0) {
-        const bw = n * w + (n - 1) * gap;
-        ctx.fillStyle = rgba(col, 0.16); ctx.fillRect(Math.round(x0), Math.round(yy), bw, 2);
-        ctx.fillStyle = rgba(col, 0.85); ctx.fillRect(Math.round(x0), Math.round(yy), bw * (1 - p.sendCd / (p.sendCdMax || 1)), 2);
-      } else for (let k = 0; k < n; k++) {
+      for (let k = 0; k < n; k++) {
         ctx.fillStyle = rgba(col, k <= cur ? (ow ? 0.85 : 0.5) : 0.16);
         ctx.fillRect(Math.round(x0 + k * (w + gap)), Math.round(yy), w, 2);
       }
@@ -2506,7 +2507,7 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. После отправки узлу нужна перезарядка — у ноутбука 4 с, у станции 2,8, у сервера 2, у мейнфрейма 1,4 с: чёрточки под числом превращаются в заполняющуюся полоску. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты в них — переходит к захватившему. Пачки в полёте владельца не меняют.'],
+    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки на канале останавливаются и перемалывают друг друга. Захват узла рвёт сеть: если узел связывал части сети, отрезанная часть — все её узлы и пакеты в них — переходит к захватившему. Пачки в полёте владельца не меняют.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
