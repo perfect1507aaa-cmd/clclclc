@@ -1708,7 +1708,8 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const freeOf = A => A.v - (A.held || 0);
   // what it has noticed coming; one order = one bundle it sends, if it has a free hand
   const seen = i => incomingArmies(i, a => a.o !== o).filter(x => x.age >= D.react);
-  const order = (e, i, n, dest) => { if (ai.hands < 1 || !sendArmy(e, i, o, n, dest)) return false; ai.hands--; book(N[i], fly); return true; };
+  const send1 = (e, i, n, dest) => { if (!sendArmy(e, i, o, n, dest)) return false; book(N[i], fly); return true; };
+  const order = (e, i, n, dest) => { if (ai.hands < 1 || !send1(e, i, n, dest)) return false; ai.hands--; return true; };
   // an experienced player keeps a guard on the nodes that hold its network together
   const reserveOf = A => { const th = sum(seen(A.i)); if (th > 0) return th * 1.1; return D.smart ? Math.max(D.reserve, Math.min(freeOf(A) * 0.5, cutValue(A) * 0.25)) : D.reserve; };
   const avail = new Map(mine.map(A => [A.i, Math.max(0, Math.floor(freeOf(A) - reserveOf(A)))]));
@@ -1724,17 +1725,21 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     const threat = sum(seen(A.i)), help = sum(incomingArmies(A.i, a => a.o === o));
     const deficit = threat - (freeOf(A) + help);
     if (deficit <= 0) continue;
-    if (D.smart && typeof fortifyCheck(A.i, o) === 'number' && deficit < freeOf(A) * 1.5) { if (fortify(A.i, o)) ai.hands--; actions--; continue; }
+    // no fortify: a fight's strength grows as damage x packets squared, so paying 30% of the garrison for double
+    // damage is a wash (0.7^2 x 2 = 0.98) and costs an order; help from neighbours or a timely exit is worth more
     if (D.v2) {
       // help from anywhere within reach, nearest first; the first hop is the edge towards A
       const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...seen(A.i).map(a => a.eta), 99);
-      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 5 && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])]) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
-      let rest = deficit * 1.2 + 2;
+      // only nodes that may launch now; help runs along own channels, twice as fast
+      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 5 && slotOk(N[k]) && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])] * OWN_CHAN_MUL) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
+      // all helpers go as one group order, the way a person selects them and clicks the node
+      let rest = deficit * 1.2 + 2, sent = 0;
       for (const [k, r] of helpers) {
         if (rest <= 0) break;
         const kk = Math.min(avail.get(k), Math.ceil(rest));
-        if (order(r.e, k, kk, A.i)) { avail.set(k, avail.get(k) - kk); rest -= kk; }
+        if (send1(r.e, k, kk, A.i)) { avail.set(k, avail.get(k) - kk); rest -= kk; sent++; }
       }
+      if (sent) ai.hands--;
       // what cannot be held is not thrown away: the garrison leaves for the strongest safe neighbour
       // never empty a chokepoint: losing it for free would cut off a whole part of the network
       if (rest > freeOf(A) * 0.5 && A.v >= 6 && cutValue(A) === 0) {
@@ -1782,7 +1787,9 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     const total = srcs.reduce((s, x) => s + (slotOk(x.A) ? avail.get(x.A.i) || 0 : 0), 0), solo = srcs.some(x => slotOk(x.A) && (avail.get(x.A.i) || 0) >= need);
     // bundles from several nodes arrive one by one and are ground down separately: ask for more when no single node can do it
     if (solo ? total < need : total < need * 1.25) continue;
-    let score = (T.cap / 40) * (T.owner ? 1.3 : 1) / (need + 8) * (1 + (Math.random() - 0.5) * D.noise);
+    // every strike costs one order whatever its size, and orders are what a bot is short of: a big prize is worth
+    // a bigger bundle, so the price counts only weakly
+    let score = (T.cap / 40) * (T.owner ? 1.3 : 1) / Math.pow(need + 8, 0.4) * (1 + (Math.random() - 0.5) * D.noise);
     if (T.owner === 1) score *= 1 + (D.hunt || 0);                                   // it is you it wants
     if (T.lostFrom === o && G.time - (T.lostAt || -99) < 40) score *= 1.6;           // take back what was just lost
     if (T.kind) score *= 1.3;
@@ -1821,13 +1828,15 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
       const k = Math.min(have, D.smart && t.solo ? Math.max(rem + 2, Math.floor(have * 0.75)) : rem + 2);
       // a big bundle on a thin channel crawls: an experienced player widens the channel first
       if (D.smart && !s.dest && k > BW[s.e.lvl || 1] * 1.5 && typeof upgradeCheck(s.e, o) === 'object' && have >= k + BW_COST[(s.e.lvl || 1) + 1] + 2 && ai.hands >= 2 && upgradeChannel(s.e, o)) ai.hands--;
-      if (k >= 1 && sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); rem -= k; book(s.A, fly); }
+      if (k >= 1 && sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); rem -= k; book(s.A, fly); t.sent = (t.sent || 0) + 1; }
     }
+    if (!t.sent) continue;                                                           // nothing left: the order was not given
     ai.hands--; actions--;
   }
   // 3. expand: build trunks from rich nodes
   for (const A of mine.slice().sort(() => Math.random() - 0.5)) {
-    if (actions <= 0 || ai.hands < 1) break;
+    // a channel is worth it only with an order to spare for the strike along it
+    if (actions <= 0 || ai.hands < 2.5) break;
     if (A.v < D.minV + 6) continue;
     const cands = [];
     for (const T of N) {
