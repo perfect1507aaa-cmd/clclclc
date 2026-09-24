@@ -350,6 +350,12 @@ const rangeOf = v => RANGE[tierOf(v)];
 const GROW_SPEED = 300;
 const HOPS = [1, 2, 3, 4];
 const FIREWALL = { dur: 10, cd: 30 };
+/* Launch slots: the most friendly batches that may already be flying in a node's network for it to launch
+   one more. A laptop never launches, a workstation only into an empty network, a server next to one batch,
+   a mainframe next to two — so a network never holds more than three batches in flight. */
+const LAUNCH_MAX = [-1, 0, 1, 2];
+const OWN_TRUNK_SPEED = 2;   // batches move this much faster along a trunk whose both ends belong to their owner
+const pl = (n, a, b, c) => { const m = n % 100, k = n % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k > 1 && k < 5 ? b : c; };
 const DIFF = {
   easy:   { think: 4.8, actions: 1, defend: false, supply: false, reserve: 8, minV: 14, noise: 1.0, margin: 1.35, build: 0.2 },
   normal: { think: 3.2, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.6, margin: 1.3,  build: 0.35 },
@@ -446,12 +452,13 @@ const SFX = {
   bounce() { if (sfxOk()) blip(900, 0, 0.08, 0.014, 'square', 400, 0.2); },
   flowOn() { if (sfxOk()) { blip(880, 0, 0.03, 0.018); blip(1320, 0.04, 0.05, 0.016); } },
   flowOff() { if (sfxOk()) { blip(1320, 0, 0.03, 0.016); blip(660, 0.04, 0.06, 0.016); } },
+  queue() { if (sfxOk()) { blip(990, 0, 0.025, 0.014, 'triangle'); blip(990, 0.07, 0.025, 0.01, 'triangle'); } },
   win() { if (!sfxOk()) return; [880, 1046.5, 1318.5, 1760, 2093].forEach((f, i) => blip(f, i * 0.09, 0.08, 0.022)); bell(1760, 0.5, 0.016, 3, 0.9); },
   lose() { if (!sfxOk()) return; [440, 392, 330, 220].forEach((f, i) => blip(f, i * 0.2, 0.18, 0.026, 'square', f * 0.97)); noise(0, 1.4, 0.03, 'lowpass', 800, 80, 0.6, 0.6); },
 };
 /* throttle: never stack the same sound faster than its interval */
 (() => {
-  const gap = { shield: 200, bounce: 80, daemon: 200, infect: 300, ui: 40, select: 60, link: 120, live: 150, cut: 150, error: 150, capture: 400, lost: 400, tier: 300, flowOn: 90, flowOff: 90 };
+  const gap = { shield: 200, bounce: 80, daemon: 200, infect: 300, ui: 40, select: 60, link: 120, live: 150, cut: 150, error: 150, capture: 400, lost: 400, tier: 300, flowOn: 90, flowOff: 90, queue: 90 };
   const lastT = {};
   for (const k of Object.keys(gap)) { const f = SFX[k]; if (!f) continue; SFX[k] = (...a) => { const n = performance.now(); if (lastT[k] && n - lastT[k] < gap[k]) return; lastT[k] = n; try { f(...a); } catch (e) {} }; }
 })();
@@ -686,7 +693,8 @@ function buildGame(map, aiNames, meta) {
     return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, owner: d.o, v, vd: v, tier: tierOf(v), name, seed: Math.floor(Math.random() * 1e6),
       hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, fwT: 0, fwCd: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
   });
-  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], time: 0, sel: -1, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
+  G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], time: 0, sel: -1, msel: new Set(), speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
+    queue: [], topo: 0, netV: -1, net: null,
     pct: store.pct || 0.5,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0 };
@@ -703,6 +711,40 @@ const rad = i => radiusFor(Math.min(G.nodes[i].vd, 200)) * 1.05 + 3;
 const startD = (e, dir) => rad(srcOf(e, dir));
 const endD = (e, dir) => e.len - rad(dstOf(e, dir));
 const edgeBetween = (i, j) => G.nodes[i].nb.find(e => other(e, i) === j) || null;
+
+/* ---------- networks ----------
+   A network is a group of one owner's nodes joined by finished trunks between them. A trunk whose both
+   ends belong to the same owner is that owner's own trunk: it is tinted in their colour and their batches
+   run along it twice as fast. A batch in flight counts towards the network of whichever end of its trunk
+   its owner still holds. */
+const ownTrunk = (e, o) => o > 0 && G.nodes[e.a].owner === o && G.nodes[e.b].owner === o;
+const armySp = (e, a) => a.sp * (ownTrunk(e, a.o) ? OWN_TRUNK_SPEED : 1);
+function netIds() {
+  if (G.netV === G.topo) return G.net;
+  const N = G.nodes, id = new Array(N.length).fill(-1); let k = 0;
+  for (const p of N) {
+    if (!p.owner || id[p.i] >= 0) continue;
+    id[p.i] = k; const q = [p.i];
+    while (q.length) {
+      const i = q.pop();
+      for (const e of N[i].nb) { if (e.state !== 'up') continue; const j = other(e, i); if (id[j] < 0 && N[j].owner === p.owner) { id[j] = k; q.push(j); } }
+    }
+    k++;
+  }
+  G.net = id; G.netV = G.topo; return id;
+}
+function armyNet(e, a) {
+  const id = netIds(), s = srcOf(e, a.dir), d = dstOf(e, a.dir);
+  return G.nodes[s].owner === a.o ? id[s] : G.nodes[d].owner === a.o ? id[d] : -1;
+}
+function flyingIn(net) { if (net < 0) return 0; let c = 0; for (const e of G.edges) for (const a of e.ar) if (armyNet(e, a) === net) c++; return c; }
+/* null when node i may launch a batch right now, otherwise the reason it has to wait */
+function launchBlock(i) {
+  const t = tierOf(G.nodes[i].v);
+  if (t === 0) return 'ноутбук не отправляет пакеты';
+  const f = flyingIn(netIds()[i]);
+  return f > LAUNCH_MAX[t] ? `${TIERS[t].name}: в сети ${f === 1 ? 'уже летит пачка' : `летят ${f} ${pl(f, 'пачка', 'пачки', 'пачек')}`}` : null;
+}
 
 /* Routing: permanent PCB-style trunks. They may not cross other trunks or pass through nodes. */
 const HS = 24;
@@ -753,11 +795,12 @@ function build(i, j, o, autoSend) {
   A.v -= r.cost;
   let pts = r.pts; if (i > j) pts = pts.slice().reverse();
   const c = withCum(pts), a = Math.min(i, j), b = Math.max(i, j);
-  const e = Object.assign(c, { id: G.edges.length, a, b, state: 'grow', builder: o, from: i, gd: rad(i), cost: r.cost, ar: [], autoSend: !!autoSend });
+  const e = Object.assign(c, { id: G.edges.length, a, b, state: 'grow', builder: o, from: i, gd: rad(i), cost: r.cost, ar: [] });
   G.edges.push(e); A.nb.push(e); B.nb.push(e);
   for (const [x, y] of r.smp) { const k = `${Math.floor(x / HS)},${Math.floor(y / HS)}`; if (!G.hash.has(k)) G.hash.set(k, []); G.hash.get(k).push([x, y, a, b]); }
   G.floats.push({ x: A.x, y: A.y, txt: `−${r.cost}`, o, life: 1.4, max: 1.4 });
   if (o === 1 && !G.demo) SFX.link();
+  if (autoSend) enqueue(i, j, o, G.pct);
   return true;
 }
 const sendCount = (i, pct) => Math.floor(G.nodes[i].v * pct);
@@ -788,13 +831,40 @@ function canSend(e, i, o, n) {
 /* An army is a batch of packets travelling along one trunk. */
 function sendArmy(e, i, o, n) {
   n = Math.floor(n);
-  if (canSend(e, i, o, n) !== true) return false;
+  if (canSend(e, i, o, n) !== true || launchBlock(i)) return false;
   const A = G.nodes[i]; A.v -= n;
   const dir = dirFrom(e, i);
   e.ar.push({ dir, d: startD(e, dir), n, o, sp: ARMY_SPEED * (1 + tierOf(A.v + n) * 0.08), seed: Math.floor(Math.random() * 1e6) });
   if (o === 1 && !G.demo) { SFX.flowOn(); if (G.tut === 2) { G.tut = 3; tutNext(); } }
   return true;
 }
+
+/* ---------- orders ----------
+   A drag is an order rather than an instant launch. It waits in the queue until its source may launch
+   (see launchBlock), then fires a batch of the share chosen when it was given. Orders run first come,
+   first served; one that still has to wait lets the ones behind it go. One pending order per node. */
+function orderState(q) {
+  const A = G.nodes[q.i], e = edgeBetween(q.i, q.j);
+  if (A.owner !== q.o || !e) return { dead: true };
+  if (e.state !== 'up') return { e, wait: 'канал ещё прокладывается' };
+  if (A.infect > 0) return { e, wait: 'узел заражён демоном' };
+  if (blockedFor(e, q.o)) return { e, wait: 'канал закрыт файрволом' };
+  const lb = launchBlock(q.i); if (lb) return { e, wait: lb };
+  const n = Math.floor(A.v * q.pct); if (n < 1) return { e, wait: 'в узле нет пакетов' };
+  return { e, n };
+}
+function runQueue() {
+  if (!G.queue.length) return;
+  G.queue = G.queue.filter(q => { const s = orderState(q); return s.dead ? false : s.wait ? true : !sendArmy(s.e, q.i, q.o, s.n); });
+}
+function enqueue(i, j, o, pct) {
+  G.queue = G.queue.filter(q => !(q.o === o && q.i === i));
+  G.queue.push({ i, j, o, pct });
+  runQueue();
+  return G.queue.some(q => q.o === o && q.i === i);   // true: still waiting
+}
+function cancelOrders(pred) { const n = G.queue.length; G.queue = G.queue.filter(q => !pred(q)); return G.queue.length < n; }
+const orderOf = i => G.queue.find(q => q.i === i && q.o === G.nodes[i].owner) || null;
 
 /* ---------- daemon ----------
    Unlocked when one of your nodes first grows into a mainframe. It waits on your biggest mainframe;
@@ -884,7 +954,7 @@ function arrive(B, n, o, x, y) {
 }
 function captureNode(B, o) {
   const old = B.owner, bounty = old === 0 ? Math.max(0, Math.round(B.base || 0)) : 0;
-  B.owner = o; B.v = Math.max(1, -B.v) + bounty; B.pop = 1; B.glitch = 0.9; B.hurt = 0; B.base = B.v; B.infect = 0; B.fwT = 0; B.fwCd = 0;
+  B.owner = o; G.topo++; B.v = Math.max(1, -B.v) + bounty; B.pop = 1; B.glitch = 0.9; B.hurt = 0; B.base = B.v; B.infect = 0; B.fwT = 0; B.fwCd = 0;
   if (bounty > 0) G.floats.push({ x: B.x, y: B.y, txt: `+${bounty}`, o, life: 1.6, max: 1.6 });
   G.waves.push({ x: B.x, y: B.y, r: radiusFor(Math.min(B.v, 200)), life: 1.3, max: 1.3, o });
   if (G.demo) return;
@@ -922,31 +992,17 @@ function step(dt) {
       const dir = dirFrom(e, e.from);
       e.gd += GROW_SPEED * dt;
       if (e.gd >= endD(e, dir)) {
-        e.state = 'up';
+        e.state = 'up'; G.topo++;
         if (e.builder === 1 && !G.demo) { SFX.live(); if (G.tut === 1) { G.tut = 2; tutNext(); } }
-        if (e.autoSend && N[e.from].owner === e.builder) sendArmy(e, e.from, e.builder, sendCount(e.from, G.pct));
       }
     }
     if (!e.ar.length) continue;
     for (const a of e.ar) {
-      a.d += a.sp * dt;
+      a.d += armySp(e, a) * dt;
       const dst = N[dstOf(e, a.dir)];
       if (dst.fwT > 0 && dst.owner !== a.o) { a.dir = 1 - a.dir; a.d = e.len - a.d; a.back = true; if (!G.demo && isVis(...posAt(e, a.dir, a.d))) SFX.bounce(); }
     }
-    // head-on collisions between opposing armies on the same trunk
-    for (const a of e.ar) {
-      if (a.dead || a.dir !== 0) continue;
-      for (const b of e.ar) {
-        if (b.dead || b.dir !== 1 || b.o === a.o) continue;
-        if (a.d >= e.len - b.d) {
-          const m = Math.min(a.n, b.n); a.n -= m; b.n -= m;
-          const [x, y] = ptAt(e, a.d); burst(x, y, a.n >= b.n ? a.o : b.o, Math.min(8, 2 + Math.floor(m / 4)));
-          if (!G.demo && (a.o === 1 || b.o === 1) && isVis(x, y)) SFX.hit();
-          if (a.n <= 0) a.dead = true; if (b.n <= 0) b.dead = true;
-          if (a.dead) break;
-        }
-      }
-    }
+    // batches never collide: opposing ones on the same trunk simply pass each other
     for (const a of e.ar) {
       if (a.dead) continue;
       const end = endD(e, a.dir);
@@ -954,6 +1010,7 @@ function step(dt) {
     }
     e.ar = e.ar.filter(a => !a.dead);
   }
+  runQueue();
   for (const p of N) {
     const t = tierOf(p.v);
     if (t !== p.tier) {
@@ -994,7 +1051,7 @@ function checkEnd() {
 /* incoming armies to node i matching a predicate, with arrival times */
 function incomingArmies(i, pred) {
   const out = [];
-  for (const e of G.nodes[i].nb) for (const a of e.ar) if (dstOf(e, a.dir) === i && pred(a)) out.push({ n: a.n, eta: (endD(e, a.dir) - a.d) / a.sp, o: a.o });
+  for (const e of G.nodes[i].nb) for (const a of e.ar) if (dstOf(e, a.dir) === i && pred(a)) out.push({ n: a.n, eta: (endD(e, a.dir) - a.d) / armySp(e, a), o: a.o });
   return out;
 }
 function aiThink(o, D) {
@@ -1004,19 +1061,28 @@ function aiThink(o, D) {
   const reserveOf = A => { const th = sum(incomingArmies(A.i, a => a.o !== o)); return th > 0 ? th * 1.1 : D.reserve; };
   const avail = new Map(mine.map(A => [A.i, Math.max(0, Math.floor(A.v - reserveOf(A)))]));
   let actions = D.actions;
+  // launch slots per network (see LAUNCH_MAX); planned launches are booked here before they happen
+  const net = netIds(), fly = new Map();
+  for (const e of G.edges) for (const a of e.ar) if (a.o === o) { const k = armyNet(e, a); if (k >= 0) fly.set(k, (fly.get(k) || 0) + 1); }
+  const slotOk = (A, f = fly) => { const t = tierOf(A.v); return t > 0 && (f.get(net[A.i]) || 0) <= LAUNCH_MAX[t]; };
+  const book = (A, f = fly) => f.set(net[A.i], (f.get(net[A.i]) || 0) + 1);
+  const send = (e, A, k) => { if (!slotOk(A) || !sendArmy(e, A.i, o, k)) return false; book(A); avail.set(A.i, Math.max(0, (avail.get(A.i) || 0) - k)); return true; };
+  // weaker nodes first: a workstation needs an empty network, so it has to go before a server or a mainframe
+  const byTier = (a, b) => tierOf(a.v) - tierOf(b.v) || (avail.get(b.i) || 0) - (avail.get(a.i) || 0);
   // 1. defence: reinforce own nodes that are about to fall
   if (D.defend) for (const A of mine) {
     const threat = sum(incomingArmies(A.i, a => a.o !== o)), help = sum(incomingArmies(A.i, a => a.o === o));
-    const deficit = threat - (A.v + help);
+    let deficit = threat - (A.v + help);
     if (deficit <= 0) continue;
-    for (const e of A.nb) {
-      if (e.state !== 'up' || deficit <= 0) continue;
-      const F = N[other(e, A.i)]; if (F.owner !== o) continue;
+    const helpers = A.nb.filter(e => e.state === 'up' && N[other(e, A.i)].owner === o).map(e => ({ e, F: N[other(e, A.i)] }));
+    helpers.sort((x, y) => byTier(x.F, y.F));
+    for (const { e, F } of helpers) {
+      if (deficit <= 0) break;
       const k = Math.min(avail.get(F.i) || 0, Math.ceil(deficit * 1.2) + 2);
-      if (k >= 3 && sendArmy(e, F.i, o, k)) { avail.set(F.i, avail.get(F.i) - k); actions--; }
+      if (k >= 3 && send(e, F, k)) { deficit -= k; actions--; }
     }
   }
-  // 2. attack: coordinate all own neighbours of a target
+  // 2. attack: the smallest set of launches that takes the target, within the free slots
   const targets = new Map();
   for (const A of mine) for (const e of A.nb) {
     if (e.state !== 'up') continue;
@@ -1030,7 +1096,7 @@ function aiThink(o, D) {
     const eta = Math.min(...srcs.map(s => s.e.len / ARMY_SPEED));
     const need = Math.ceil((T.v + (T.owner ? TIERS[tierOf(T.v)].regen * eta : 0) + sum(incomingArmies(ti, a => a.o === T.owner && T.owner))) * D.margin + 2 - mineInc);
     if (need <= 0) continue;
-    const total = srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0);
+    const total = srcs.reduce((s, x) => s + (slotOk(x.A) ? avail.get(x.A.i) || 0 : 0), 0);
     if (total < need) continue;
     let score = (T.cap / 40) * (T.owner ? 1.3 : 1) / (need + 8) * (1 + (Math.random() - 0.5) * D.noise);
     scored.push({ ti, srcs, need, score });
@@ -1038,10 +1104,22 @@ function aiThink(o, D) {
   scored.sort((a, b) => b.score - a.score);
   for (const t of scored) {
     if (actions <= 0) break;
-    let rem = t.need;
-    const srcs = t.srcs.slice().sort((a, b) => (avail.get(b.A.i) || 0) - (avail.get(a.A.i) || 0));
-    const total = srcs.reduce((s, x) => s + (avail.get(x.A.i) || 0), 0); if (total < rem) continue;
-    for (const s of srcs) { if (rem <= 0) break; const k = Math.min(avail.get(s.A.i) || 0, rem + 2); if (k >= 1 && sendArmy(s.e, s.A.i, o, k)) { avail.set(s.A.i, avail.get(s.A.i) - k); rem -= k; } }
+    const srcs = t.srcs.slice().sort((a, b) => byTier(a.A, b.A));
+    // one source that can do it alone is best: it leaves the other slots free
+    let plan = null;
+    const solo = srcs.find(s => slotOk(s.A) && (avail.get(s.A.i) || 0) >= t.need);
+    if (solo) plan = [{ s: solo, k: Math.min(avail.get(solo.A.i), t.need + 2) }];
+    else {
+      const f2 = new Map(fly); let rem = t.need; plan = [];
+      for (const s of srcs) {
+        if (rem <= 0) break;
+        const k = Math.min(avail.get(s.A.i) || 0, rem + 2);
+        if (k < 1 || !slotOk(s.A, f2)) continue;
+        plan.push({ s, k }); book(s.A, f2); rem -= k;
+      }
+      if (rem > 0) continue;
+    }
+    for (const { s, k } of plan) send(s.e, s.A, k);
     actions--;
   }
   // 3. expand: rarely, one trunk at a time, only from nodes that have no target yet
@@ -1062,15 +1140,15 @@ function aiThink(o, D) {
     for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { actions--; built = true; break; }
     if (built) break;
   }
-  // 4. supply: rear nodes near cap push armies towards the front
+  // 4. supply: rear nodes near cap push armies towards the front, but only into an idle network
   if (D.supply) {
     const front = new Map(), q = [];
     for (const p of mine) if (p.nb.some(e => N[other(e, p.i)].owner !== o)) { front.set(p.i, 0); q.push(p.i); }
     while (q.length) { const i = q.shift(); for (const e of N[i].nb) { if (e.state !== 'up') continue; const j = other(e, i); if (N[j].owner === o && !front.has(j)) { front.set(j, front.get(i) + 1); q.push(j); } } }
     for (const A of mine) {
-      const f = front.get(A.i); if (f == null || f < 1 || A.v < A.cap * 0.8) continue;
+      const f = front.get(A.i); if (f == null || f < 1 || A.v < A.cap * 0.8 || fly.get(net[A.i])) continue;
       const e = A.nb.find(e => e.state === 'up' && N[other(e, A.i)].owner === o && front.get(other(e, A.i)) === f - 1);
-      if (e) sendArmy(e, A.i, o, Math.floor(A.v * 0.6));
+      if (e) send(e, A, Math.floor(A.v * 0.6));
     }
   }
 }
@@ -1098,18 +1176,60 @@ function edgeNear(sx, sy) {
 }
 const interactive = () => G && !G.demo && !G.paused && !G.ended;
 function dragAction(i, j) {
-  const e = edgeBetween(i, j), n = sendCount(i, G.pct);
+  const e = edgeBetween(i, j), A = G.nodes[i];
   if (!e) {
     const r = canBuild(i, j, 1); if (typeof r === 'string') return { ok: false, label: r };
-    return { ok: true, kind: 'build', plan: r, label: `канал −${r.cost}, затем ${Math.floor((G.nodes[i].v - r.cost) * G.pct)}` };
+    const v = A.v - r.cost, t = tierOf(v), wait = t === 0 || flyingIn(netIds()[i]) > LAUNCH_MAX[t];
+    return { ok: true, kind: 'build', plan: r, label: `канал −${r.cost}, затем ${Math.floor(v * G.pct)}${wait ? ' (в очередь)' : ''}` };
   }
-  if (e.state === 'grow') return { ok: false, e, label: 'канал прокладывается' };
-  const r = canSend(e, i, 1, n); return r === true ? { ok: true, kind: 'send', e, label: `отправить ${n}` } : { ok: false, e, label: r };
+  const s = orderState({ i, j, o: 1, pct: G.pct });
+  if (s.dead) return { ok: false, e, label: 'это не ваш узел' };
+  const repl = orderOf(i) ? ' · заменит приказ' : '';
+  return s.wait ? { ok: true, kind: 'send', e, queued: true, label: `в очередь: ${s.wait}${repl}` } : { ok: true, kind: 'send', e, label: `отправить ${s.n}${repl}` };
 }
 function doAction(i, j) {
   const a = dragAction(i, j);
   if (!a.ok) { SFX.error(); return; }
-  if (a.kind === 'build') build(i, j, 1, true); else sendArmy(a.e, i, 1, sendCount(i, G.pct));
+  if (a.kind === 'build') build(i, j, 1, true); else if (enqueue(i, j, 1, G.pct)) SFX.queue();
+}
+/* group order: every selected node with a trunk to the target gets its own order */
+function groupAction(srcs, j) {
+  const ok = srcs.filter(i => i !== j && G.nodes[i].owner === 1 && edgeBetween(i, j)), skip = srcs.filter(i => i !== j).length - ok.length;
+  if (!ok.length) return { ok: false, srcs: ok, label: 'у выделенных узлов нет каналов к цели' };
+  return { ok: true, srcs: ok, label: `приказ ${ok.length} ${pl(ok.length, 'узлу', 'узлам', 'узлам')} → ${G.nodes[j].name}${skip ? ` · без канала: ${skip}` : ''}` };
+}
+function doGroup(srcs, j) {
+  const a = groupAction(srcs, j);
+  if (!a.ok) { SFX.error(); return; }
+  // weaker nodes queue first: a workstation needs an empty network, a mainframe can still go after it
+  const ord = a.srcs.slice().sort((x, y) => tierOf(G.nodes[x].v) - tierOf(G.nodes[y].v));
+  let waiting = 0; for (const i of ord) if (enqueue(i, j, 1, G.pct)) waiting++;
+  if (waiting) SFX.queue();
+}
+/* selection: G.sel is a single node, G.msel a group of two or more */
+function normSel() {
+  const M = G.msel; for (const i of [...M]) if (G.nodes[i].owner !== 1) M.delete(i);
+  if (M.size === 1) { G.sel = [...M][0]; M.clear(); }
+}
+function clearSel() { G.sel = -1; G.msel.clear(); }
+function toggleSel(i) {
+  const M = G.msel;
+  if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) M.add(G.sel);
+  const was = G.sel === i || M.has(i); G.sel = -1;
+  if (was) M.delete(i); else M.add(i);
+  normSel(); SFX.select();
+}
+function boxSelect(p) {
+  const x1 = Math.min(p.x0, p.x), x2 = Math.max(p.x0, p.x), y1 = Math.min(p.y0, p.y), y2 = Math.max(p.y0, p.y);
+  if (!p.add) clearSel(); else if (G.sel >= 0 && G.nodes[G.sel].owner === 1) { G.msel.add(G.sel); G.sel = -1; }
+  let n = 0;
+  for (const q of G.nodes) { if (q.owner !== 1) continue; ts(q.x, q.y); if (TX >= x1 && TX <= x2 && TY >= y1 && TY <= y2) { G.msel.add(q.i); n++; } }
+  normSel(); if (n) SFX.select();
+}
+function qPos(p) { const r = radiusFor(Math.min(p.vd, 200)) * 1.25 + 14; return { x: p.x + r * 0.75, y: p.y + r * 0.75 }; }
+function qNear(sx, sy) {
+  for (const q of G.queue) { if (q.o !== 1) continue; const b = qPos(G.nodes[q.i]); ts(b.x, b.y); if (Math.hypot(TX - sx, TY - sy) < 13) return q; }
+  return null;
 }
 cv.addEventListener('wheel', e => {
   if (!G || G.demo) return; e.preventDefault(); closePop();
@@ -1117,7 +1237,7 @@ cv.addEventListener('wheel', e => {
   cam.z = clamp(cam.z * Math.exp(-e.deltaY * 0.0015), l.min, l.max); cam.tx = null;
   cam.x = w.x - (e.clientX - V.w / 2) / cam.z; cam.y = w.y - (e.clientY - V.h / 2) / cam.z; clampCam();
 }, { passive: false });
-cv.addEventListener('contextmenu', e => { e.preventDefault(); if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; } });
+cv.addEventListener('contextmenu', e => { e.preventDefault(); if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'box')) { ptr.cancel = true; ptr.target = -1; } });
 /* Aim assist: the target is picked from the area around the cursor and along the drag line,
    so the pointer does not have to be exactly on a node. */
 function pickTarget(src, px, py, pred) {
@@ -1151,7 +1271,7 @@ function fwNear(sx, sy) {
 }
 cv.addEventListener('pointerdown', e => {
   audioInit(); if (!G || G.demo) return;
-  if (e.button === 2) { if (ptr && ptr.mode !== 'pan') { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; closePop(); } return; }
+  if (e.button === 2) { if (ptr && ptr.mode !== 'pan') { ptr.cancel = true; ptr.target = -1; } else { clearSel(); closePop(); } return; }
   cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [p1, p2] = [...pointers.values()];
@@ -1163,15 +1283,28 @@ cv.addEventListener('pointerdown', e => {
   if (interactive()) {
     const fp = fwNear(e.clientX, e.clientY);
     if (fp) { if (!activateFirewall(fp)) SFX.error(); ptr = null; return; }
+    const qb = qNear(e.clientX, e.clientY);
+    if (qb) { cancelOrders(q => q === qb); SFX.flowOff(); ptr = null; return; }
     const an = armyNear(e.clientX, e.clientY);
     if (an) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'army', army: an, target: -1 }; return; }
   }
   const dp = interactive() && G.daemon && G.daemon.state === 'idle' ? daemonPos() : null;
   if (dp) { ts(dp.x, dp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 18) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'daemon', target: -1 }; return; } }
-  const p = interactive() ? hit(w.x, w.y) : -1;
+  const p = interactive() ? hit(w.x, w.y) : -1, own = p >= 0 && G.nodes[p].owner === 1;
   ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
-    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1 };
+    mode: own ? 'link' : 'pan', target: -1, group: own && G.msel.size >= 2 && G.msel.has(p), add: e.shiftKey,
+    touch: e.pointerType !== 'mouse', t0: performance.now() };
+  // shift + drag on empty space: frame selection
+  if (e.shiftKey && interactive() && p < 0) ptr.mode = 'box';
 });
+/* touch: a long press on your node adds it to the selection, on empty space it starts a selection frame */
+function longPress() {
+  ptr.lp = true;
+  if (ptr.mode === 'link') { toggleSel(ptr.p); ptr.mode = 'none'; }
+  else if (ptr.mode === 'pan' && ptr.p < 0) { ptr.mode = 'box'; ptr.add = G.msel.size > 0 || G.sel >= 0; }
+  else return;
+  try { navigator.vibrate && navigator.vibrate(12); } catch (err) {}
+}
 cv.addEventListener('pointermove', e => {
   if (!G) return;
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1185,7 +1318,7 @@ cv.addEventListener('pointermove', e => {
   hover = interactive() ? hit(w.x, w.y) : -1;
   let overD = false; if (!ptr && interactive() && G.daemon && G.daemon.state === 'idle') { const dp = daemonPos(); ts(dp.x, dp.y); overD = Math.hypot(TX - e.clientX, TY - e.clientY) < 18; }
   G.overDaemon = overD;
-  if (!ptr && interactive()) { G.overFw = fwNear(e.clientX, e.clientY); G.overArmy = armyNear(e.clientX, e.clientY); if (G.overFw || G.overArmy) overD = true; }
+  if (!ptr && interactive()) { G.overFw = fwNear(e.clientX, e.clientY); G.overQ = G.overFw ? null : qNear(e.clientX, e.clientY); G.overArmy = armyNear(e.clientX, e.clientY); if (G.overFw || G.overQ || G.overArmy) overD = true; }
   cv.style.cursor = hover >= 0 || overD ? 'pointer' : ptr && ptr.mode === 'pan' && ptr.moved ? 'grabbing' : 'default';
   if (!ptr || ptr.id !== e.pointerId) return;
   if (ptr.mode !== 'pan' && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
@@ -1203,7 +1336,7 @@ cv.addEventListener('pointermove', e => {
       const toSrc = (TX - hx) * (e.clientX - hx) + (TY - hy) * (e.clientY - hy) > 0 && Math.hypot(e.clientX - hx, e.clientY - hy) > 25;
       ptr.target = toSrc ? src : -1; }
   }
-  else if (ptr.moved) { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
+  else if (ptr.mode === 'pan' && ptr.moved) { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
   ptr.lx = e.clientX; ptr.ly = e.clientY;
 });
 function endPtr(e, cancel) {
@@ -1214,17 +1347,23 @@ function endPtr(e, cancel) {
   if (cancel || !interactive()) return;
   if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
   if (p.mode === 'army') { if (!p.cancel && p.target >= 0) retreat(p.army.e, p.army.a); return; }
+  if (p.mode === 'none') return;
+  if (p.mode === 'box') { if (!p.cancel && p.moved) boxSelect(p); return; }
   if (!p.moved && !p.cancel) {
-    if (p.p >= 0) return tapNode(p.p);
-    G.sel = -1; closePop(); return;
+    if (p.p >= 0) return tapNode(p.p, p.add);
+    clearSel(); closePop(); return;
   }
-  if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) { doAction(p.p, p.target); G.sel = -1; }
+  if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) {
+    if (p.group) doGroup([...G.msel], p.target); else { doAction(p.p, p.target); clearSel(); }
+  }
 }
 cv.addEventListener('pointerup', e => endPtr(e, false));
 cv.addEventListener('pointercancel', e => endPtr(e, true));
-function tapNode(i) {
+function tapNode(i, add) {
   closePop();
   const p = G.nodes[i];
+  if (add && p.owner === 1) { toggleSel(i); return; }
+  if (G.msel.size) { if (G.msel.has(i)) { G.msel.clear(); G.sel = i; SFX.select(); } else doGroup([...G.msel], i); return; }
   if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { doAction(G.sel, i); G.sel = -1; return; }
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
@@ -1327,18 +1466,25 @@ function render(now) {
       continue;
     }
     if (pathRange(e, s0, e0)) {
-      ctx.strokeStyle = dark ? 'rgba(214,238,226,0.1)' : 'rgba(13,19,17,0.1)'; ctx.lineWidth = Math.max(4, 7 * S); ctx.stroke();
-      ctx.strokeStyle = dark ? 'rgba(214,238,226,0.42)' : 'rgba(13,19,17,0.45)'; ctx.lineWidth = Math.max(1.2, 1.6 * S); ctx.stroke();
+      const ow = shownOwner(A);
+      if (ow && ow === shownOwner(B)) {
+        // own trunk: a light shade of the owner's colour — batches run twice as fast here
+        const c = PAL.rgb[ow];
+        ctx.strokeStyle = rgba(c, dark ? 0.1 : 0.13); ctx.lineWidth = Math.max(4, 7 * S); ctx.stroke();
+        ctx.strokeStyle = dark ? rgba(c, 0.5) : rgba(mix(c, [255, 255, 255], 0.3), 1); ctx.lineWidth = Math.max(1.4, 2 * S); ctx.stroke();
+      } else {
+        ctx.strokeStyle = dark ? 'rgba(214,238,226,0.1)' : 'rgba(13,19,17,0.1)'; ctx.lineWidth = Math.max(4, 7 * S); ctx.stroke();
+        ctx.strokeStyle = dark ? 'rgba(214,238,226,0.42)' : 'rgba(13,19,17,0.45)'; ctx.lineWidth = Math.max(1.2, 1.6 * S); ctx.stroke();
+      }
       const ar = e.ar.find(a => isVis(...posAt(e, a.dir, a.d)));
       if (ar) { const c = PAL.rgb[ar.o]; ctx.strokeStyle = rgba(c, dark ? 0.35 : 0.4); ctx.lineWidth = Math.max(1.2, 1.6 * S); ctx.stroke(); }
     }
     for (const q of [[e.a, 0], [e.b, 1]]) { const [x, y] = ptAt(e, q[1] ? e0 : s0); ts(x, y); ctx.fillStyle = dark ? 'rgba(214,238,226,0.6)' : 'rgba(13,19,17,0.55)'; ctx.fillRect(TX - 2, TY - 2, 4, 4); }
   }
   // neighbour hints while dragging / selected
-  const srcSel = ptr && ptr.mode === 'link' && ptr.moved ? ptr.p : (G.sel >= 0 && N[G.sel].owner === 1 ? G.sel : -1);
-  if (srcSel >= 0) {
-    const A = N[srcSel];
-    for (const e of A.nb) { const s0 = rad(e.a), e0 = e.len - rad(e.b); if (pathRange(e, s0, e0)) { ctx.strokeStyle = rgba(PAL.rgb[1], 0.3); ctx.lineWidth = Math.max(4, 7 * S); ctx.stroke(); } }
+  const srcSel = ptr && ptr.mode === 'link' && ptr.moved ? (ptr.group ? [...G.msel] : [ptr.p]) : G.msel.size ? [...G.msel] : (G.sel >= 0 && N[G.sel].owner === 1 ? [G.sel] : []);
+  for (const i of srcSel) {
+    for (const e of N[i].nb) { const s0 = rad(e.a), e0 = e.len - rad(e.b); if (pathRange(e, s0, e0)) { ctx.strokeStyle = rgba(PAL.rgb[1], 0.3); ctx.lineWidth = Math.max(4, 7 * S); ctx.stroke(); } }
   }
   ctx.lineCap = 'butt';
 
@@ -1468,10 +1614,17 @@ function render(now) {
   ctx.globalAlpha = 1;
   if (!G.demo) {
     const sel = G.sel >= 0 ? N[G.sel] : null;
-    const rs = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (sel && sel.owner === 1 ? G.sel : -1);
+    const rs = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? (ptr.group ? -1 : ptr.p) : (sel && sel.owner === 1 ? G.sel : -1);
     if (rs >= 0) { const A = N[rs]; ts(A.x, A.y); ctx.setLineDash([2, 6]); ctx.lineDashOffset = -t * 10; ctx.strokeStyle = rgba(PAL.rgb[1], 0.35); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(TX, TY, rangeOf(A.v) * S, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
     if (sel) { ts(sel.x, sel.y); const r = (radiusFor(sel.vd) * 1.2 + 16) * S + Math.sin(t * 4) * 1.5; ctx.strokeStyle = PAL.sel; ctx.lineWidth = 1.4; brackets(TX, TY, r, Math.max(8, r * 0.3)); }
-    if (hover >= 0 && hover !== G.sel && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (radiusFor(p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
+    for (const i of G.msel) { const p = N[i]; ts(p.x, p.y); const r = (radiusFor(p.vd) * 1.2 + 16) * S + Math.sin(t * 4) * 1.5; ctx.strokeStyle = PAL.sel; ctx.lineWidth = 1.4; brackets(TX, TY, r, Math.max(8, r * 0.3)); }
+    if (ptr && ptr.mode === 'box' && ptr.moved && !ptr.cancel) {
+      const x = Math.min(ptr.x0, ptr.x), y = Math.min(ptr.y0, ptr.y), w = Math.abs(ptr.x - ptr.x0), h = Math.abs(ptr.y - ptr.y0);
+      ctx.fillStyle = rgba(PAL.rgb[1], 0.06); ctx.fillRect(x, y, w, h);
+      ctx.setLineDash([3, 4]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.7); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w, h); ctx.setLineDash([]);
+    }
+    drawQueue(t);
+    if (hover >= 0 && hover !== G.sel && !G.msel.has(hover) && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (radiusFor(p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
     for (const p of N) { if (!fwShown(p)) continue; const q = fwPos(p); ts(q.x, q.y); drawFwIcon(TX, TY, p, t); if (G.overFw === p && !ptr) { ctx.strokeStyle = rgba(fcol(), 0.9); ctx.lineWidth = 1; brackets(TX, TY, 16, 5); } }
     const ah = ptr && ptr.mode === 'army' ? ptr.army : (!ptr ? G.overArmy : null);
     if (ah && ah.e.ar.includes(ah.a)) {
@@ -1502,10 +1655,51 @@ function render(now) {
         } else if (dp) { ts(dp.x, dp.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(ptr.x, ptr.y); ctx.setLineDash([2, 5]); ctx.strokeStyle = rgba(dcol(), 0.6); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); }
       }
     }
-    const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
-    const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
-    if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
+    if (ptr && ptr.mode === 'link' && ptr.group && ptr.moved && !ptr.cancel) drawGroupPreview([...G.msel], ptr.p, ptr.target, ptr.x, ptr.y, t);
+    else if (!ptr && G.msel.size && hover >= 0 && !G.msel.has(hover)) drawGroupPreview([...G.msel], -1, hover, null, null, t);
+    else {
+      const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
+      const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
+      if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
+    }
+    if (!ptr && G.overQ && G.queue.includes(G.overQ)) {
+      const q = G.overQ, st = orderState(q), b = qPos(N[q.i]); ts(b.x, b.y);
+      label(`${N[q.i].name} → ${N[q.j].name} · ${st.wait || 'сейчас уйдёт'} · нажмите, чтобы отменить`, TX, TY, true);
+    }
   }
+}
+/* pending orders: a slow dashed trace along the trunk and a numbered badge by the source (click cancels) */
+function drawQueue(t) {
+  let k = 0;
+  for (const q of G.queue) {
+    if (q.o !== 1) continue; k++;
+    const A = G.nodes[q.i], e = edgeBetween(q.i, q.j); if (!e) continue;
+    const c = PAL.rgb[1];
+    if (e.state === 'up' && pathRange(e, rad(e.a), e.len - rad(e.b))) {
+      ctx.setLineDash([2, 7]); ctx.lineDashOffset = -t * 14 * (dirFrom(e, q.i) === 0 ? 1 : -1); ctx.strokeStyle = rgba(c, 0.5); ctx.lineWidth = Math.max(1, 1.4 * cam.z); ctx.stroke(); ctx.setLineDash([]);
+    }
+    const b = qPos(A); ts(b.x, b.y); const x = TX, y = TY;
+    ctx.beginPath(); ctx.arc(x, y, 8, 0, TAU); ctx.fillStyle = PAL.dark ? 'rgba(4,10,8,0.92)' : 'rgba(242,246,243,0.95)'; ctx.fill();
+    ctx.strokeStyle = rgba(c, 0.3); ctx.lineWidth = 1.2; ctx.stroke();
+    const a0 = t * 3.5; ctx.strokeStyle = rgba(c, 0.95); ctx.beginPath(); ctx.arc(x, y, 8, a0, a0 + 1.7); ctx.stroke();
+    ctx.fillStyle = PAL.lab[1]; ctx.font = `600 9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(k), x, y + 0.5);
+    if (G.overQ === q && !ptr) { ctx.strokeStyle = PAL.sel; ctx.lineWidth = 1; brackets(x, y, 13, 4); }
+  }
+}
+function drawGroupPreview(srcs, from, tgt, px, py, t) {
+  const S = cam.z;
+  if (tgt < 0 || srcs.includes(tgt)) {
+    if (px != null && from >= 0) { const A = G.nodes[from]; ts(A.x, A.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); }
+    return;
+  }
+  const B = G.nodes[tgt], a = groupAction(srcs, tgt), col = a.ok ? PAL.rgb[1] : PAL.rgb[2];
+  for (const i of a.srcs) {
+    const e = edgeBetween(i, tgt);
+    if (pathRange(e, rad(e.a), e.len - rad(e.b))) { ctx.setLineDash([4, 6]); ctx.lineDashOffset = -t * 40 * (dirFrom(e, i) === 0 ? 1 : -1); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.6; ctx.stroke(); ctx.setLineDash([]); }
+  }
+  ts(B.x, B.y); const rr = (radiusFor(B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
+  ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
+  label(a.label, px != null ? px : TX, py != null ? py : TY, a.ok);
 }
 function drawPreview(src, tgt, px, py, t) {
   const A = G.nodes[src], S = cam.z;
@@ -1536,7 +1730,10 @@ function drawMini(now) {
   const w = mini.width, h = mini.height, pad = 6 * V.dpr, k = Math.min((w - 2 * pad) / G.W, (h - 2 * pad) / G.H), ox = (w - G.W * k) / 2, oy = (h - G.H * k) / 2;
   mctx.clearRect(0, 0, w, h);
   mctx.lineWidth = V.dpr;
-  for (const e of G.edges) { if (e.state !== 'up' || !(G.nodes[e.a].seen && G.nodes[e.b].seen)) continue; mctx.strokeStyle = PAL.dark ? 'rgba(214,238,226,0.25)' : 'rgba(13,19,17,0.25)'; mctx.beginPath(); mctx.moveTo(ox + G.nodes[e.a].x * k, oy + G.nodes[e.a].y * k); mctx.lineTo(ox + G.nodes[e.b].x * k, oy + G.nodes[e.b].y * k); mctx.stroke(); }
+  for (const e of G.edges) {
+    if (e.state !== 'up' || !(G.nodes[e.a].seen && G.nodes[e.b].seen)) continue;
+    const oa = G.nodes[e.a].vis ? G.nodes[e.a].owner : G.nodes[e.a].lastOwner, ob = G.nodes[e.b].vis ? G.nodes[e.b].owner : G.nodes[e.b].lastOwner;
+    mctx.strokeStyle = oa && oa === ob ? rgba(PAL.rgb[oa], 0.55) : PAL.dark ? 'rgba(214,238,226,0.25)' : 'rgba(13,19,17,0.25)'; mctx.beginPath(); mctx.moveTo(ox + G.nodes[e.a].x * k, oy + G.nodes[e.a].y * k); mctx.lineTo(ox + G.nodes[e.b].x * k, oy + G.nodes[e.b].y * k); mctx.stroke(); }
   for (const p of G.nodes) { if (!p.seen) continue; const ow = p.vis ? p.owner : p.lastOwner; mctx.fillStyle = rgba(PAL.rgb[ow], p.vis ? 1 : 0.5); const r = (1.5 + Math.sqrt(p.vis ? p.v : p.lastV) * 0.25) * V.dpr; mctx.fillRect(ox + p.x * k - r, oy + p.y * k - r, r * 2, r * 2); }
   const a = fromS(0, 0), b = fromS(V.w, V.h);
   mctx.strokeStyle = PAL.sel; mctx.strokeRect(ox + a.x * k, oy + a.y * k, (b.x - a.x) * k, (b.y - a.y) * k);
@@ -1571,6 +1768,7 @@ function tick(now) {
       if (Math.hypot(cam.tx - cam.x, cam.ty - cam.y) < 1 && Math.abs(cam.tz - cam.z) < 0.002) cam.tx = null;
     }
   }
+  if (ptr && ptr.touch && !ptr.moved && !ptr.lp && !ptr.cancel && interactive() && now - ptr.t0 > 480) longPress();
   render(now); hudTick(now); drawMini(now);
 }
 
@@ -1623,7 +1821,11 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие.', 'Цель не нужно ловить курсором точно: игра выбирает ближайший узел по направлению жеста. Отмена — правая кнопка или возврат на исходный узел.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание по готовому каналу отправляет пачку: 50, 75 или 100% узла (внизу или клавишами 1–3). Свою пачку в пути можно вернуть: потяните её назад, к исходному узлу.', 'Встречные вражеские пачки уничтожают друг друга. Нейтральный узел при захвате приносит свой гарнизон.'],
+    'Перетаскивание по готовому каналу — приказ отправить пачку: 50, 75 или 100% узла (внизу или клавишами 1–3). Свою пачку в пути можно вернуть: потяните её назад, к исходному узлу.', 'Пачки не сталкиваются, а пролетают друг мимо друга. Канал между двумя вашими узлами подсвечен вашим цветом: по нему пакеты летят вдвое быстрее. Нейтральный узел при захвате приносит свой гарнизон.'],
+  ['<path d="M4 20h22" stroke="currentColor" stroke-opacity=".3"/><rect x="5" y="17" width="4" height="4" fill="currentColor"/><rect x="13" y="17" width="4" height="4" fill="none" stroke="currentColor"/><rect x="21" y="17" width="4" height="4" fill="none" stroke="currentColor"/><path d="M7 13V9h16v4" fill="none" stroke="currentColor"/>',
+    'В одной сети одновременно летит не больше трёх пачек, и отправить может не каждый узел: ноутбук — никогда, рабочая станция — только если в её сети ничего не летит, сервер — если летит не больше одной, мейнфрейм — не больше двух.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. Нажмите значок, чтобы отменить приказ; Delete отменяет все.'],
+  ['<rect x="4" y="6" width="22" height="18" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><rect x="8" y="10" width="5" height="4" fill="none" stroke="currentColor"/><rect x="17" y="15" width="5" height="4" fill="none" stroke="currentColor"/>',
+    'Несколько узлов: Shift+клик или рамка с Shift, на телефоне — долгое нажатие на узел или на пустое место. Потяните от любого выделенного узла к цели: приказ получит каждый, у кого есть к ней канал.', 'Приказы исполняются по очереди, по мере свободных мест в сети. Не заваливайте её приказами: пока летят одни пачки, остальные ждут. Esc снимает выделение.'],
   ['<path d="M15 5l8 3.5-1 9.5-7 7-7-7-1-9.5z" fill="none" stroke="currentColor"/><path d="M10.5 13h9M11 17h8M15 13v4" stroke="currentColor"/>',
     'Файрвол — оранжевая иконка у вашего узла, соединённого каналом с врагом. Нажмите её: на 10 секунд вражеские пачки не пройдут в узел, а летящие развернутся.', 'После этого файрвол перезаряжается 30 секунд.'],
   ['<path d="M15 5l8.7 5v10L15 25l-8.7-5V10z" fill="none" stroke="currentColor"/><text x="15" y="18.5" text-anchor="middle" font-size="9" fill="currentColor" font-family="monospace">λ</text>',
@@ -1646,9 +1848,9 @@ function toast(msg, ms = 3500) { const el = $('#toast'); el.classList.add('show'
 function hideToast() { clearTimeout(toastTimer); $('#toast').classList.remove('show'); }
 const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал, и по нему уйдёт пачка пакетов. канал стоит пакетов и остаётся навсегда.',
-  2: 'канал готов. каждое перетаскивание по нему отправляет пачку. размер пачки — 50, 75 или 100% узла, внизу экрана или клавишами 1–3.',
-  3: 'пачка в пути. если она больше гарнизона цели, узел будет захвачен. встречные вражеские пачки на канале уничтожают друг друга.',
-  4: 'узел взломан. чужие гарнизоны скрыты — видны только символы. пачку в пути можно вернуть: потяните её назад. найдите и взломайте пурпурные узлы.',
+  2: 'канал готов. каждое перетаскивание по нему — приказ отправить пачку (50, 75 или 100% узла, клавиши 1–3). ноутбук пакеты не отправляет: приказ подождёт, пока узел вырастет.',
+  3: 'пачка в пути. если она больше гарнизона цели, узел будет захвачен. пока она летит, рабочая станция новую не отправит — приказ встанет в очередь. сервер может отправить вторую, мейнфрейм — третью.',
+  4: 'узел взломан. канал между двумя вашими узлами окрашен в ваш цвет — по нему пакеты летят вдвое быстрее. пачки не сталкиваются, а пролетают мимо. найдите и взломайте пурпурные узлы.',
 };
 function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
 
@@ -1670,7 +1872,10 @@ function hudTick(now) {
     let sum = 0; bars.forEach(el => sum += power(+el.dataset.o));
     bars.forEach(el => { el.style.display = ''; el.style.flexGrow = sum ? (power(+el.dataset.o) / sum).toFixed(4) : 1; });
   }
-  $('#hudCount').textContent = `мощность ${power(1)}`;
+  normSel();
+  let fl = 0; for (const e of G.edges) for (const a of e.ar) if (a.o === 1) fl++;
+  const qn = G.queue.filter(q => q.o === 1).length;
+  $('#hudCount').textContent = `мощность ${power(1)} · в полёте ${fl}${qn ? ` · очередь ${qn}` : ''}`;
 }
 
 function startLevel(i) {
@@ -1730,8 +1935,18 @@ $('#btnEndMain').addEventListener('click', () => { SFX.ui(); if (endAction) endA
 addEventListener('keydown', e => {
   if (!G || G.demo) return;
   const k = e.key.toLowerCase();
-  if (k === 'escape') { if (ptr && ptr.mode === 'link') { ptr.cancel = true; ptr.target = -1; return; } if (G.paused) resumeGame(); else pauseGame(); return; }
+  if (k === 'escape') {
+    if (ptr && (ptr.mode === 'link' || ptr.mode === 'box')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (!G.paused && (G.sel >= 0 || G.msel.size)) { clearSel(); return; }
+    if (G.paused) resumeGame(); else pauseGame(); return;
+  }
   if (G.paused) return;
+  // delete / backspace: drop the pending orders of the selected nodes, or all of them
+  if (k === 'delete' || k === 'backspace') {
+    const sel = G.msel.size ? G.msel : G.sel >= 0 ? new Set([G.sel]) : null;
+    if (cancelOrders(q => q.o === 1 && (!sel || sel.has(q.i)))) SFX.flowOff();
+    e.preventDefault(); return;
+  }
   if (k === 'h' || k === 'р' || k === 'home') homeFocus(false);
   const pk = { '1': '0.5', '2': '0.75', '3': '1' }[k]; if (pk) { setPct(+pk); segPct.set(pk); }
   if (k === '+' || k === '=') { cam.z = clamp(cam.z * 1.2, zoomLimits().min, zoomLimits().max); clampCam(); }
@@ -1752,7 +1967,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, cam, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, genMap, LEVELS, sendDaemon, daemonRoute };
+window.__root = { get G() { return G; }, cam, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, netIds, flyingIn, doGroup, tierOf };
 })();
 </script>
 </body>
