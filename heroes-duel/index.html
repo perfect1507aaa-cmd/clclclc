@@ -14,31 +14,50 @@
     }
   </script>
 </head>
-<body>
+<body data-phase="deploy">
   <canvas id="scene"></canvas>
   <div id="labels"></div>
 
   <header id="topbar">
     <div class="brand">
       <span class="brand-title">Дуэль героев</span>
-      <span class="brand-sub">Орден Порядка против Ордена Порядка</span>
+      <span id="phase" class="brand-sub">Расстановка</span>
     </div>
     <nav>
+      <button id="btn-mode" class="deploy-only" title="Кто управляет красной армией">Против ИИ</button>
       <button id="btn-bestiary">Бестиарий</button>
       <button id="btn-grid" class="on">Сетка</button>
       <button id="btn-camera">Камера</button>
     </nav>
   </header>
 
-  <aside id="army-left" class="army left"></aside>
-  <aside id="army-right" class="army right"></aside>
+  <section id="deploy" class="deploy-only">
+    <div class="deploy-head">
+      <div id="deploy-title">Расстановка</div>
+      <div class="deploy-hint">Выберите отряд и кликните по клетке в своих двух крайних колонках. Кнопка под отрядом меняет его на базовый или улучшенный вид.</div>
+    </div>
+    <div id="deploy-list"></div>
+    <div class="deploy-actions">
+      <button id="btn-deploy-default">Сбросить расстановку</button>
+      <button id="btn-fight" class="primary">В бой</button>
+    </div>
+  </section>
+
+  <footer id="atb" class="battle-only">
+    <div id="active"></div>
+    <div id="atb-track"></div>
+    <div class="actions">
+      <button id="btn-wait" title="Ждать (W): ход сдвигается на середину шкалы">Ждать <kbd>W</kbd></button>
+      <button id="btn-defend" title="Защита (D): +30% к защите до следующего хода">Защита <kbd>D</kbd></button>
+    </div>
+  </footer>
+
+  <div id="log" class="battle-only"></div>
 
   <section id="card" class="hidden">
     <button id="card-close" aria-label="Закрыть">×</button>
     <div id="card-body"></div>
   </section>
-
-  <footer id="atb"></footer>
 
   <div id="tooltip" class="hidden"></div>
 
@@ -52,6 +71,14 @@
         <div id="bestiary-body"></div>
         <div id="bestiary-detail"></div>
       </div>
+    </div>
+  </div>
+
+  <div id="end" class="hidden">
+    <div class="end-window">
+      <h2 id="end-title"></h2>
+      <p id="end-sub"></p>
+      <button id="btn-again" class="primary">Новая дуэль</button>
     </div>
   </div>
 

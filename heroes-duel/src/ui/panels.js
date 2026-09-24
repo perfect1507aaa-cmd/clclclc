@@ -1,47 +1,43 @@
-// DOM UI: army panels, initiative (ATB) strip, hover tooltip, creature card, bestiary.
-import { CREATURES, TIERS, VARIANT_LABEL, FACTION } from '../data/haven.js';
+// DOM UI: deployment tray, initiative strip, action bar, combat log, tooltip,
+// creature card, bestiary and the end-of-battle overlay.
+import { CREATURES, TIERS, VARIANT_LABEL } from '../data/haven.js';
 import { ABILITIES } from '../data/abilities.js';
+import { SIDES } from '../data/duel.js';
 import { portrait } from './portraits.js';
 
 const $ = (sel) => document.querySelector(sel);
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const dmgText = (d) => (d[0] === d[1] ? `${d[0]}` : `${d[0]}–${d[1]}`);
 
-function dmgText(d) {
-  return d[0] === d[1] ? `${d[0]}` : `${d[0]}–${d[1]}`;
-}
-
-function costText(cost) {
-  const parts = [`<span class="res gold"></span>${cost.gold}`];
-  if (cost.crystal) parts.push(`<span class="res crystal"></span>${cost.crystal}`);
-  return parts.join(' ');
-}
-
-export function statRows(def) {
+function statRows(def, unit) {
   const rows = [
     ['Атака', def.attack],
-    ['Защита', def.defense],
+    ['Защита', unit?.defending ? `${def.defense} <em>+30%</em>` : def.defense],
     ['Урон', dmgText(def.dmg)],
-    ['Здоровье', def.hp],
+    ['Здоровье', unit ? `${unit.topHp} / ${def.hp}` : def.hp],
     ['Скорость', def.speed],
     ['Инициатива', def.initiative],
   ];
-  if (def.shots) rows.push(['Выстрелы', def.shots]);
+  if (def.shots) rows.push(['Выстрелы', unit ? `${unit.shots} / ${def.shots}` : def.shots]);
   if (def.mana) rows.push(['Мана', def.mana]);
   rows.push(['Прирост', `${def.growth} / нед.`]);
-  rows.push(['Стоимость', costText(def.cost)]);
+  const cost = [`<span class="res gold"></span>${def.cost.gold}`];
+  if (def.cost.crystal) cost.push(`<span class="res crystal"></span>${def.cost.crystal}`);
+  rows.push(['Стоимость', cost.join(' ')]);
   return rows;
 }
 
-export function creatureCardHTML(id, stack) {
+function creatureCardHTML(id, unit) {
   const d = CREATURES[id];
-  const stats = statRows(d).map(([k, v]) => `<div class="st"><span>${k}</span><b>${v}</b></div>`).join('');
+  const stats = statRows(d, unit).map(([k, v]) => `<div class="st"><span>${k}</span><b>${v}</b></div>`).join('');
   const abil = d.abilities.map((a) => {
     const ab = ABILITIES[a];
-    const extra = a === 'caster' && d.spells.length ? `<div class="spells">Заклинания: ${d.spells.map(esc).join(', ')}</div>` : '';
-    return `<li><b>${esc(ab.name)}</b><span>${esc(ab.desc)}</span>${extra}</li>`;
+    const spells = a === 'caster' && d.spells.length ? `<div class="spells">Заклинания: ${d.spells.map(esc).join(', ')}</div>` : '';
+    const todo = ab.combat ? '' : '<i class="todo">в бою пока не действует</i>';
+    return `<li><b>${esc(ab.name)}</b><span>${esc(ab.desc)}</span>${spells}${todo}</li>`;
   }).join('');
-  const inBattle = stack
-    ? `<div class="battle-line"><span>В отряде: <b>${stack.count}</b></span><span>Всего HP: <b>${stack.count * d.hp}</b></span></div>`
+  const inBattle = unit
+    ? `<div class="battle-line" style="--team:${SIDES[unit.side].color}"><span>${SIDES[unit.side].name}</span><span>В отряде: <b>${unit.count}</b></span></div>`
     : '';
   return `
     <div class="card-head">
@@ -60,56 +56,30 @@ export function creatureCardHTML(id, stack) {
     <ul class="abilities">${abil}</ul>`;
 }
 
-export function createUI({ units, onSelect, onHoverSlot, onToggleGrid, onResetCamera }) {
-  // ── Army panels ──
-  for (const side of ['left', 'right']) {
-    const own = units.filter((u) => u.army.side === side);
-    const army = own[0].army;
-    const el = $(`#army-${side}`);
-    el.innerHTML = `
-      <div class="army-head" style="--team:${army.color}">
-        <div class="hero-name">${esc(army.hero)}</div>
-        <div class="army-sub">${esc(FACTION.name)} · ${esc(army.name)}</div>
-      </div>
-      <div class="slots">
-        ${own.map((u) => `
-          <button class="slot" data-key="${u.key}" style="--team:${army.color}">
-            <img src="${portrait(u.stack.id)}" alt="">
-            <span class="slot-name">${esc(u.def.name)}</span>
-            <span class="slot-count">${u.stack.count}</span>
-          </button>`).join('')}
-      </div>`;
-  }
-
-  // ── Initiative strip ──
-  const order = [...units].sort((a, b) =>
-    b.def.initiative - a.def.initiative || (a.army.side === 'left' ? -1 : 1) || a.stack.row - b.stack.row);
-  $('#atb').innerHTML = `<div class="atb-label">Шкала инициативы</div><div class="atb-track">${order.map((u) => `
-    <button class="atb-item" data-key="${u.key}" style="--team:${u.army.color}" title="${esc(u.def.name)}">
-      <img src="${portrait(u.stack.id)}" alt="">
-      <span class="atb-ini">${u.def.initiative}</span>
-      <span class="atb-count">${u.stack.count}</span>
-    </button>`).join('')}</div>`;
-
-  const byKey = new Map(units.map((u) => [u.key, u]));
-  document.querySelectorAll('.slot, .atb-item').forEach((b) => {
-    b.addEventListener('click', () => onSelect(byKey.get(b.dataset.key)));
-    b.addEventListener('mouseenter', () => onHoverSlot(byKey.get(b.dataset.key)));
-    b.addEventListener('mouseleave', () => onHoverSlot(null));
-  });
-
-  // ── Card ──
-  const card = $('#card');
-  $('#card-close').addEventListener('click', () => onSelect(null));
-
-  // ── Tooltip ──
+export function createUI(h) {
   const tip = $('#tooltip');
+  const card = $('#card');
+  const bestiary = $('#bestiary');
+
+  // ── Top bar ──
+  $('#btn-grid').addEventListener('click', (e) => e.currentTarget.classList.toggle('on', h.onToggleGrid()));
+  $('#btn-camera').addEventListener('click', h.onResetCamera);
+  $('#btn-mode').addEventListener('click', h.onToggleMode);
+  $('#card-close').addEventListener('click', () => card.classList.add('hidden'));
+
+  // ── Deployment tray ──
+  $('#btn-deploy-default').addEventListener('click', h.onDeployDefault);
+  $('#btn-fight').addEventListener('click', h.onFight);
+
+  // ── Battle actions ──
+  $('#btn-wait').addEventListener('click', h.onWait);
+  $('#btn-defend').addEventListener('click', h.onDefend);
+  $('#btn-again').addEventListener('click', h.onRestart);
 
   // ── Bestiary ──
-  const bestiary = $('#bestiary');
-  const bestiaryBody = $('#bestiary-body');
-  const bestiaryDetail = $('#bestiary-detail');
-  bestiaryBody.innerHTML = TIERS.map((ids, i) => `
+  const body = $('#bestiary-body');
+  const detail = $('#bestiary-detail');
+  body.innerHTML = TIERS.map((ids, i) => `
     <div class="tier-row">
       <div class="tier-num">${i + 1}</div>
       ${ids.map((id) => {
@@ -117,57 +87,144 @@ export function createUI({ units, onSelect, onHoverSlot, onToggleGrid, onResetCa
         return `<button class="beast" data-id="${id}">
           <img src="${portrait(id)}" alt="">
           <span class="beast-name">${esc(d.name)}</span>
-          <span class="beast-stats">⚔${d.attack} 🛡${d.defense} ❤${d.hp} ⚡${d.initiative}</span>
+          <span class="beast-stats">⚔${d.attack} 🛡${d.defense} ❤${d.hp} 👣${d.speed} ⚡${d.initiative}</span>
           <span class="badge v-${d.variant}">${VARIANT_LABEL[d.variant]}</span>
         </button>`;
       }).join('')}
     </div>`).join('');
   const showBeast = (id) => {
-    bestiaryDetail.innerHTML = creatureCardHTML(id);
-    bestiaryBody.querySelectorAll('.beast').forEach((b) => b.classList.toggle('active', b.dataset.id === id));
+    detail.innerHTML = creatureCardHTML(id);
+    body.querySelectorAll('.beast').forEach((b) => b.classList.toggle('active', b.dataset.id === id));
   };
-  bestiaryBody.querySelectorAll('.beast').forEach((b) => b.addEventListener('click', () => showBeast(b.dataset.id)));
+  body.querySelectorAll('.beast').forEach((b) => b.addEventListener('click', () => showBeast(b.dataset.id)));
   showBeast(TIERS[0][0]);
   $('#btn-bestiary').addEventListener('click', () => bestiary.classList.remove('hidden'));
   $('#bestiary-close').addEventListener('click', () => bestiary.classList.add('hidden'));
   bestiary.addEventListener('click', (e) => { if (e.target === bestiary) bestiary.classList.add('hidden'); });
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (!bestiary.classList.contains('hidden')) bestiary.classList.add('hidden');
-      else onSelect(null);
+      else card.classList.add('hidden');
     }
   });
 
-  $('#btn-grid').addEventListener('click', (e) => {
-    const on = onToggleGrid();
-    e.currentTarget.classList.toggle('on', on);
-  });
-  $('#btn-camera').addEventListener('click', onResetCamera);
+  const logEl = $('#log');
 
   return {
-    showCard(unit) {
-      document.querySelectorAll('.slot, .atb-item').forEach((b) => b.classList.toggle('selected', !!unit && b.dataset.key === unit.key));
+    setPhase({ phase, side, round, mode }) {
+      document.body.dataset.phase = phase;
+      const label = phase === 'deploy'
+        ? `Расстановка · ${SIDES[side].name}`
+        : phase === 'battle' ? `Бой · раунд ${round}` : 'Бой окончен';
+      $('#phase').textContent = label;
+      $('#btn-mode').textContent = mode === 'ai' ? 'Против ИИ' : '2 игрока';
+    },
+
+    renderTray(units, side, selected) {
+      $('#deploy-title').innerHTML = `Расстановка: <b style="color:${SIDES[side].color}">${SIDES[side].name}</b>`;
+      $('#deploy-list').innerHTML = units.map((u) => {
+        const [base, up] = TIERS[u.def.tier - 1];
+        const other = u.id === base ? up : base;
+        return `<div class="tray-item${u === selected ? ' selected' : ''}" data-uid="${u.uid}" style="--team:${SIDES[side].color}">
+          <button class="tray-pick" data-uid="${u.uid}" title="Выбрать для расстановки">
+            <img src="${portrait(u.id)}" alt="">
+            <span class="tray-name">${esc(u.def.name)}</span>
+            <span class="tray-count">${u.count}</span>
+          </button>
+          <button class="tray-swap" data-uid="${u.uid}" title="Сменить на: ${esc(CREATURES[other].name)}">${u.id === base ? '▲' : '▼'} ${esc(CREATURES[other].name)}</button>
+        </div>`;
+      }).join('');
+      document.querySelectorAll('.tray-pick').forEach((b) => b.addEventListener('click', () => h.onTrayPick(+b.dataset.uid)));
+      document.querySelectorAll('.tray-swap').forEach((b) => b.addEventListener('click', () => h.onTraySwap(+b.dataset.uid)));
+    },
+
+    renderATB(forecast, currentRound) {
+      let lastRound = currentRound;
+      const items = [];
+      forecast.forEach((f, i) => {
+        if (f.round !== lastRound) {
+          items.push(`<div class="atb-round">${f.round}</div>`);
+          lastRound = f.round;
+        }
+        const u = f.unit;
+        items.push(`<button class="atb-item${i === 0 ? ' now' : ''}" data-uid="${u.uid}" style="--team:${SIDES[u.side].color}" title="${esc(u.def.name)}">
+          <img src="${portrait(u.id)}" alt="">
+          <span class="atb-ini">${u.def.initiative}</span>
+          <span class="atb-count">${u.count}</span>
+        </button>`);
+      });
+      $('#atb-track').innerHTML = items.join('');
+      document.querySelectorAll('.atb-item').forEach((b) => {
+        b.addEventListener('click', () => h.onInspect(+b.dataset.uid));
+        b.addEventListener('mouseenter', () => h.onHoverUid(+b.dataset.uid));
+        b.addEventListener('mouseleave', () => h.onHoverUid(null));
+      });
+    },
+
+    setActive(unit, { playerTurn, canWait }) {
+      const el = $('#active');
       if (!unit) {
-        card.classList.add('hidden');
+        el.innerHTML = '';
         return;
       }
-      $('#card-body').innerHTML = creatureCardHTML(unit.stack.id, unit.stack);
-      card.style.setProperty('--team', unit.army.color);
+      el.style.setProperty('--team', SIDES[unit.side].color);
+      el.innerHTML = `<img src="${portrait(unit.id)}" alt=""><div><b>${esc(unit.def.name)}</b> × ${unit.count}<small>${playerTurn ? 'Ваш ход' : 'Ходит противник…'}</small></div>`;
+      $('#btn-wait').disabled = !playerTurn || !canWait;
+      $('#btn-defend').disabled = !playerTurn;
+    },
+
+    log(html) {
+      const line = document.createElement('div');
+      line.innerHTML = html;
+      logEl.appendChild(line);
+      while (logEl.children.length > 6) logEl.firstChild.remove();
+    },
+
+    clearLog() {
+      logEl.innerHTML = '';
+    },
+
+    showCard(unit) {
+      $('#card-body').innerHTML = creatureCardHTML(unit.id, unit);
+      card.style.setProperty('--team', SIDES[unit.side].color);
       card.classList.remove('hidden');
     },
-    showTooltip(unit, x, y) {
-      document.querySelectorAll('.slot, .atb-item').forEach((b) => b.classList.toggle('hovered', !!unit && b.dataset.key === unit.key));
-      if (!unit || x == null) {
+
+    hideCard() {
+      card.classList.add('hidden');
+    },
+
+    showTooltip(html, x, y, color) {
+      if (!html) {
         tip.classList.add('hidden');
         return;
       }
-      const d = unit.def;
-      tip.innerHTML = `<b>${esc(d.name)}</b> × ${unit.stack.count}
-        <div class="tip-stats">⚔ ${d.attack} · 🛡 ${d.defense} · 🗡 ${dmgText(d.dmg)} · ❤ ${d.hp} · 👣 ${d.speed} · ⚡ ${d.initiative}</div>`;
-      tip.style.setProperty('--team', unit.army.color);
-      tip.style.left = `${x + 16}px`;
+      tip.innerHTML = html;
+      tip.style.setProperty('--team', color || '#8a7040');
+      const w = tip.offsetWidth || 220;
+      tip.style.left = `${Math.min(x + 16, window.innerWidth - w - 8)}px`;
       tip.style.top = `${y + 14}px`;
       tip.classList.remove('hidden');
     },
+
+    showEnd(winner, mode) {
+      const title = winner === 'draw' ? 'Ничья'
+        : mode === 'ai' ? (winner === 'left' ? 'Победа!' : 'Поражение')
+        : `Победили ${SIDES[winner].name.toLowerCase()}`;
+      $('#end-title').textContent = title;
+      $('#end-sub').textContent = winner === 'draw' ? 'Обе армии полегли.' : `На поле осталась армия: ${SIDES[winner].name.toLowerCase()}.`;
+      $('#end').classList.remove('hidden');
+    },
+
+    hideEnd() {
+      $('#end').classList.add('hidden');
+    },
   };
+}
+
+export function unitTooltip(u) {
+  const d = u.def;
+  return `<b>${esc(d.name)}</b> × ${u.count}
+    <div class="tip-stats">⚔ ${d.attack} · 🛡 ${d.defense} · 🗡 ${dmgText(d.dmg)} · ❤ ${u.topHp}/${d.hp} · 👣 ${d.speed} · ⚡ ${d.initiative}${d.shots ? ` · 🏹 ${u.shots}` : ''}</div>`;
 }
