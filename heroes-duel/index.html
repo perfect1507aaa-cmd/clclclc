@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Дуэль героев</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.min.js",
+        "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-title">Дуэль героев</span>
+      <span class="brand-sub">Орден Порядка против Ордена Порядка</span>
+    </div>
+    <nav>
+      <button id="btn-bestiary">Бестиарий</button>
+      <button id="btn-grid" class="on">Сетка</button>
+      <button id="btn-camera">Камера</button>
+    </nav>
+  </header>
+
+  <aside id="army-left" class="army left"></aside>
+  <aside id="army-right" class="army right"></aside>
+
+  <section id="card" class="hidden">
+    <button id="card-close" aria-label="Закрыть">×</button>
+    <div id="card-body"></div>
+  </section>
+
+  <footer id="atb"></footer>
+
+  <div id="tooltip" class="hidden"></div>
+
+  <div id="bestiary" class="hidden">
+    <div class="bestiary-window">
+      <div class="bestiary-head">
+        <h2>Бестиарий · Орден Порядка</h2>
+        <button id="bestiary-close" aria-label="Закрыть">×</button>
+      </div>
+      <div class="bestiary-content">
+        <div id="bestiary-body"></div>
+        <div id="bestiary-detail"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading">Строим поле боя…</div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
