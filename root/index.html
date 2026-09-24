@@ -1473,7 +1473,7 @@ function encircle(X, old, o) {
   }
 }
 /* Fog of war. You see as grey shapes (class visible, owner not) only the nodes you could lay a channel to right now:
-   within range of an own node, a free slot, a clear path. Who owns a node shows only once it is linked to one of yours
+   within range of an own node that has a free slot of its own, a free slot at the target, a clear path. Who owns a node shows only once it is linked to one of yours
    by a finished channel; channels and fights are visible only where they touch your network. Checking a path is costly,
    so results are cached until the channels change and refreshed a few at a time. */
 function connectable(A, p, budget) {
@@ -1496,8 +1496,11 @@ function updateVision() {
   for (const p of N) p.vis = p.owner === 1;
   for (const e of G.edges) if (e.state === 'up') { if (N[e.a].owner === 1) N[e.b].vis = true; if (N[e.b].owner === 1) N[e.a].vis = true; }
   for (const p of N) {
-    let seen = p.vis;
+    // visible: linked to you (a channel still being laid counts), or a channel could be laid to it now
+    let seen = p.vis || p.nb.some(e => N[other(e, p.i)].owner === 1);
     if (!seen && p.nb.length < linkCap(p)) for (const A of own) {
+      // the own end must be able to lay a channel too: not infected, a free slot (a laptop has none)
+      if (A.infect > 0 || A.nb.length >= (A.kind === 'hub' ? 5 : TIERS[tierN(A)].links)) continue;
       if (Math.hypot(A.x - p.x, A.y - p.y) > rangeN(A)) continue;
       if (connectable(A, p, budget)) { seen = true; break; }
     }
@@ -2600,7 +2603,7 @@ function buildLevelGrid() {
 }
 const HOW = [
   ['<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><circle cx="15" cy="15" r="2.4" fill="currentColor"/><text x="23" y="9" font-size="7" fill="currentColor" font-family="monospace">?</text>',
-    'Туман войны: видны только узлы, к которым вы можете проложить канал прямо сейчас (в дальности, есть свободный слот, путь не пересекает каналы и узлы). Они серые: видно класс, но не хозяина. Чей узел — становится ясно, только когда его соединит с вашим готовый канал. Чужие каналы, пачки и бои видны лишь там, где касаются вашей сети. Числа видны только ваши: у остальных — медленно меняющиеся символы.',
+    'Туман войны: видны только узлы, к которым вы можете проложить канал прямо сейчас (в дальности вашего узла, у которого есть свободный слот; у цели тоже есть слот; путь не пересекает каналы и узлы). Они серые: видно класс, но не хозяина. Чей узел — становится ясно, только когда его соединит с вашим готовый канал. Чужие каналы, пачки и бои видны лишь там, где касаются вашей сети. Числа видны только ваши: у остальных — медленно меняющиеся символы.',
     'Выйти из боя: потяните от узла, который вы осаждаете, к своему узлу, соединённому с ним каналом, — ваши пакеты уйдут домой, потеряв 10%. Наводиться точно не нужно: при перетаскивании цель выбирается по близости к курсору и вдоль ваших каналов.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
