@@ -857,7 +857,7 @@ function canBuild(i, j, o) {
   if (A.infect > 0) return 'узел заражён демоном';
   if (edgeBetween(i, j)) return 'канал уже есть';
   if (B.owner === o) return 'к своему узлу пакет идёт по каналам';
-  if (B.owner !== 0 && tierN(A) < 2) return 'атаковать может только сервер или мейнфрейм';
+  if (B.owner !== 0 && tierN(A) < 2 && !(o === 1 && G.fog && !B.vis)) return 'атаковать может только сервер или мейнфрейм';
   const cap = A.kind === 'hub' ? 5 : TIERS[tierN(A)].links;
   if (A.nb.length >= cap) {
     if (cap === 0) return 'ноутбук не прокладывает каналы';
@@ -882,7 +882,7 @@ function build(i, j, o, autoSend) {
   let pts = r.pts; if (i > j) pts = pts.slice().reverse();
   const c = withCum(pts), a = Math.min(i, j), b = Math.max(i, j);
   const e = Object.assign(c, { id: G.edges.length, a, b, state: 'grow', builder: o, from: i, gd: rad(i), cost: r.cost, ar: [], autoSend: !!autoSend });
-  G.edges.push(e); A.nb.push(e); B.nb.push(e);
+  G.edges.push(e); A.nb.push(e); B.nb.push(e); G.edgeVer = (G.edgeVer || 0) + 1;
   for (const [x, y] of r.smp) { const k = `${Math.floor(x / HS)},${Math.floor(y / HS)}`; if (!G.hash.has(k)) G.hash.set(k, []); G.hash.get(k).push([x, y, a, b]); }
   G.floats.push({ x: A.x, y: A.y, txt: `−${r.cost}`, o, life: 1.4, max: 1.4 });
   if (o === 1 && !G.demo) SFX.link();
@@ -1371,7 +1371,7 @@ function cutChannel(e, o) {
     G.floats.push({ x, y, txt: `−${Math.round(a.n)}`, o: a.o, life: 1.3, max: 1.3 });
     spark(x, y, a.o);
   }
-  const k = G.edges.indexOf(e); if (k >= 0) G.edges.splice(k, 1);
+  const k = G.edges.indexOf(e); if (k >= 0) G.edges.splice(k, 1); G.edgeVer = (G.edgeVer || 0) + 1;
   A.nb = A.nb.filter(f => f !== e); B.nb = B.nb.filter(f => f !== e);
   for (const [key, list] of G.hash) { const l = list.filter(q => !(q[2] === e.a && q[3] === e.b)); if (l.length) G.hash.set(key, l); else G.hash.delete(key); }
   const own = N[e.from] && N[e.from].owner === o ? N[e.from] : (A.owner === o ? A : B), back = Math.floor((e.cost || 0) * CUT_REFUND);
@@ -1472,19 +1472,45 @@ function encircle(X, old, o) {
     }
   }
 }
+/* Fog of war. You see as grey shapes (class visible, owner not) only the nodes you could lay a channel to right now:
+   within range of an own node, a free slot, a clear path. Who owns a node shows only once it is linked to one of yours
+   by a finished channel; channels and fights are visible only where they touch your network. Checking a path is costly,
+   so results are cached until the channels change and refreshed a few at a time. */
+function connectable(A, p, budget) {
+  const key = A.i * 8192 + p.i, c = G.connCache.get(key);
+  if (c && (c.ver === G.connVer || budget.n <= 0)) return c.ok;
+  if (!c && budget.n <= 0) return false;
+  budget.n--;
+  const ok = !planRoute(A.i, p.i).err;
+  G.connCache.set(key, { ver: G.connVer, ok });
+  return ok;
+}
 function updateVision() {
   const N = G.nodes;
-  if (!G.fog) { for (const p of N) { p.vis = p.seen = true; p.lastOwner = p.owner; p.lastV = p.v; } G.visC = null; return; }
-  const C = [];
-  for (const p of N) if (p.owner === 1) { const r = visionN(p); C.push({ x: p.x, y: p.y, r }); p.expR = Math.max(p.expR, r); }
-  for (const e of G.edges) for (const [s, t] of [[e.a, e.b], [e.b, e.a]]) if (N[s].owner === 1) { const q = N[t], r = q.capR * 2 + 40; C.push({ x: q.x, y: q.y, r }); q.expR = Math.max(q.expR, r); }
+  if (!G.fog) { for (const p of N) { p.vis = p.seen = true; p.lastOwner = p.owner; p.lastV = p.v; } G.visC = G.visPts = null; return; }
+  if (!G.connCache) G.connCache = new Map();
+  const ver = `${G.edges.length}/${N.length}/${G.edgeVer || 0}`;
+  if (G.connVerKey !== ver) { G.connVerKey = ver; G.connVer = (G.connVer || 0) + 1; }
+  const C = [], own = N.filter(p => p.owner === 1), budget = { n: 12 };
+  for (const p of own) { const r = visionN(p); C.push({ x: p.x, y: p.y, r }); p.expR = Math.max(p.expR, r); }
+  for (const p of N) p.vis = p.owner === 1;
+  for (const e of G.edges) if (e.state === 'up') { if (N[e.a].owner === 1) N[e.b].vis = true; if (N[e.b].owner === 1) N[e.a].vis = true; }
   for (const p of N) {
-    p.vis = p.owner === 1 || C.some(c => Math.hypot(c.x - p.x, c.y - p.y) < c.r + p.capR * 0.4);
-    if (p.vis) { p.seen = true; p.lastOwner = p.owner; p.lastV = p.v; }
+    let seen = p.vis;
+    if (!seen && p.nb.length < linkCap(p)) for (const A of own) {
+      if (Math.hypot(A.x - p.x, A.y - p.y) > rangeN(A)) continue;
+      if (connectable(A, p, budget)) { seen = true; break; }
+    }
+    p.seen = seen;
+    if (p.vis) p.lastOwner = p.owner;
+    if (p.seen) p.lastV = p.v;
   }
   G.visC = C;
+  G.visPts = N.filter(p => p.vis).map(p => ({ x: p.x, y: p.y, r: p.capR * 1.3 + 90 }));
 }
-function isVis(x, y) { if (!G.visC) return true; for (const c of G.visC) if ((c.x - x) ** 2 + (c.y - y) ** 2 < c.r * c.r) return true; return false; }
+function isVis(x, y) { if (!G.visPts) return true; for (const c of G.visPts) if ((c.x - x) ** 2 + (c.y - y) ** 2 < c.r * c.r) return true; return false; }
+/* A channel is shown when it touches your network, or links two nodes you know. */
+const edgeShown = e => !G.fog || G.nodes[e.a].owner === 1 || G.nodes[e.b].owner === 1 || (G.nodes[e.a].vis && G.nodes[e.b].vis);
 function step(dt) {
   G.time += dt;
   const N = G.nodes;
@@ -2127,7 +2153,7 @@ function render(now) {
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   for (const e of G.edges) {
     const A = N[e.a], B = N[e.b];
-    if (!(A.vis || B.vis || (A.seen && B.seen))) continue;
+    if (!edgeShown(e)) continue;
     const s0 = radiusFor(shownV(A)) * 1.05 + 3, e0 = e.len - radiusFor(shownV(B)) * 1.05 - 3;
     if (e.state === 'grow') {
       const dir = dirFrom(e, e.from), c = PAL.rgb[e.builder];
@@ -2139,10 +2165,10 @@ function render(now) {
     // built cable
     if (pathRange(e, s0, e0)) {
       // a channel between two nodes of one player takes a light tint of that player's colour
-      const co = A.seen && B.seen && shownOwner(A) && shownOwner(A) === shownOwner(B) ? shownOwner(A) : 0, grey = dark ? [214, 238, 226] : [13, 19, 17];
+      const co = shownOwner(A) && shownOwner(A) === shownOwner(B) ? shownOwner(A) : 0, grey = dark ? [214, 238, 226] : [13, 19, 17];
       const lw = [0, 1.4, 2.6, 4][e.lvl || 1];
       ctx.strokeStyle = rgba(co ? mix(grey, PAL.rgb[co], 0.45) : grey, dark ? 0.32 + 0.06 * ((e.lvl || 1) - 1) : 0.34 + 0.06 * ((e.lvl || 1) - 1)); ctx.lineWidth = Math.max(1, lw * S); ctx.stroke();
-      const ar = e.ar.find(a => isVis(...posAt(e, a.dir, a.d)));
+      const ar = e.ar.find(a => !a.dead);
       if (ar) { const c = PAL.rgb[ar.o]; ctx.strokeStyle = rgba(c, dark ? 0.3 : 0.35); ctx.lineWidth = Math.max(1, 1.4 * S); ctx.stroke(); }
     }
     for (const q of [[e.a, 0], [e.b, 1]]) { const [x, y] = ptAt(e, q[1] ? e0 : s0); ts(x, y); ctx.fillStyle = dark ? 'rgba(214,238,226,0.45)' : 'rgba(13,19,17,0.4)'; ctx.fillRect(TX - 1.5, TY - 1.5, 3, 3); }
@@ -2221,7 +2247,8 @@ function render(now) {
   const sz = Math.max(7, 12 * S), heads = [];
   for (const e of G.edges) for (const a of e.ar) {
     if (a.dead) continue;
-    const [hx, hy] = posAt(e, a.dir, a.d); if (!isVis(hx, hy)) continue;
+    if (!edgeShown(e)) continue;
+    const [hx, hy] = posAt(e, a.dir, a.d);
     ts(hx, hy); if (TX < -60 || TX > V.w + 60 || TY < -60 || TY > V.h + 60) continue;
     const [bx, by] = posAt(e, a.dir, a.d - 4), dx = hx - bx, dy = hy - by, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
     const k = Math.min(22, 2 + Math.floor(Math.sqrt(a.n) * 2)), shake = a.hold ? Math.sin(t * 22 + a.seed) * 3 : 0, s0 = startD(e, a.dir);
@@ -2235,7 +2262,7 @@ function render(now) {
   // wi-fi jumps: a bundle on a parabola over the map
   for (const J of G.jumps) {
     const u = J.t / J.dur, [hx, hy] = jumpPos(J, u);
-    if (!isVis(hx, hy) && !isVis(G.nodes[J.from].x, G.nodes[J.from].y)) continue;
+    if (G.fog && !G.nodes[J.from].vis && !G.nodes[J.to].vis) continue;
     ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = rgba(PAL.rgb[J.o], 0.22); ctx.lineWidth = 1; ctx.beginPath();
     for (let q = 0; q <= 24; q++) { const [x, y] = jumpPos(J, u * q / 24); ts(x, y); if (q) ctx.lineTo(TX, TY); else ctx.moveTo(TX, TY); }
@@ -2487,7 +2514,7 @@ function drawMini(now) {
   const w = mini.width, h = mini.height, pad = 6 * V.dpr, k = Math.min((w - 2 * pad) / BW, (h - 2 * pad) / BH), ox = (w - BW * k) / 2 - bb.x0 * k, oy = (h - BH * k) / 2 - bb.y0 * k;
   mctx.clearRect(0, 0, w, h);
   mctx.lineWidth = V.dpr;
-  for (const e of G.edges) { if (e.state !== 'up' || !(G.nodes[e.a].seen && G.nodes[e.b].seen)) continue; mctx.strokeStyle = PAL.dark ? 'rgba(214,238,226,0.25)' : 'rgba(13,19,17,0.25)'; mctx.beginPath(); mctx.moveTo(ox + G.nodes[e.a].x * k, oy + G.nodes[e.a].y * k); mctx.lineTo(ox + G.nodes[e.b].x * k, oy + G.nodes[e.b].y * k); mctx.stroke(); }
+  for (const e of G.edges) { if (e.state !== 'up' || !edgeShown(e)) continue; mctx.strokeStyle = PAL.dark ? 'rgba(214,238,226,0.25)' : 'rgba(13,19,17,0.25)'; mctx.beginPath(); mctx.moveTo(ox + G.nodes[e.a].x * k, oy + G.nodes[e.a].y * k); mctx.lineTo(ox + G.nodes[e.b].x * k, oy + G.nodes[e.b].y * k); mctx.stroke(); }
   for (const p of G.nodes) { if (!p.seen) continue; const ow = p.vis ? p.owner : p.lastOwner; mctx.fillStyle = rgba(PAL.rgb[ow], p.vis ? 1 : 0.5); const r = (1.5 + (p.owner === 1 && p.vis ? Math.sqrt(p.v) * 0.25 : 1)) * V.dpr; mctx.fillRect(ox + p.x * k - r, oy + p.y * k - r, r * 2, r * 2); }
   const a = fromS(0, 0), b = fromS(V.w, V.h);
   mctx.strokeStyle = PAL.sel; mctx.strokeRect(ox + a.x * k, oy + a.y * k, (b.x - a.x) * k, (b.y - a.y) * k);
@@ -2573,7 +2600,7 @@ function buildLevelGrid() {
 }
 const HOW = [
   ['<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><circle cx="15" cy="15" r="2.4" fill="currentColor"/><text x="23" y="9" font-size="7" fill="currentColor" font-family="monospace">?</text>',
-    'Туман войны: узел видит ровно на дальность своего канала — только те узлы, к которым можно подключиться. Всё остальное скрыто; разведанные места запоминаются тусклыми. Числа видны только ваши: чужие гарнизоны и пачки — медленно меняющиеся символы.',
+    'Туман войны: видны только узлы, к которым вы можете проложить канал прямо сейчас (в дальности, есть свободный слот, путь не пересекает каналы и узлы). Они серые: видно класс, но не хозяина. Чей узел — становится ясно, только когда его соединит с вашим готовый канал. Чужие каналы, пачки и бои видны лишь там, где касаются вашей сети. Числа видны только ваши: у остальных — медленно меняющиеся символы.',
     'Выйти из боя: потяните от узла, который вы осаждаете, к своему узлу, соединённому с ним каналом, — ваши пакеты уйдут домой, потеряв 10%. Наводиться точно не нужно: при перетаскивании цель выбирается по близости к курсору и вдоль ваших каналов.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
