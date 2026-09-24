@@ -95,12 +95,6 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
 .grp:hover{ border-color:var(--c1); color:var(--c1); }
 .grp[aria-pressed="true"]{ border-color:var(--c1); color:var(--c1); background:var(--fill2); }
 .grp .k{ color:var(--fg3); margin-left:6px; font-size:11px; }
-.hud-bottom{ gap:10px; flex-wrap:wrap; }
-.turnbox[hidden]{ display:none; }
-.turn{ position:relative; overflow:hidden; border-color:var(--c1); color:var(--c1); font-weight:700; min-width:92px; }
-.turn:disabled{ cursor:default; color:var(--fg2); border-color:var(--line); font-weight:500; }
-.turn .fill{ position:absolute; left:0; top:0; bottom:0; width:0; background:var(--fill2); z-index:-1; }
-.turn[data-run="1"] .fill{ background:color-mix(in srgb, var(--c1) 22%, transparent); }
 .info{ pointer-events:none; border-radius:10px; padding:8px 14px 9px; min-width:min(460px, calc(100vw - 28px)); max-width:calc(100vw - 28px); display:flex; flex-direction:column; gap:3px; }
 .info-a{ font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .info-b{ font-size:11px; color:var(--fg2); display:flex; flex-wrap:wrap; column-gap:16px; row-gap:2px; }
@@ -247,10 +241,6 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
       <button class="grp" id="btnFort" aria-label="Укрепить выбранный узел">укрепить<span class="k">F</span></button>
       <span class="pill-label" id="pctLabel">пачка 100% · shift — 50%</span>
     </div>
-    <div class="pill panel turnbox" id="turnBox" hidden>
-      <button class="grp" id="btnUndo" aria-label="Отменить последний приказ" disabled>отменить<span class="k">Z</span></button>
-      <button class="grp turn" id="btnTurn" aria-label="Сделать ход"><span class="fill"></span><span id="turnLbl">ход</span><span class="k">⏎</span></button>
-    </div>
   </div>
   <canvas id="mini" class="panel" aria-label="Мини-карта"></canvas>
   <div id="toast" class="toast panel" role="status" aria-live="polite"></div>
@@ -272,7 +262,6 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
       <div class="settings">
         <button class="toggle" id="tgMusic"><span>музыка</span><span class="state"></span></button>
         <button class="toggle" id="tgSfx"><span>звуковые эффекты</span><span class="state"></span></button>
-        <button class="toggle" id="tgTurn"><span>пошаговый режим</span><span class="state"></span></button>
       </div>
     </div>
   </div>
@@ -373,15 +362,10 @@ const RANGE = [480, 620, 800, 1050];
 const rangeN = p => RANGE[tierN(p)];
 const GROW_SPEED = 230;
 const DIFF = {
-  easy:   { turnHands: 2, apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
-  normal: { turnHands: 3, apm: 16, react: 1.1, think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
-  hard:   { turnHands: 4, apm: 24, react: 0.8, think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
+  easy:   { apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
+  normal: { apm: 16, react: 1.1, think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
+  hard:   { apm: 24, react: 0.8, think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
 };
-/* Turn-based play, both sides at once: while you plan, the world stands still and your orders wait in a plan.
-   «ход»: the bots give their orders looking at the same picture you saw, then both plans start together
-   and the world runs for TURN.len seconds. Bots get turnHands orders a turn (a group strike is one). */
-const TURN = { len: 4 };
-const cdTxt = s => G && G.tb ? `${Math.ceil(s / TURN.len)} ход.` : `${Math.ceil(s)} с`;
 /* A bot plays with human hands: apm orders a minute at most (a group strike counts as one), up to AI_HANDS_MAX saved up,
    and it notices an incoming bundle only after it has been on its way for `react` seconds. */
 const AI_HANDS_MAX = 3;
@@ -402,7 +386,7 @@ function setShift(on) {
   const el = document.getElementById('pctLabel');
   if (el) { el.textContent = on ? 'пачка 50%' : 'пачка 100% · shift — 50%'; el.classList.toggle('half', on); }
 }
-let store = { unlocked: 1, done: {}, music: true, sfx: true, turns: true, pct: 0.5, quick: { opp: 1, diff: 'normal', map: 1, fog: 1 } };
+let store = { unlocked: 1, done: {}, music: true, sfx: true, pct: 0.5, quick: { opp: 1, diff: 'normal', map: 1, fog: 1 } };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); o.quick = Object.assign({}, store.quick, o.quick || {}); store = Object.assign(store, o); } } catch (e) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} }
 
@@ -814,8 +798,7 @@ function buildGame(map, aiNames, meta) {
     pct: shiftHeld ? 0.5 : 1,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0, kills: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0,
-    used, shake: 0, chanSel: null,
-    tb: !meta.demo && store.turns !== false, turnN: 1, phase: 'plan', runT: 0, plan: [], applying: false };
+    used, shake: 0, chanSel: null };
   if (G.demo) G.ais = aiNames.map((d, k) => ({ o: k + 1, d: DIFF[d], next: 0.5 + k * 0.4 }));
   initDaemon();
   updateVision();
@@ -864,68 +847,20 @@ function planRoute(i, j) {
   }
   return { err };
 }
-/* The plan: in turn-based play the player's orders are written down and packets they need are set aside (held);
-   they are carried out when the turn starts. While a turn runs, new orders wait for it to end. */
-const planning = o => o === 1 && G && G.tb && !G.applying;
-function turnBusy(o) {
-  if (!planning(o) || G.phase !== 'run') return false;
-  SFX.error(); toast('идёт ход — приказы после его окончания', 1500); return true;
-}
-const planHas = f => G && G.tb && !G.applying && G.plan.some(f);
-function planAdd(q) {
-  G.plan.push(q);
-  if (q.node != null) G.nodes[q.node].held = (G.nodes[q.node].held || 0) + q.cost;
-  if (!store.turnhint) { store.turnhint = 1; save(); toast('приказ записан в план. отдайте все приказы и нажмите «ход» (Enter или пробел): боты походят одновременно с вами.', 8000); }
-  updateTurnUi();
-  return true;
-}
-function undoPlan() {
-  const q = G && G.tb && G.phase === 'plan' ? G.plan.pop() : null;
-  if (!q) return;
-  if (q.node != null) G.nodes[q.node].held = Math.max(0, (G.nodes[q.node].held || 0) - q.cost);
-  SFX.flowOff(); updateTurnUi();
-}
-function applyOrder(q) {
-  const ok = e => G.edges.includes(e);
-  if (q.k === 'send') return ok(q.e) && sendArmy(q.e, q.i, 1, q.n, q.dest);
-  if (q.k === 'build') return build(q.i, q.j, 1, q.autoSend);
-  if (q.k === 'fort') return fortify(q.i, 1);
-  if (q.k === 'up') return ok(q.e) && upgradeChannel(q.e, 1);
-  if (q.k === 'cut') return ok(q.e) && cutChannel(q.e, 1);
-  if (q.k === 'wifi') return sendWifi(q.i, q.j, q.n);
-  return false;
-}
-function endTurn() {
-  if (!G || !G.tb || G.phase !== 'plan' || G.ended || G.paused) return;
-  closePop();
-  // the bots decide on the picture the player saw: the player's plan is not on the map yet
-  for (const ai of G.ais) if (alive(ai.o)) { ai.hands = ai.d.turnHands; aiThink(ai.o, Object.assign({}, ai.d, { react: 0, actions: ai.d.turnHands }), false, ai); }
-  for (const p of G.nodes) p.held = 0;
-  G.applying = true; let failed = 0;
-  for (const q of G.plan) if (!applyOrder(q)) failed++;
-  G.applying = false; G.plan = [];
-  if (failed) toast(`не выполнено приказов: ${failed} — обстановка изменилась`, 2500);
-  G.phase = 'run'; G.runT = 0; SFX.ui(); updateTurnUi();
-}
-function endRun() {
-  G.phase = 'plan'; G.turnN++; updateTurnUi();
-}
 function canBuild(i, j, o) {
   const A = G.nodes[i], B = G.nodes[j];
   if (A.owner !== o) return 'это не ваш узел';
   if (A.infect > 0) return 'узел заражён демоном';
   if (edgeBetween(i, j)) return 'канал уже есть';
-  if (planHas(q => q.k === 'build' && ((q.i === i && q.j === j) || (q.i === j && q.j === i)))) return 'канал уже в плане';
   if (B.owner === o) return 'к своему узлу пакет идёт по каналам';
   if (B.owner !== 0 && tierN(A) < 2) return 'атаковать может только сервер или мейнфрейм';
   const cap = A.kind === 'hub' ? 5 : TIERS[tierN(A)].links;
-  const planned = k => planning(o) ? G.plan.filter(q => q.k === 'build' && (q.i === k || q.j === k)).length : 0;
-  if (A.nb.length + planned(i) >= cap) {
+  if (A.nb.length >= cap) {
     if (cap === 0) return 'ноутбук не прокладывает каналы';
     if (A.nb.length >= 3) return `у узла уже ${A.nb.length} канала`;
     return 'рабочая станция держит не больше 2 каналов';
   }
-  if (B.nb.length + planned(j) >= linkCap(B)) return `у цели уже ${B.nb.length} канала`;
+  if (B.nb.length >= linkCap(B)) return `у цели уже ${B.nb.length} канала`;
   const r = planRoute(i, j); if (r.err) return r.err;
   if (A.v - (A.held || 0) < r.cost) return `нужно ${r.cost} пакетов`;
   return r;
@@ -937,9 +872,7 @@ function spend(node, n) {
   node.base = node.v + bonus;
 }
 function build(i, j, o, autoSend) {
-  if (turnBusy(o)) return false;
   const r = canBuild(i, j, o); if (typeof r === 'string') return false;
-  if (planning(o)) { SFX.link(); return planAdd({ k: 'build', i, j, autoSend, node: i, cost: r.cost, pts: i > j ? r.pts.slice().reverse() : r.pts }); }
   const A = G.nodes[i], B = G.nodes[j];
   spend(A, r.cost);
   let pts = r.pts; if (i > j) pts = pts.slice().reverse();
@@ -1026,9 +959,7 @@ function nextHop(i, dest, o) {
 /* A send is one bundle: it leaves at once, carries its count, and flies at the speed of the sender's class. */
 function sendArmy(e, i, o, n, dest) {
   n = Math.floor(n);
-  if (turnBusy(o)) return false;
   if (canSend(e, i, o, n) !== true) return false;
-  if (planning(o)) { SFX.flowOn(); return planAdd({ k: 'send', e, i, n, dest, node: i, cost: n }); }
   const A = G.nodes[i], tier = tierN(A);
   spend(A, n); A.sentAt = G.time;
   launch(e, dirFrom(e, i), o, dest, 0, SPEED_MUL[tier] * (A.kind === 'boost' ? 1.3 : 1), 0, n);
@@ -1164,19 +1095,16 @@ function wifiCheck(i, j) {
   const A = G.nodes[i], T = G.nodes[j];
   if (!T || j === i || !T.seen) return 'выберите узел';
   if (!hasWifi(A)) return 'wi-fi есть только у мейнфрейма';
-  if (A.wifiCd > 0) return `wi-fi перезаряжается: ${cdTxt(A.wifiCd)}`;
-  if (planHas(q => q.k === 'wifi' && q.i === i)) return 'wi-fi уже в плане';
+  if (A.wifiCd > 0) return `wi-fi перезаряжается: ${Math.ceil(A.wifiCd)} с`;
   const r = rangeN(A);
   if (Math.hypot(T.x - A.x, T.y - A.y) > r) return `слишком далеко: дальность ${r}`;
   if (sendCount(i, G.pct) < 1) return 'в узле нет пакетов';
   return true;
 }
-function sendWifi(i, j, count) {
-  if (turnBusy(1)) return false;
+function sendWifi(i, j) {
   const r = wifiCheck(i, j);
   if (r !== true) { SFX.error(); toast(r, 2200); return false; }
-  if (planning(1)) { SFX.daemon(); return planAdd({ k: 'wifi', i, j, n: sendCount(i, G.pct), node: i, cost: sendCount(i, G.pct) }); }
-  const A = G.nodes[i], T = G.nodes[j], n = Math.min(count || sendCount(i, G.pct), sendCount(i, 1)), d = Math.hypot(T.x - A.x, T.y - A.y);
+  const A = G.nodes[i], T = G.nodes[j], n = sendCount(i, G.pct), d = Math.hypot(T.x - A.x, T.y - A.y);
   spend(A, n); A.wifiCd = WIFI.cd;
   G.jumps.push({ o: 1, n, from: i, to: j, t: 0, dur: d * 1.15 / (BASE_SPEED * SPEED_MUL[3]), h: Math.min(280, 60 + d * 0.3), seed: Math.floor(Math.random() * 1e6) });
   SFX.daemon();
@@ -1395,17 +1323,14 @@ function resolveNodes(dt) {
 function fortifyCheck(i, o) {
   const A = G.nodes[i];
   if (!A || A.owner !== o) return 'это не ваш узел';
-  if (A.fortCd > 0) return `укрепление перезаряжается: ${cdTxt(A.fortCd)}`;
-  if (planHas(q => q.k === 'fort' && q.i === i)) return 'укрепление уже в плане';
-  const free = A.v - (A.held || 0), cost = Math.max(FORTIFY.min, Math.ceil(free * FORTIFY.share));
-  if (free < cost + 1) return `нужно ${cost + 1} пакетов`;
+  if (A.fortCd > 0) return `укрепление перезаряжается: ${Math.ceil(A.fortCd)} с`;
+  const cost = Math.max(FORTIFY.min, Math.ceil(A.v * FORTIFY.share));
+  if (A.v < cost + 1) return `нужно ${cost + 1} пакетов`;
   return cost;
 }
 function fortify(i, o) {
-  if (turnBusy(o)) return false;
   const r = fortifyCheck(i, o);
   if (typeof r === 'string') { if (o === 1) { SFX.error(); toast(r, 2000); } return false; }
-  if (planning(o)) { SFX.tier(); return planAdd({ k: 'fort', i, node: i, cost: r }); }
   const A = G.nodes[i];
   spend(A, r); A.shield = FORTIFY.time; A.fortCd = FORTIFY.cd;
   G.waves.push({ x: A.x, y: A.y, r: radiusFor(Math.min(A.v, 200)), life: 0.9, max: 0.9, o, soft: true });
@@ -1419,17 +1344,13 @@ function upgradeCheck(e, o) {
   if (N[e.a].owner !== o && N[e.b].owner !== o) return 'это не ваш канал';
   if (e.state !== 'up') return 'канал ещё прокладывается';
   if (lvl >= 3) return 'канал уже магистраль';
-  if (planHas(q => q.k === 'up' && q.e === e)) return 'улучшение уже в плане';
-  const free = n => n.v - (n.held || 0);
-  const payer = [N[e.a], N[e.b]].filter(n => n.owner === o).sort((x, y) => free(y) - free(x))[0], cost = BW_COST[lvl + 1];
-  if (free(payer) < cost + 1) return `нужно ${cost + 1} пакетов в узле`;
+  const payer = [N[e.a], N[e.b]].filter(n => n.owner === o).sort((x, y) => y.v - x.v)[0], cost = BW_COST[lvl + 1];
+  if (payer.v < cost + 1) return `нужно ${cost + 1} пакетов в узле`;
   return { payer, cost };
 }
 function upgradeChannel(e, o) {
-  if (turnBusy(o)) return false;
   const r = upgradeCheck(e, o);
   if (typeof r === 'string') { if (o === 1) { SFX.error(); toast(r, 2000); } return false; }
-  if (planning(o)) { SFX.link(); return planAdd({ k: 'up', e, node: r.payer.i, cost: r.cost }); }
   spend(r.payer, r.cost); e.lvl = (e.lvl || 1) + 1;
   const [mx, my] = ptAt(e, e.len / 2);
   G.floats.push({ x: mx, y: my, txt: `${BW_NAME[e.lvl]} · ${BW[e.lvl]}`, o, life: 1.6, max: 1.6 });
@@ -1440,8 +1361,6 @@ function upgradeChannel(e, o) {
 function cutChannel(e, o) {
   const N = G.nodes, A = N[e.a], B = N[e.b];
   if (A.owner !== o && B.owner !== o) return false;
-  if (turnBusy(o)) return false;
-  if (planning(o)) { if (planHas(q => q.k === 'cut' && q.e === e)) return false; closePop(); SFX.cut(); return planAdd({ k: 'cut', e, cost: 0 }); }
   for (const a of e.ar) {
     if (a.dead) continue;
     const [x, y] = posAt(e, a.dir, a.d);
@@ -1588,7 +1507,7 @@ function step(dt) {
       if (e.gd >= endD(e, dir)) {
         e.state = 'up';
         if (e.builder === 1 && !G.demo) { SFX.live(); if (G.tut === 1) { G.tut = 2; tutNext(); } }
-        if (e.autoSend && N[e.from].owner === e.builder) { const was = G.applying; G.applying = true; sendArmy(e, e.from, e.builder, sendCount(e.from, G.pct)); G.applying = was; }
+        if (e.autoSend && N[e.from].owner === e.builder) sendArmy(e, e.from, e.builder, sendCount(e.from, G.pct));
       }
     }
     if (!e.ar) e.ar = [];
@@ -1621,7 +1540,7 @@ function step(dt) {
   for (const w of G.waves) w.life -= dt; G.waves = G.waves.filter(w => w.life > 0);
   for (const p of N) { if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6); }
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
-  if (!G.tb) for (const ai of G.ais) {
+  for (const ai of G.ais) {
     // hands: like a person, a bot gives only so many orders a minute; unused ones pile up a little
     ai.hands = Math.min(AI_HANDS_MAX, (ai.hands ?? 1) + ai.d.apm / 60 * dt);
     // reflexes: threats are answered twice as often as plans are made
@@ -2104,55 +2023,6 @@ function brackets(cx, cy, r, len) {
   for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(cx + sx * r, cy + sy * (r - len)); ctx.lineTo(cx + sx * r, cy + sy * r); ctx.lineTo(cx + sx * (r - len), cy + sy * r); }
   ctx.stroke();
 }
-/* The player's plan: dashed arrows with counts, drawn until the turn starts. */
-function drawPlan(t, S) {
-  const N = G.nodes, c = PAL.rgb[1], lw = Math.max(2, 2.6 * S);
-  const label = (x, y, txt) => {
-    ts(x, y); ctx.font = `700 ${Math.round(clamp(11 * S, 10, 13))}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const w = ctx.measureText(txt).width + 8;
-    ctx.fillStyle = rgba(PAL.dark ? [10, 14, 12] : [250, 252, 250], 0.85); ctx.fillRect(TX - w / 2, TY - 8, w, 16);
-    ctx.fillStyle = rgba(c, 1); ctx.fillText(txt, TX, TY + 0.5);
-  };
-  const arrowHead = (x, y, ang) => {
-    ts(x, y); const L = Math.max(7, 9 * S);
-    ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(TX - L * Math.cos(ang - 0.45), TY - L * Math.sin(ang - 0.45));
-    ctx.moveTo(TX, TY); ctx.lineTo(TX - L * Math.cos(ang + 0.45), TY - L * Math.sin(ang + 0.45)); ctx.stroke();
-  };
-  ctx.lineCap = 'round';
-  // several sends along one channel share one arrow
-  const sends = new Map();
-  for (const q of G.plan) if (q.k === 'send') { const key = G.edges.indexOf(q.e) + ':' + q.i + ':' + (q.dest ?? ''); const s = sends.get(key); if (s) s.n += q.n; else sends.set(key, { ...q }); }
-  for (const q of sends.values()) {
-    const e = q.e, fwd = e.a === q.i, s0 = rad(q.i), e0 = e.len - rad(other(e, q.i)), d1 = fwd ? s0 : e.len - e0, d2 = fwd ? e0 : e.len - s0;
-    if (!pathRange(e, d1, d2)) continue;
-    ctx.setLineDash([7, 6]); ctx.lineDashOffset = (fwd ? -1 : 1) * t * 30; ctx.strokeStyle = rgba(c, 0.9); ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]);
-    const tip = fwd ? d2 : d1, back = fwd ? tip - 6 : tip + 6, [x, y] = ptAt(e, tip), [bx, by] = ptAt(e, back);
-    ts(bx, by); const px = TX, py = TY; ts(x, y); arrowHead(x, y, Math.atan2(TY - py, TX - px));
-    const [mx, my] = ptAt(e, fwd ? d1 + (d2 - d1) * 0.4 : d2 - (d2 - d1) * 0.4);
-    const far = q.dest != null && q.dest !== other(e, q.i) ? ` → ${N[q.dest].name}` : '';
-    label(mx, my, `${q.n}${far}`);
-  }
-  for (const q of G.plan) {
-    if (q.k === 'build') {
-      ctx.beginPath(); q.pts.forEach(([x, y], k) => { ts(x, y); k ? ctx.lineTo(TX, TY) : ctx.moveTo(TX, TY); });
-      ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(c, 0.8); ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]);
-      const m = q.pts[Math.floor(q.pts.length / 2)]; label(m[0], m[1], `канал −${q.cost}`);
-    } else if (q.k === 'fort') {
-      const A = N[q.i]; ts(A.x, A.y); ctx.beginPath(); ctx.arc(TX, TY, radiusFor(Math.min(A.vd, 200)) * S * 1.35 + 8, 0, Math.PI * 2);
-      ctx.setLineDash([4, 5]); ctx.lineDashOffset = -t * 12; ctx.strokeStyle = rgba(c, 0.85); ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]);
-      label(A.x, A.y - radiusFor(Math.min(A.vd, 200)) * 1.35 - 22 / S, `щит −${q.cost}`);
-    } else if (q.k === 'up' || q.k === 'cut') {
-      const [mx, my] = ptAt(q.e, q.e.len / 2);
-      label(mx, my, q.k === 'up' ? `↑ ${BW_NAME[(q.e.lvl || 1) + 1]} −${q.cost}` : '✕ перерезать');
-    } else if (q.k === 'wifi') {
-      const A = N[q.i], T = N[q.j], d = Math.hypot(T.x - A.x, T.y - A.y), J = { from: q.i, to: q.j, h: Math.min(280, 60 + d * 0.3) };
-      ctx.beginPath(); for (let k = 0; k <= 24; k++) { const [x, y] = jumpPos(J, k / 24); ts(x, y); k ? ctx.lineTo(TX, TY) : ctx.moveTo(TX, TY); }
-      ctx.setLineDash([3, 6]); ctx.strokeStyle = rgba(c, 0.85); ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]);
-      const [mx, my] = jumpPos(J, 0.5); label(mx, my, `wi-fi ${q.n}`);
-    }
-  }
-  ctx.lineCap = 'butt';
-}
 function pathRange(L, d1, d2) {
   if (d2 <= d1) return false;
   ctx.beginPath(); let [x, y] = ptAt(L, d1); ts(x, y); ctx.moveTo(TX, TY);
@@ -2232,7 +2102,6 @@ function render(now) {
       ctx.strokeStyle = rgba(PAL.rgb[1], dark ? 0.7 : 0.6); ctx.lineWidth = Math.max(2.5, 3.5 * S); ctx.stroke(); ctx.setLineDash([]);
     }
   }
-  if (G.tb && G.plan.length) drawPlan(t, S);
   // neighbour hints while dragging / selected
   const srcSel = ptr && ptr.mode === 'link' && ptr.moved ? ptr.p : (G.sel >= 0 && N[G.sel].owner === 1 ? G.sel : -1);
   if (srcSel >= 0) {
@@ -2577,15 +2446,7 @@ function tick(now) {
   placeChanPop();
   if (G && G.shake > 0.05 && !G.paused) { G.shake *= Math.exp(-dt * 6); SHX = (Math.random() - 0.5) * G.shake; SHY = (Math.random() - 0.5) * G.shake; }
   else { SHX = SHY = 0; if (G) G.shake = 0; }
-  if (G && !G.paused && !(G.tb && G.phase === 'plan')) {
-    let rem = dt * G.speed;
-    while (rem > 1e-6) {
-      const h = Math.min(rem, 1 / 60, G.tb ? TURN.len - G.runT : 1);
-      step(h); rem -= h;
-      if (G.tb) { G.runT += h; if (G.runT >= TURN.len - 1e-6) { endRun(); break; } }
-    }
-    if (G.tb) turnFill();
-  }
+  if (G && !G.paused) { let rem = dt * G.speed; while (rem > 1e-6) { const h = Math.min(rem, 1 / 60); step(h); rem -= h; } }
   if (G && !G.demo) {
     let kx = 0, ky = 0;
     if (keys.has('arrowleft') || keys.has('a') || keys.has('ф')) kx--; if (keys.has('arrowright') || keys.has('d') || keys.has('в')) kx++;
@@ -2628,8 +2489,6 @@ function setToggle(el, on) { el.setAttribute('aria-pressed', on ? 'true' : 'fals
 const tgM = $('#tgMusic'), tgS = $('#tgSfx');
 setToggle(tgM, store.music); setToggle(tgS, store.sfx);
 tgM.addEventListener('click', () => { store.music = !store.music; save(); setToggle(tgM, store.music); audioInit(); if (store.music) musicStart(); else musicStop(); });
-const tgT = $('#tgTurn'); setToggle(tgT, store.turns !== false);
-tgT.addEventListener('click', () => { store.turns = store.turns === false; save(); setToggle(tgT, store.turns); SFX.ui(); });
 tgS.addEventListener('click', () => { store.sfx = !store.sfx; save(); setToggle(tgS, store.sfx); audioInit(); setSfx(store.sfx); SFX.ui(); });
 
 function buildLevelGrid() {
@@ -2645,9 +2504,6 @@ function buildLevelGrid() {
   });
 }
 const HOW = [
-  ['<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-opacity=".35"/><path d="M15 15V7" stroke="currentColor" stroke-width="1.6"/><path d="M15 15l6 4" stroke="currentColor" stroke-width="1.6"/><circle cx="15" cy="15" r="1.6" fill="currentColor"/>',
-    'Игра идёт по ходам, все ходят одновременно. Пока вы думаете, сеть стоит: ваши приказы (пачки, каналы, щиты, улучшения, wi-fi) записываются в план и видны пунктиром, пакеты под них откладываются. Z отменяет последний приказ.',
-    'Нажмите «ход» (Enter или пробел): боты отдают свои приказы, глядя на ту же карту, что и вы, затем оба плана исполняются вместе и сеть живёт 4 секунды. Бот отдаёт за ход 2–4 приказа. Маршруты работают и во время хода. Реальное время можно вернуть в меню: «пошаговый режим».'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
@@ -2684,8 +2540,6 @@ function updateGroupBtn() {
   b.innerHTML = n ? `выделено ${n}<span class="k">×</span>` : 'все узлы<span class="k">Q</span>';
   b.setAttribute('aria-label', n ? `Выделено узлов: ${n}. Снять выделение` : 'Выделить все свои узлы');
 }
-$('#btnTurn').addEventListener('click', () => endTurn());
-$('#btnUndo').addEventListener('click', () => { SFX.ui(); undoPlan(); });
 $('#btnSpeed').addEventListener('click', () => { SFX.ui(); if (!G) return; G.speed = G.speed === 1 ? 2 : 1; $('#btnSpeed').textContent = 'x' + G.speed; });
 
 let toastTimer = 0;
@@ -2706,18 +2560,8 @@ function setupHud() {
   $('#popbar').innerHTML = owners.map(o => `<i data-o="${o}" style="background:${PAL.c[o]};flex-grow:1"></i>`).join('');
   $('#popnums').innerHTML = owners.map(o => `<span data-o="${o}" style="color:var(--c${o})" title="${o === 1 ? 'вы' : COLOR_NAME[o]}"></span>`).join('');
   $('#btnSpeed').textContent = 'x1';
-  updateGroupBtn(); updateTurnUi();
+  updateGroupBtn();
 }
-function updateTurnUi() {
-  const box = $('#turnBox'); box.hidden = !(G && G.tb && !G.demo);
-  if (box.hidden) return;
-  const run = G.phase === 'run', b = $('#btnTurn');
-  b.disabled = run || G.ended; b.dataset.run = run ? '1' : '0';
-  $('#turnLbl').textContent = run ? `ход ${G.turnN}…` : `ход ${G.turnN}` + (G.plan.length ? ` · приказов ${G.plan.length}` : '');
-  $('#btnUndo').disabled = run || !G.plan.length;
-  turnFill();
-}
-function turnFill() { const f = document.querySelector('#btnTurn .fill'); if (f && G) f.style.width = G.phase === 'run' ? `${Math.min(100, G.runT / TURN.len * 100)}%` : '0%'; }
 function hudTick(now) {
   if (!G || G.demo || now - hudLast < 150) return;
   hudLast = now;
@@ -2728,7 +2572,7 @@ function hudTick(now) {
   document.querySelectorAll('#popbar i').forEach(el => { el.style.flexGrow = sum ? (pw[+el.dataset.o] / sum).toFixed(4) : 1; });
   document.querySelectorAll('#popnums span').forEach(el => { el.textContent = pw[+el.dataset.o]; el.style.opacity = pw[+el.dataset.o] ? 1 : 0.35; });
   const mm = Math.floor(G.time / 60), ss = Math.floor(G.time % 60);
-  $('#hudCount').textContent = G.tb ? `ход ${G.turnN}` : `${mm}:${String(ss).padStart(2, '0')}`;
+  $('#hudCount').textContent = `${mm}:${String(ss).padStart(2, '0')}`;
 }
 
 function startLevel(i) {
@@ -2800,8 +2644,6 @@ addEventListener('keydown', e => {
   }
   if (G.paused) return;
   if ((k === 'q' || k === 'й') && !e.repeat && !G.ended) selectAll();
-  if ((k === 'enter' || k === ' ') && !e.repeat && G.tb) { e.preventDefault(); endTurn(); return; }
-  if ((k === 'z' || k === 'я' || k === 'backspace') && !e.repeat && G.tb) { undoPlan(); return; }
   if ((k === 'f' || k === 'а') && !e.repeat && !G.ended) { const i = hover >= 0 && G.nodes[hover].owner === 1 ? hover : (G.sel >= 0 && G.nodes[G.sel].owner === 1 ? G.sel : -1); if (i >= 0) fortify(i, 1); else toast('наведите курсор на свой узел и нажмите F', 2000); }
   if (k === 'h' || k === 'р' || k === 'home') homeFocus(false);
   if (k === '+' || k === '=') { cam.z = clamp(cam.z * 1.2, zoomLimits().min, zoomLimits().max); clampCam(); }
@@ -2823,6 +2665,6 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, DIFF, endTurn, undoPlan, canBuild, upgradeChannel, fortify, cutChannel, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
+window.__root = { get G() { return G; }, DIFF, upgradeChannel, fortify, cutChannel, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute };
 })();
 </script>
