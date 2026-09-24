@@ -803,7 +803,6 @@ function build(i, j, o, autoSend) {
   if (autoSend) enqueue(i, j, o, G.pct);
   return true;
 }
-const sendCount = (i, pct) => Math.floor(G.nodes[i].v * pct);
 function retreat(e, a) {
   if (!e.ar.includes(a) || a.o !== 1) return false;
   a.dir = 1 - a.dir; a.d = e.len - a.d; a.back = true; SFX.flowOff(); return true;
