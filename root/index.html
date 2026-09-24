@@ -357,8 +357,9 @@ const dpsOf = v => 0.9 + Math.max(0, v) * 0.028;
 const speedOf = v => 80 + Math.max(0, v) * 0.4;
 const costOf = len => Math.max(3, Math.ceil(len / 40));
 const rateOf = t => 5 + t * 2.5;
-const visionN = p => 430 + tierN(p) * 80;
 const RANGE = [480, 620, 800, 1050];
+/* Fog of war: a node sees exactly as far as it can lay a channel; the rest of the network is dark. */
+const visionN = p => RANGE[tierN(p)];
 const rangeN = p => RANGE[tierN(p)];
 const GROW_SPEED = 230;
 const DIFF = {
@@ -373,6 +374,9 @@ const COLOR_NAME = ['', 'зелёные', 'пурпурные', 'янтарны�
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ日月火水木金土田电网零壱弐参ΣΔΨΩλ01#$%&@<>/=+*';
 const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = Math.imul(n, 9); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); n ^= n >>> 15; return n >>> 0; };
 const glyph = n => GLYPHS[hash(n) % GLYPHS.length];
+/* Other players' numbers are never shown: slowly changing glyphs stand for the unknown. */
+const secret = (seed, t, len = 2) => { let s = ''; for (let k = 0; k < len; k++) s += glyph(seed + k * 7919 + Math.floor(t * 0.8 + k * 0.45 + (seed % 97) / 97) * 131); return s; };
+const ownNum = o => o === 1;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- storage ---------- */
@@ -1077,7 +1081,7 @@ function startLive() {
   const [cx, cy] = [LIVE.W / 2, LIVE.H / 2], extra = [];
   for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + 0.3, d = 330 + (k % 3) * 150; extra.push({ x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d * 0.8, sz: ['s', 'm', 's', 'l'][k % 4], g: [4, 9, 5, 16][k % 4] }); }
   const map = genMap({ W: LIVE.W, H: LIVE.H, seed: Math.floor(Math.random() * 1e9), homes: [[0.5, 0.5]], extra, kinds: 0.14 });
-  buildGame(map, [], { level: -1, title: 'живая сеть', endless: true, fog: false });
+  buildGame(map, [], { level: -1, title: 'живая сеть', endless: true, fog: true });
   G.area = { x0: cx - LIVE.start[0] / 2, y0: cy - LIVE.start[1] / 2, x1: cx + LIVE.start[0] / 2, y1: cy + LIVE.start[1] / 2 };
   G.nodeT = 3; G.botT = LIVE.firstBot; G.botsMade = 0;
   for (let k = 0; k < 6; k++) spawnNeutral();
@@ -1767,8 +1771,39 @@ function hit(wx, wy) {
   let best = -1, bd = 1e9;
   for (const p of G.nodes) {
     if (!p.seen) continue;
-    const r = radiusFor(p.vd), d = Math.hypot(p.x - wx, p.y - wy), lim = Math.max(r + 18, 26 / cam.z);
+    const r = radiusFor(p.vd), d = Math.hypot(p.x - wx, p.y - wy), lim = r + Math.max(18, 24 / cam.z);
     if (d < lim && d - r < bd) { bd = d - r; best = p.i; }
+  }
+  return best;
+}
+/* Aiming while dragging: the pointer does not have to be on the node. A node under the pointer wins;
+   then the far end of a channel of the source the pointer runs along; then the nearest explored node around the pointer,
+   where nodes linked to the source and nodes close to the line of the drag count as nearer. */
+function aimTarget(sx, sy, src, chans) {
+  const N = G.nodes, w = fromS(sx, sy), h = hit(w.x, w.y);
+  if (h >= 0 && h !== src) return h;
+  if (src < 0) return -1;
+  const A = N[src]; ts(A.x, A.y); const ax = TX, ay = TY, dl = Math.hypot(sx - ax, sy - ay);
+  if (dl < 24) return -1;
+  if (chans) {
+    let best = -1, bd = 22;
+    for (const e of A.nb) {
+      const fwd = e.a === src;
+      for (let d = e.len * 0.3; d < e.len; d += 8) { const [x, y] = ptAt(e, fwd ? d : e.len - d); ts(x, y); const dd = Math.hypot(TX - sx, TY - sy); if (dd < bd) { bd = dd; best = other(e, src); } }
+    }
+    if (best >= 0) return best;
+  }
+  const ux = (sx - ax) / dl, uy = (sy - ay) / dl;
+  let best = -1, bs = 1e9;
+  for (const p of N) {
+    if (!p.seen || p.i === src) continue;
+    ts(p.x, p.y);
+    const d = Math.hypot(TX - sx, TY - sy) - radiusFor(p.vd) * cam.z;
+    if (d > 110) continue;
+    const along = (TX - ax) * ux + (TY - ay) * uy, perp = Math.abs((TX - ax) * uy - (TY - ay) * ux);
+    let sc = d + perp * 0.35 - (edgeBetween(src, p.i) ? 30 : 0);
+    if (along < 0) sc += 80;
+    if (sc < bs) { bs = sc; best = p.i; }
   }
   return best;
 }
@@ -1860,7 +1895,7 @@ cv.addEventListener('contextmenu', e => {
 });
 cv.addEventListener('pointerdown', e => {
   audioInit(); if (!G || G.demo) return;
-  if (e.button === 2) { if (ptr && ptr.mode === 'link') { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); } return; }
+  if (e.button === 2) { if (ptr && (ptr.mode === 'link' || ptr.mode === 'retreat')) { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); } return; }
   cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [p1, p2] = [...pointers.values()];
@@ -1883,7 +1918,7 @@ cv.addEventListener('pointerdown', e => {
     if (p < 0) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'box', target: -1 }; return; }
   }
   ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
-    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : 'pan', target: -1, chain: p >= 0 ? [p] : [], shift: e.shiftKey };
+    mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : p >= 0 && myAssault(p) && retreatExits(p).length ? 'retreat' : 'pan', target: -1, chain: p >= 0 ? [p] : [], shift: e.shiftKey };
 });
 cv.addEventListener('pointermove', e => {
   if (!G) return;
@@ -1901,18 +1936,20 @@ cv.addEventListener('pointermove', e => {
   G.overDaemon = overD;
   cv.style.cursor = hover >= 0 || overD ? 'pointer' : ptr && ptr.mode === 'pan' && ptr.moved ? 'grabbing' : 'default';
   if (!ptr || ptr.id !== e.pointerId) return;
-  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
+  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi' || ptr.mode === 'retreat') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
   ptr.x = e.clientX; ptr.y = e.clientY;
   if (!ptr.moved && Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 7) { ptr.moved = true; closePop(); }
-  if (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') {
+  if (ptr.mode === 'retreat') {
+    // the exit nearest to the pointer; only own nodes linked to the battle count
+    if (ptr.moved && !ptr.cancel) { let best = -1, bd = 1e9; for (const e of retreatExits(ptr.p)) { const q = G.nodes[other(e, ptr.p)]; ts(q.x, q.y); const d = Math.hypot(TX - ptr.x, TY - ptr.y); if (d < bd) { bd = d; best = q.i; } } ptr.target = best; }
+  }
+  else if (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') {
     if (!ptr.cancel) {
-      const h = hit(w.x, w.y);
+      const exact = hit(w.x, w.y), h = ptr.mode === 'daemon' ? exact : aimTarget(ptr.x, ptr.y, ptr.p, ptr.mode === 'link');
       if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1;
-      else if (h >= 0) {
-        ptr.target = h;
-        // dragging over own nodes gathers them: all of them send to where the drag ends
-        if (ptr.mode === 'link' && G.nodes[h].owner === 1 && !ptr.chain.includes(h)) { ptr.chain.push(h); SFX.select(); }
-      }
+      else if (h >= 0) ptr.target = h;
+      // dragging right over own nodes gathers them: all of them send to where the drag ends
+      if (ptr.mode === 'link' && exact >= 0 && exact !== ptr.p && G.nodes[exact].owner === 1 && !ptr.chain.includes(exact)) { ptr.chain.push(exact); SFX.select(); }
     }
   }
   else if (ptr.moved && ptr.mode === 'pan') { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
@@ -1928,6 +1965,7 @@ function endPtr(e, cancel) {
   if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
   if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
   if (p.mode === 'wifi') { if (!p.cancel && p.target >= 0) sendWifi(p.p, p.target); return; }
+  if (p.mode === 'retreat' && p.moved) { if (!p.cancel && p.target >= 0) retreat(p.p, p.target); return; }
   if (!p.moved && !p.cancel) {
     if (p.shift && p.p >= 0 && G.nodes[p.p].owner === 1) { toggleGroup(p.p); return; }
     if (p.p >= 0) return tapNode(p.p);
@@ -1944,6 +1982,27 @@ function endPtr(e, cancel) {
     else doAction(p.p, p.target);
     G.sel = -1;
   }
+}
+/* Leaving a battle: drag from the node you are besieging back to an own node linked to it by a channel.
+   What is left of your swarm leaves at once and flies home; the retreat costs a share of it. */
+const RETREAT_LOSS = 0.1;
+const myAssault = i => { const B = G.nodes[i]; return B.owner !== 1 && B.assault ? B.assault.find(a => a.o === 1 && a.n >= 1) : null; };
+const retreatExits = i => G.nodes[i].nb.filter(e => e.state === 'up' && G.nodes[other(e, i)].owner === 1);
+function retreatCheck(i, j) {
+  const s = myAssault(i); if (!s) return 'здесь нет ваших пакетов в бою';
+  const e = edgeBetween(i, j);
+  if (!e || e.state !== 'up' || G.nodes[j].owner !== 1) return 'отступать можно по каналу в свой узел';
+  return { s, e, n: Math.floor(s.n * (1 - RETREAT_LOSS)) };
+}
+function retreat(i, j) {
+  const r = retreatCheck(i, j);
+  if (typeof r === 'string') { SFX.error(); toast(r, 2200); return false; }
+  const B = G.nodes[i];
+  B.assault = B.assault.filter(a => a !== r.s); if (!B.assault.length) B.assault = null;
+  if (r.n >= 1) launch(r.e, dirFrom(r.e, i), 1, j, 0, 1, 0, r.n);
+  G.floats.push({ x: B.x, y: B.y, txt: `отход ${r.n}`, o: 1, life: 1.4, max: 1.4 });
+  SFX.flowOff();
+  return true;
 }
 /* Own nodes gathered by a drag, except the one the drag ends on. */
 const chainSources = p => (p.chain || []).filter(k => k !== p.target && G.nodes[k].owner === 1);
@@ -2068,7 +2127,7 @@ function render(now) {
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   for (const e of G.edges) {
     const A = N[e.a], B = N[e.b];
-    if (!(A.seen || B.seen)) continue;
+    if (!(A.vis || B.vis || (A.seen && B.seen))) continue;
     const s0 = radiusFor(shownV(A)) * 1.05 + 3, e0 = e.len - radiusFor(shownV(B)) * 1.05 - 3;
     if (e.state === 'grow') {
       const dir = dirFrom(e, e.from), c = PAL.rgb[e.builder];
@@ -2171,7 +2230,7 @@ function render(now) {
       ts(px + nx * off + shake, py + ny * off); const z = sz * (j === 0 ? 1.2 : 0.85) * (1 + Math.min(1, a.n / 150) * 0.7);
       ctx.drawImage(DOT[a.o], TX - z / 2, TY - z / 2, z, z);
     }
-    ts(hx, hy); heads.push([TX, TY, a.n, a.o]);
+    ts(hx, hy); heads.push([TX, TY, a.n, a.o, a.seed]);
   }
   // wi-fi jumps: a bundle on a parabola over the map
   for (const J of G.jumps) {
@@ -2188,14 +2247,14 @@ function render(now) {
       ts(px + ox, py + oy); const z = sz * (j === 0 ? 1.2 : 0.85);
       ctx.drawImage(DOT[J.o], TX - z / 2, TY - z / 2, z, z);
     }
-    ts(hx, hy); heads.push([TX, TY, J.n, J.o]);
+    ts(hx, hy); heads.push([TX, TY, J.n, J.o, J.seed]);
   }
   ctx.globalCompositeOperation = 'source-over';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const [x, y, n, o] of heads) {
-    const big = n >= 50, fs = big ? 13 : 11, hgt = big ? 17 : 14;
+  for (const [x, y, n, o, seed] of heads) {
+    const big = ownNum(o) && n >= 50, fs = big ? 13 : 11, hgt = big ? 17 : 14;
     ctx.font = `${big ? 700 : 600} ${fs}px ${FONT}`;
-    const txt = String(Math.max(1, Math.round(n))), w = ctx.measureText(txt).width + 8;
+    const txt = ownNum(o) ? String(Math.max(1, Math.round(n))) : secret(seed, t), w = ctx.measureText(txt).width + 8;
     ctx.fillStyle = dark ? 'rgba(2,4,3,0.75)' : 'rgba(242,246,243,0.85)'; roundRect(x - w / 2, y - 7 - hgt, w, hgt, 3); ctx.fill();
     ctx.fillStyle = PAL.lab[o]; ctx.fillText(txt, x, y - 7 - hgt / 2 + 0.5);
   }
@@ -2220,7 +2279,7 @@ function render(now) {
       // an enemy bundle is on its way here: how many and how soon
       const blink = 0.55 + 0.45 * Math.sin(t * 10), yy = TY - (p.capR * 1.2 + (p.kind ? 34 : 18)) * S - 4;
       ctx.font = `700 11px ${FONT}`; ctx.fillStyle = PAL.lab[p.incomingO || 2]; ctx.globalAlpha = blink;
-      ctx.fillText(`▼ ${p.incoming} · ${p.incomingEta.toFixed(1)}с`, TX, yy); ctx.globalAlpha = 1;
+      ctx.fillText(`▼ ${secret(p.seed + 5, t)} · ${p.incomingEta.toFixed(1)}с`, TX, yy); ctx.globalAlpha = 1;
     }
     const fight = p.vis && p.assault && p.assault.length;
     const ow = shownOwner(p), y1 = TY + (p.capR * 1.2 + 22) * S + 6, y2 = y1 + 15;
@@ -2239,23 +2298,23 @@ function render(now) {
     ctx.globalAlpha = 1;
     ctx.font = `500 13px ${FONT}`;
     if (fight) {
-      // the battle counts; now and then, and whenever packets fall, their digits flicker into glyphs
-      const parts = [[Math.ceil(p.v - 1e-6), p.owner]].concat(p.assault.map(a => [Math.ceil(a.n - 1e-6), a.o])), gapW = 12, cw = ctx.measureText('0').width;
+      // the battle counts: yours in digits, everyone else's as glyphs that stand for the unknown
+      const parts = [[Math.ceil(p.v - 1e-6), p.owner]].concat(p.assault.map(a => [Math.ceil(a.n - 1e-6), a.o])).map(([v, o], k) => [ownNum(o) ? v : secret(p.seed + k * 31, t), o]), gapW = 12, cw = ctx.measureText('0').width;
       const total = parts.reduce((s, [v]) => s + String(v).length * cw, 0) + gapW * (parts.length - 1), tick = Math.floor(t * 14), prob = 0.04 + 0.5 * (p.numGlitch || 0);
       let x = TX - total / 2;
       parts.forEach(([v, o], k) => {
         const str = String(v);
         for (let c = 0; c < str.length; c++) {
           const h = hash(p.seed + k * 131 + c * 17 + tick * 7919), on = (h % 1000) / 1000 < prob;
-          ctx.fillStyle = o ? PAL.lab[o] : PAL.fg2; ctx.globalAlpha = on ? 0.75 : 1;
-          ctx.fillText(on ? glyph(h) : str[c], x + cw / 2, y2); x += cw;
+          ctx.fillStyle = o ? PAL.lab[o] : PAL.fg2; ctx.globalAlpha = on && !ownNum(o) ? 0.75 : 1;
+          ctx.fillText(str[c], x + cw / 2, y2); x += cw;
         }
         x += gapW;
       });
       ctx.globalAlpha = 1;
     } else {
       ctx.fillStyle = ow ? PAL.lab[ow] : PAL.fg2;
-      ctx.fillText(p.vis ? String(Math.floor(p.v)) : `~${Math.floor(p.lastV)}`, TX, y2);
+      ctx.fillText(p.owner === 1 ? String(Math.floor(p.v)) : secret(p.seed, t), TX, y2);
     }
     {
       // class steps: laptop, station, server, mainframe; filled up to the node's current class
@@ -2284,7 +2343,7 @@ function render(now) {
   if (G.fog && G.visC) drawFog();
   // floats
   ctx.font = `500 12px ${FONT}`;
-  for (const f of G.floats) { if (!isVis(f.x, f.y)) continue; ts(f.x, f.y); ctx.globalAlpha = Math.min(1, f.life / f.max * 1.5); ctx.fillStyle = PAL.lab[f.o]; ctx.fillText(f.txt, TX, TY - 10); }
+  for (const f of G.floats) { if (!isVis(f.x, f.y)) continue; if (!ownNum(f.o) && !f.hid) { const sd = Math.floor(Math.random() * 1e6); f.txt = f.txt.replace(/\d+/g, () => secret(sd, 0)); f.hid = true; } ts(f.x, f.y); ctx.globalAlpha = Math.min(1, f.life / f.max * 1.5); ctx.fillStyle = PAL.lab[f.o]; ctx.fillText(f.txt, TX, TY - 10); }
   ctx.globalAlpha = 1;
   if (!G.demo) {
     const sel = G.sel >= 0 ? N[G.sel] : null;
@@ -2328,6 +2387,7 @@ function render(now) {
       if (ptr.target >= 0) drawGroupPreview(ptr.target, ptr.x, ptr.y, t, new Set(chainSources(ptr)));
     }
     else if (ptr && ptr.mode === 'wifi' && !ptr.cancel) drawWifiPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
+    else if (ptr && ptr.mode === 'retreat' && ptr.moved && !ptr.cancel) drawRetreatPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
     else if (!ptr && G.group.size && hover >= 0) drawGroupPreview(hover, null, null, t);
     else {
       const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
@@ -2368,6 +2428,14 @@ function drawWifiBadge(p, t) {
   ctx.beginPath(); ctx.arc(x, y + 3.5, 1.3, 0, TAU); ctx.fill();
   for (const rr of [3.6, 6.2]) { ctx.beginPath(); ctx.arc(x, y + 3.5, rr, -Math.PI * 0.78, -Math.PI * 0.22); ctx.stroke(); }
   ctx.restore();
+}
+function drawRetreatPreview(src, tgt, px, py, t) {
+  const S = cam.z, B = G.nodes[src];
+  if (tgt < 0) { ts(B.x, B.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 5]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.6); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); return; }
+  const r = retreatCheck(src, tgt), T = G.nodes[tgt], ok = typeof r !== 'string', col = ok ? PAL.rgb[1] : PAL.rgb[2];
+  ts(T.x, T.y); const rr = (radiusFor(T.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6); ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
+  if (ok) { const e = r.e, fwd = e.a === src; if (pathRange(e, rad(e.a), e.len - rad(e.b))) { ctx.setLineDash([4, 5]); ctx.lineDashOffset = -t * 40 * (fwd ? 1 : -1); ctx.strokeStyle = rgba(col, 0.95); ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]); } }
+  label(ok ? `отступить: ${r.n} (−${Math.round(RETREAT_LOSS * 100)}%)` : r, px, py, ok, ok ? PAL.rgb[1] : null);
 }
 function drawWifiPreview(src, tgt, px, py, t) {
   const A = G.nodes[src], S = cam.z;
@@ -2420,7 +2488,7 @@ function drawMini(now) {
   mctx.clearRect(0, 0, w, h);
   mctx.lineWidth = V.dpr;
   for (const e of G.edges) { if (e.state !== 'up' || !(G.nodes[e.a].seen && G.nodes[e.b].seen)) continue; mctx.strokeStyle = PAL.dark ? 'rgba(214,238,226,0.25)' : 'rgba(13,19,17,0.25)'; mctx.beginPath(); mctx.moveTo(ox + G.nodes[e.a].x * k, oy + G.nodes[e.a].y * k); mctx.lineTo(ox + G.nodes[e.b].x * k, oy + G.nodes[e.b].y * k); mctx.stroke(); }
-  for (const p of G.nodes) { if (!p.seen) continue; const ow = p.vis ? p.owner : p.lastOwner; mctx.fillStyle = rgba(PAL.rgb[ow], p.vis ? 1 : 0.5); const r = (1.5 + Math.sqrt(p.vis ? p.v : p.lastV) * 0.25) * V.dpr; mctx.fillRect(ox + p.x * k - r, oy + p.y * k - r, r * 2, r * 2); }
+  for (const p of G.nodes) { if (!p.seen) continue; const ow = p.vis ? p.owner : p.lastOwner; mctx.fillStyle = rgba(PAL.rgb[ow], p.vis ? 1 : 0.5); const r = (1.5 + (p.owner === 1 && p.vis ? Math.sqrt(p.v) * 0.25 : 1)) * V.dpr; mctx.fillRect(ox + p.x * k - r, oy + p.y * k - r, r * 2, r * 2); }
   const a = fromS(0, 0), b = fromS(V.w, V.h);
   mctx.strokeStyle = PAL.sel; mctx.strokeRect(ox + a.x * k, oy + a.y * k, (b.x - a.x) * k, (b.y - a.y) * k);
   mini._map = { k, ox, oy };
@@ -2504,6 +2572,9 @@ function buildLevelGrid() {
   });
 }
 const HOW = [
+  ['<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><circle cx="15" cy="15" r="2.4" fill="currentColor"/><text x="23" y="9" font-size="7" fill="currentColor" font-family="monospace">?</text>',
+    'Туман войны: узел видит ровно на дальность своего канала — только те узлы, к которым можно подключиться. Всё остальное скрыто; разведанные места запоминаются тусклыми. Числа видны только ваши: чужие гарнизоны и пачки — медленно меняющиеся символы.',
+    'Выйти из боя: потяните от узла, который вы осаждаете, к своему узлу, соединённому с ним каналом, — ваши пакеты уйдут домой, потеряв 10%. Наводиться точно не нужно: при перетаскивании цель выбирается по близости к курсору и вдоль ваших каналов.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят на 10% быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
@@ -2569,15 +2640,16 @@ function hudTick(now) {
   // balance of forces: every player's packets on nodes, in flight and in battle
   const pw = {}; let sum = 0;
   document.querySelectorAll('#popbar i').forEach(el => { const o = +el.dataset.o; pw[o] = power(o); sum += pw[o]; });
-  document.querySelectorAll('#popbar i').forEach(el => { el.style.flexGrow = sum ? (pw[+el.dataset.o] / sum).toFixed(4) : 1; });
-  document.querySelectorAll('#popnums span').forEach(el => { el.textContent = pw[+el.dataset.o]; el.style.opacity = pw[+el.dataset.o] ? 1 : 0.35; });
+  // the others' strength is unknown: the bar shows only who is still in the game, their numbers are glyphs
+  document.querySelectorAll('#popbar i').forEach(el => { el.style.flexGrow = +el.dataset.o === 1 ? 1 : (pw[+el.dataset.o] ? 1 : 0); });
+  document.querySelectorAll('#popnums span').forEach(el => { const o = +el.dataset.o; el.textContent = o === 1 ? pw[o] : secret(o * 977, now / 1000, 3); el.style.opacity = pw[o] ? 1 : 0.35; });
   const mm = Math.floor(G.time / 60), ss = Math.floor(G.time % 60);
   $('#hudCount').textContent = `${mm}:${String(ss).padStart(2, '0')}`;
 }
 
 function startLevel(i) {
   const L = LEVELS[i];
-  buildGame(genMap(L.spec), L.ai, { level: i, title: `${String(i + 1).padStart(2, '0')} ${L.name}`, fog: false });
+  buildGame(genMap(L.spec), L.ai, { level: i, title: `${String(i + 1).padStart(2, '0')} ${L.name}`, fog: true });
   enterGame();
   if (i === 0) setTimeout(() => { if (G && G.tut === 1) tutNext(); }, 700);
   if (i === 1) setTimeout(() => { if (G && G.meta.level === 1 && !G.ended) toast('новое: маршрутизация. дважды нажмите на свой узел, затем на другой — узел будет пересылать туда все свои пакеты.', 9000); }, 900);
@@ -2585,7 +2657,7 @@ function startLevel(i) {
 }
 function startQuick() {
   const q = store.quick;
-  buildGame(genMap(quickSpec(q.opp, q.map)), Array.from({ length: q.opp }, () => q.diff), { level: -1, title: 'быстрая игра', quick: true, fog: false });
+  buildGame(genMap(quickSpec(q.opp, q.map)), Array.from({ length: q.opp }, () => q.diff), { level: -1, title: 'быстрая игра', quick: true, fog: true });
   enterGame();
 }
 function homeFocus(instant) {
