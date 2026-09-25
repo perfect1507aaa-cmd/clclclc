@@ -1,0 +1,548 @@
+<meta charset="utf-8">
+<title>Эскизы слияния</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0b0d10; --panel:#14171c; --line:#242933; --ink:#e7eaf0; --mut:#8a93a3;
+  --s-bg:#101216; --s-surf:#15181e; --s-cell:#1b1f27; --s-line:#262b35; --s-off:#2a303b;
+  --tp:#2dd4bf; --te:#f472b6; --mana:#38bdf8; --gold:#fbbf24; --hpc:#f87171;
+  --fd:"Unbounded",system-ui,sans-serif; --fb:"Manrope",system-ui,sans-serif; --fm:"JetBrains Mono",ui-monospace,monospace;
+  --nf:var(--fd); --pr:16px; --pbg:var(--s-surf); --pbd:none; --br:999px;
+}
+html,body{background:var(--bg);}
+body{color:var(--ink); font:15px/1.5 var(--fb);}
+.wrap{max-width:1320px; margin:0 auto; padding-inline:16px; padding-block:28px 56px; display:grid; gap:18px;}
+.eyebrow,.label{margin:0; font:500 11.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+h1{margin:6px 0; font:700 clamp(24px,3.6vw,36px)/1.15 var(--fd); letter-spacing:-.01em; text-wrap:balance;}
+h2.sec{margin:26px 0 0; font:700 22px/1.2 var(--fd); text-wrap:balance;}
+.lede{margin:0; max-width:72ch; color:var(--mut);}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 22px;}
+
+.ctrl{display:grid; grid-template-columns:auto 1fr; gap:10px 14px; align-items:center;}
+.seg{display:flex; flex-wrap:wrap; gap:6px;}
+.opt{all:unset; box-sizing:border-box; cursor:pointer; padding:8px 12px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font:700 12.5px/1.2 var(--fd); display:inline-flex; gap:8px; align-items:center;}
+.opt .k{font:500 11px var(--fm); opacity:.55;}
+.opt:hover{border-color:#3a4150;}
+.opt:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.opt[aria-pressed="true"]{background:var(--ink); color:#0b0d10; border-color:var(--ink);}
+.opt.view{margin-left:auto;}
+
+.stage{position:relative; width:100%; aspect-ratio:1280/900; max-width:100%; overflow:hidden; border-radius:14px; background:var(--s-bg); border:1px solid var(--line);}
+.matrix{display:grid; grid-template-columns:auto repeat(5,minmax(0,1fr)); gap:8px; align-items:center; overflow-x:auto;}
+.matrix .hd{font:700 11px/1.2 var(--fd); color:var(--mut); text-align:center;}
+.matrix .rh{font:700 11px/1.2 var(--fd); color:var(--mut); writing-mode:vertical-rl; rotate:180deg; text-align:center;}
+.mini{all:unset; cursor:pointer; position:relative; display:block; aspect-ratio:1280/900; min-width:150px; overflow:hidden; border-radius:8px; border:1px solid var(--line); background:var(--s-bg);}
+.mini:hover,.mini:focus-visible{border-color:var(--ink); outline:none;}
+.mini .num{position:absolute; left:6px; top:6px; z-index:50; padding:2px 6px; border-radius:6px; background:var(--ink); color:#0b0d10; font:700 10px/1.3 var(--fd);}
+
+.info{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;}
+.info h3{margin:4px 0 4px; font:700 20px/1.2 var(--fd);}
+.info p{margin:0 0 10px; max-width:65ch;}
+.info ul{margin:0; padding-left:18px; display:grid; gap:4px;}
+.muted{color:var(--mut);}
+
+.cards5{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:14px;}
+.mcard h3{margin:2px 0 6px; font:700 16px/1.25 var(--fd);}
+.mcard p{margin:0 0 10px; font-size:14px;}
+.mcard .diag{position:relative; height:128px; margin:14px 0 10px; border-radius:10px; background:var(--s-bg);}
+.mcard .diag .op{position:absolute; top:50%; translate:-50% -50%; font:700 18px var(--fd); color:var(--mut);}
+.mcard .pc{display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;}
+.mcard .pc b{display:block; font:500 10.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+
+.run{overflow-x:auto;}
+.run svg{display:block; min-width:900px; width:100%; height:auto;}
+.tbl{overflow-x:auto;}
+table{border-collapse:collapse; width:100%; min-width:900px; font-size:13.5px;}
+th,td{padding:9px 10px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
+th{font:500 10.5px/1.3 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+td.num{font:500 13px var(--fm); font-variant-numeric:tabular-nums;}
+td.w{white-space:normal; min-width:200px;}
+.tic{display:inline-grid; place-items:center; width:30px; height:30px; border-radius:8px; vertical-align:middle; margin-right:8px;}
+.tic svg{width:20px; height:20px;}
+@media (max-width:900px){ .info{grid-template-columns:1fr;} .ctrl{grid-template-columns:1fr;} .opt.view{margin-left:0;} }
+
+/* ---------- scene ---------- */
+.scene{position:absolute; left:0; top:0; width:1280px; height:900px; transform-origin:0 0; background:var(--s-bg); overflow:hidden; color:var(--ink); font-family:var(--fb);
+  --pr:16px; --pbg:var(--s-surf); --pbd:none; --nf:var(--fd); --cellbd:1.5px dashed var(--s-line); --cellbg:transparent; --br:999px;}
+.scene > *{position:absolute;}
+[data-d="chips"]{--pr:28px; --cellbd:1.5px dashed var(--s-line);}
+[data-d="cards"]{--pr:8px; --pbd:inset 0 0 0 1px #262b35; --br:8px; --cellbg:#13161b; --cellbd:1px solid #20242c;}
+[data-d="line"]{--pr:3px; --pbg:transparent; --pbd:inset 0 0 0 1px #2e3440; --nf:var(--fm); --br:3px; --cellbd:1px solid #242933;}
+[data-d="stack"]{--pr:14px; --pbg:#171a21; --pbd:5px 5px 0 #06070a; --br:12px; --cellbg:#14171d; --cellbd:0 solid transparent;}
+.lay{left:0; top:0; width:1280px; height:900px; pointer-events:none; overflow:visible;}
+.lay.over{z-index:25;}
+.pnl{background:var(--pbg); border-radius:var(--pr); box-shadow:var(--pbd);}
+.cell{box-sizing:border-box; border:var(--cellbd); background:var(--cellbg); border-radius:calc(var(--pr) * .75);}
+[data-d="chips"] .cell{border-radius:50%;}
+.pill{box-sizing:border-box; padding:5px 12px; border-radius:var(--br); background:var(--s-cell); color:var(--mut); font:700 12px/1.2 var(--nf); white-space:nowrap;}
+[data-d="line"] .pill{background:var(--s-bg); box-shadow:inset 0 0 0 1px #3a4150;}
+.pill b{color:var(--ink);}
+.pill.gold{background:var(--gold); color:#101216;} .pill.gold b{color:#101216;}
+.pill.hot{background:var(--te); color:#101216;}
+.pill.cool{background:var(--tp); color:#101216;}
+[data-d="line"] .pill.gold{background:transparent; color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold);}
+[data-d="line"] .pill.gold b{color:var(--gold);}
+[data-d="line"] .pill.hot{background:transparent; color:var(--te); box-shadow:inset 0 0 0 1px var(--te);}
+.lbl{font:700 11px/1.2 var(--nf); color:var(--mut); letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;}
+.note{box-sizing:border-box; padding:12px 14px; font:500 12.5px/1.4 var(--fb); color:var(--mut);}
+.note b{display:block; margin-bottom:4px; font:700 12px/1.25 var(--nf); color:var(--ink);}
+.note b.g{color:var(--gold);}
+.btnx{box-sizing:border-box; display:grid; place-items:center; border-radius:var(--br); background:var(--ink); color:#101216; font:700 13px/1 var(--nf);}
+[data-d="line"] .btnx{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink);}
+[data-d="stack"] .btnx{box-shadow:4px 4px 0 #06070a;}
+.hero{box-sizing:border-box; width:250px; padding:10px 14px 10px 10px; display:grid; grid-template-columns:48px 1fr; gap:12px; align-items:center;}
+.hero .ava{width:48px; height:48px; border-radius:calc(var(--pr) * 1.2); background:color-mix(in srgb,var(--team) 18%,#1b1f27); display:grid; place-items:center;}
+[data-d="chips"] .hero .ava{border-radius:50%;}
+[data-d="line"] .hero .ava{background:transparent; box-shadow:inset 0 0 0 1.5px var(--team);}
+.hero .ava svg{width:30px; height:30px;}
+.hero .ava svg *{fill:var(--team);} .hero .ava svg .k{fill:color-mix(in srgb,var(--team) 18%,#1b1f27);}
+[data-d="line"] .hero .ava svg *{fill:none; stroke:var(--team); stroke-width:2.4;}
+.hero b{font:700 13px/1.2 var(--nf);}
+.hero small{font:600 12px/1 var(--fb); color:var(--mut);}
+.hbar{height:6px; margin:6px 0 4px; border-radius:3px; background:var(--s-off); overflow:hidden;}
+.hbar b{display:block; height:100%; background:var(--team);}
+.gold-n{color:var(--gold);}
+
+/* ---------- unit: one markup, five designs ---------- */
+.u{position:absolute; box-sizing:border-box; container-type:size; --tint:color-mix(in srgb,var(--t) 16%,#1b1f27); --team:var(--tp);}
+.u.e{--team:var(--te);}
+.u > *{position:absolute; box-sizing:border-box;}
+.u .ly,.u .ring,.u .tn,.u .tr,.u .nm,.u .at,.u .bar,.u .seg,.u small{display:none;}
+.u .ic{left:50%; top:50%; width:46cqmin; height:46cqmin; translate:-50% -50%;}
+.u svg{display:block; width:100%; height:100%;}
+.u svg *{fill:var(--t);} .u svg .k{fill:var(--tint);}
+.u .n,.u .hp,.u .at{font:700 12px/1 var(--nf); white-space:nowrap; font-variant-numeric:tabular-nums; z-index:2;}
+.u .n small{font-size:.75em; opacity:.65; margin-right:1px;}
+.u .nm{font:800 11px/1.15 var(--fb); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.u .cost{top:-10px; left:-10px; width:28px; height:28px; border-radius:50%; background:var(--gold); color:#101216; font:700 13px/28px var(--fd); text-align:center; z-index:4;}
+.u.sel{outline:2px solid var(--tp); outline-offset:6px;}
+.u.target{outline:2px dashed var(--te); outline-offset:6px;}
+.u.mg{outline:2px dashed var(--gold); outline-offset:6px;}
+.u.card{transition:transform .15s ease; transform-origin:50% 100%; z-index:5;}
+.u.card:hover{transform:translateY(-16px) scale(1.32); z-index:40;}
+
+/* 1. Плашки */
+[data-d="tiles"] .u .bg{inset:0; border-radius:12px; background:var(--tint); box-shadow:inset 0 -4px 0 var(--t);}
+[data-d="tiles"] .u .ring{display:block; left:0; top:0; width:13px; height:13px; border-radius:12px 0 0 0; background:var(--team); clip-path:polygon(0 0,100% 0,0 100%);}
+[data-d="tiles"] .u .tr{display:flex; gap:2px; top:9px; left:50%; translate:-50% 0;}
+[data-d="tiles"] .u .tr i{width:5px; height:5px; border-radius:50%; background:var(--s-off);}
+[data-d="tiles"] .u .n{top:6px; right:6px; padding:3px 6px; border-radius:7px; background:var(--ink); color:#101216;}
+[data-d="tiles"] .u .at{display:block; left:6px; bottom:7px; padding:3px 6px; border-radius:7px; background:#101216; color:var(--ink);}
+[data-d="tiles"] .u .hp{right:6px; bottom:7px; padding:3px 6px; border-radius:7px; background:#101216; color:#fca5a5;}
+[data-d="tiles"] .u .hp.d{color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
+@container (max-width:100px){ [data-d="tiles"] .u .tr{display:none;} }
+@container (max-width:76px){ [data-d="tiles"] .u .at{display:none;} [data-d="tiles"] .u .n{top:4px; right:4px; padding:2px 4px; font-size:10.5px;} [data-d="tiles"] .u .hp{right:4px; bottom:6px; padding:2px 4px; font-size:10.5px;} }
+@container (min-height:128px){ [data-d="tiles"] .u .nm{display:block; left:6px; right:6px; bottom:36px;} [data-d="tiles"] .u .ic{top:42%;} }
+
+/* 2. Фишки */
+[data-d="chips"] .u .bg,[data-d="chips"] .u .ring{left:50%; top:50%; width:88cqmin; height:88cqmin; translate:-50% -50%; border-radius:50%;}
+[data-d="chips"] .u .bg{background:var(--tint); box-shadow:inset 0 0 0 3px var(--t), 0 0 0 3px var(--s-bg), 0 0 0 5px var(--team);}
+[data-d="chips"] .u.dm .ring{display:block; background:conic-gradient(from 0deg, transparent calc(var(--f) * 360deg), var(--hpc) 0); -webkit-mask:radial-gradient(closest-side, transparent 78%, #000 80%, #000 92%, transparent 94%); mask:radial-gradient(closest-side, transparent 78%, #000 80%, #000 92%, transparent 94%);}
+[data-d="chips"] .u .ic{width:40cqmin; height:40cqmin;}
+[data-d="chips"] .u .n{left:50%; top:calc(50% + 44cqmin - 10px); translate:-50% 0; padding:3px 7px; border-radius:999px; background:var(--ink); color:#101216;}
+[data-d="chips"] .u .tn{display:block; left:50%; top:calc(50% - 44cqmin - 9px); translate:-50% 0; min-width:20px; height:20px; padding:0 4px; border-radius:999px; background:var(--t); color:#101216; font:700 9px/20px var(--fd); text-align:center; z-index:2;}
+[data-d="chips"] .u .hp{left:calc(50% + 30cqmin); top:calc(50% + 22cqmin); padding:3px 5px; border-radius:999px; background:#101216; color:#fca5a5; box-shadow:0 0 0 1.5px #3a2020;}
+[data-d="chips"] .u.sel,[data-d="chips"] .u.target,[data-d="chips"] .u.mg{outline:0;}
+[data-d="chips"] .u.sel .bg{outline:2px solid var(--tp); outline-offset:8px;}
+[data-d="chips"] .u.target .bg{outline:2px dashed var(--te); outline-offset:8px;}
+[data-d="chips"] .u.mg .bg{outline:2px dashed var(--gold); outline-offset:8px;}
+@container (min-height:128px){
+  [data-d="chips"] .u .bg,[data-d="chips"] .u .ring,[data-d="chips"] .u .ic{top:42%;}
+  [data-d="chips"] .u .n{top:calc(42% + 44cqmin - 10px);} [data-d="chips"] .u .tn{top:calc(42% - 44cqmin - 9px);} [data-d="chips"] .u .hp{top:calc(42% + 22cqmin);}
+  [data-d="chips"] .u .nm{display:block; left:0; right:0; bottom:2px;}
+}
+
+/* 3. Карточки */
+[data-d="cards"] .u .bg{inset:0; border-radius:8px; background:#1b1f27; box-shadow:inset 0 0 0 1px #2a303b;}
+[data-d="cards"] .u .ring{display:block; left:0; right:0; top:0; height:64%; border-radius:8px 8px 0 0; background:var(--tint); box-shadow:inset 0 3px 0 var(--team);}
+[data-d="cards"] .u .ic{top:33%; width:36cqmin; height:36cqmin;}
+[data-d="cards"] .u .n{right:5px; top:calc(64% - 23px); padding:3px 5px; border-radius:3px; background:#0e1014; box-shadow:inset 0 0 0 1px var(--t); font:700 12px/1 var(--fm); color:var(--ink);}
+[data-d="cards"] .u .n small{display:none;}
+[data-d="cards"] .u .tn{display:block; left:6px; top:7px; font:700 10px/1 var(--fd); color:var(--t);}
+[data-d="cards"] .u .bar{display:block; left:0; right:0; top:64%; height:3px; background:var(--s-off);}
+[data-d="cards"] .u:not(.dm) .bar{display:none;}
+[data-d="cards"] .u .bar b{display:block; height:100%; width:calc(var(--f) * 100%); background:var(--hpc);}
+[data-d="cards"] .u .at{display:block; left:7px; bottom:7px; font:700 11px/1 var(--fm); color:var(--ink);}
+[data-d="cards"] .u .hp{right:7px; bottom:7px; font:700 11px/1 var(--fm); color:#fca5a5;}
+[data-d="cards"] .u .at small,[data-d="cards"] .u .hp small{display:inline; margin-right:3px; font-size:9px; opacity:.6;}
+@container (max-width:80px){ [data-d="cards"] .u .at{display:none;} [data-d="cards"] .u .hp small{display:none;} [data-d="cards"] .u .tn{font-size:8.5px;} }
+@container (min-height:120px){ [data-d="cards"] .u .nm{display:block; left:6px; right:6px; top:calc(64% + 10px); text-align:left;} }
+
+/* 4. Контур */
+[data-d="line"] .u .bg{inset:0; border-radius:3px; box-shadow:inset 0 0 0 1.5px var(--t), inset 3px 0 0 var(--team);}
+[data-d="line"] .u svg *{fill:none; stroke:var(--t); stroke-width:2.6; stroke-linejoin:round;}
+[data-d="line"] .u svg .k{fill:none; stroke-width:1.6;}
+[data-d="line"] .u .ic{width:36cqmin; height:36cqmin; top:46%;}
+[data-d="line"] .u .tn{display:block; top:6px; left:9px; font:700 10px/1 var(--fm); color:var(--t);}
+[data-d="line"] .u .n{top:6px; right:7px; font:700 12px/1 var(--fm); color:var(--ink);}
+[data-d="line"] .u .seg{display:flex; gap:2px; left:9px; right:7px; bottom:7px; height:5px;}
+[data-d="line"] .u .seg i{flex:1; border-radius:1px; background:var(--ink);}
+[data-d="line"] .u .seg i[style]{background:linear-gradient(90deg, var(--hpc) calc(var(--sf) * 100%), #3a4150 0);}
+[data-d="line"] .u .at{display:block; left:9px; bottom:17px; font:700 10px/1 var(--fm); color:var(--ink);}
+[data-d="line"] .u .hp{right:7px; bottom:17px; font:700 10px/1 var(--fm); color:#fca5a5;}
+[data-d="line"] .u .at small,[data-d="line"] .u .hp small{display:inline; margin-right:2px; opacity:.6;}
+@container (max-width:80px){ [data-d="line"] .u .at{display:none;} [data-d="line"] .u .hp small{display:none;} }
+@container (min-height:128px){ [data-d="line"] .u .nm{display:block; left:9px; right:7px; bottom:32px; text-align:left; font-family:var(--fm); font-weight:500;} [data-d="line"] .u .ic{top:40%;} }
+
+/* 5. Стопки */
+[data-d="stack"] .u .ly{display:block; inset:0; border-radius:12px; background:color-mix(in srgb,var(--t) 30%,#1b1f27); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 55%,#101216);}
+[data-d="stack"] .u .l1{translate:5px -5px;} [data-d="stack"] .u .l2{translate:10px -10px;} [data-d="stack"] .u .l3{translate:15px -15px;}
+[data-d="stack"] .u[data-l="0"] .ly,[data-d="stack"] .u[data-l="1"] .l2,[data-d="stack"] .u[data-l="1"] .l3,[data-d="stack"] .u[data-l="2"] .l3{display:none;}
+[data-d="stack"] .u .bg{inset:0; border-radius:12px; background:var(--tint); box-shadow:inset 0 0 0 2px var(--t);}
+[data-d="stack"] .u .ring{display:block; top:7px; right:7px; width:10px; height:10px; border-radius:50%; background:var(--team);}
+[data-d="stack"] .u .ic{top:44%;}
+[data-d="stack"] .u .tn{display:block; top:6px; left:6px; padding:2px 6px; border-radius:6px; background:var(--t); color:#101216; font:700 9px/1.3 var(--fd); z-index:2;}
+[data-d="stack"] .u .n{left:8px; bottom:6px; font:700 20px/1 var(--fd); color:var(--ink);}
+[data-d="stack"] .u .hp{right:6px; bottom:6px; padding:3px 6px; border-radius:7px; background:var(--hpc); color:#101216;}
+[data-d="stack"] .u .hp.d{background:#101216; color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
+@container (max-width:80px){ [data-d="stack"] .u .n{font-size:14px; left:5px; bottom:5px;} [data-d="stack"] .u .tn{display:none;} [data-d="stack"] .u .hp{padding:2px 4px; font-size:10px; right:4px; bottom:5px;} }
+@container (min-height:128px){ [data-d="stack"] .u .nm{display:block; left:8px; right:8px; top:calc(44% + 32px);} [data-d="stack"] .u .ic{top:36%;} }
+
+[data-d="cards"] .u.card .tn,[data-d="line"] .u.card .tn,[data-d="stack"] .u.card .tn{display:none;}
+@media (prefers-reduced-motion: reduce){ .u.card{transition:none;} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Роглайк со слиянием · Альянс · 5 досок × 5 дизайнов</p>
+    <h1>Эскизы слияния</h1>
+    <p class="lede">Вы выставляете отряды I–III тира, а выше можно подняться только слиянием. Отряд — это одна карточка: численность (×12) отдельно от ХП одного юнита. Урон убивает юнитов целиком, остаток ранит верхнего, поэтому бой идёт не в один удар. Слияние лечит раненых. Отряды и их слияния переходят с уровня на уровень, в конце забега ждёт босс.</p>
+  </header>
+
+  <section class="panel ctrl" aria-label="Выбор эскиза">
+    <span class="label">Доска</span><div class="seg" id="boards"></div>
+    <span class="label">Дизайн</span><div class="seg" id="designs"></div>
+  </section>
+
+  <div class="stage" id="stage"><div class="scene" id="scene"></div></div>
+  <div class="matrix" id="matrix" hidden></div>
+
+  <section class="info">
+    <div class="panel" id="binfo"></div>
+    <div class="panel" id="dinfo"></div>
+  </section>
+
+  <h2 class="sec">5 принципов слияния</h2>
+  <p class="lede">На всех досках выше показан первый принцип. Остальные меняют темп роста и то, что происходит с численностью. Золотая пунктирная рамка на эскизах означает, что отряды можно слить.</p>
+  <div class="cards5" id="merges" data-d="tiles"></div>
+
+  <h2 class="sec">Забег</h2>
+  <div class="panel run" id="run"></div>
+
+  <h2 class="sec">Альянс: 7 тиров</h2>
+  <p class="lede">Состав и характеристики взяты по мотивам замка Haven из «Героев 5». Значения по памяти, их нужно сверить с игрой перед балансом. Базовая форма появляется при слиянии, улучшенная форма — для пятого принципа слияния или награды за уровень.</p>
+  <div class="panel tbl" id="roster"></div>
+</div>
+
+<script>
+const ICONS = {
+  peasant:`<rect x="10" y="16" width="30" height="4" rx="2"/><path d="M17 16l3-9h10l3 9z"/><circle cx="25" cy="26" r="7"/><path d="M12 62l4-26h18l4 26z"/><rect x="45" y="15" width="3.5" height="47"/><path d="M39 3v11h16V3h-3v8h-3.5V3h-3v8H42V3z"/>`,
+  archer:`<path d="M18 4c24 10 24 46 0 56l3 2c28-12 28-48 0-60z"/><rect x="17" y="5" width="2" height="54"/><rect x="8" y="31" width="44" height="3"/><path d="M61 32.5L48 26v13z"/><path d="M3 26l9 6.5L3 39l3-6.5z"/>`,
+  footman:`<path d="M6 10h30v24c0 15-8 23-15 27C14 57 6 49 6 34z"/><path class="k" d="M19 16h4v38h-4zM11 26h20v4H11z"/><path d="M46 6l3.5-5 3.5 5v34h-7z"/><rect x="40" y="40" width="19" height="4" rx="2"/><rect x="47.5" y="44" width="4" height="12"/><circle cx="49.5" cy="59" r="3.5"/>`,
+  griffin:`<path d="M2 14c10-2 18 2 22 10-6 0-8 4-6 8-6-2-10 0-12 4-2-8-4-14-4-22z"/><path d="M62 14c-10-2-18 2-22 10 6 0 8 4 6 8 6-2 10 0 12 4 2-8 4-14 4-22z"/><path d="M22 30c0-10 5-18 10-20 5 2 10 10 10 20v6l-4 6 4 20H22l4-20-4-6z"/><path d="M28 22l4 10 4-10z" class="k"/><path d="M32 30l-4 6h8z"/><circle class="k" cx="28" cy="20" r="2"/><circle class="k" cx="36" cy="20" r="2"/>`,
+  priest:`<path d="M26 4c11 0 17 10 17 22v36H9V26C9 14 15 4 26 4z"/><ellipse class="k" cx="26" cy="22" rx="8" ry="9"/><path class="k" d="M23 34h6v22h-6zM18 40h16v5H18z"/><rect x="51" y="16" width="3.5" height="46"/><circle cx="52.7" cy="10" r="7"/>`,
+  cavalier:`<path d="M12 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><circle class="k" cx="36" cy="19" r="2.8"/><path d="M3 34L60 6l1.5 3L5 37z"/>`,
+  angel:`<ellipse cx="32" cy="7" rx="11" ry="4"/><ellipse class="k" cx="32" cy="7" rx="7.5" ry="2"/><circle cx="32" cy="19" r="7"/><path d="M25 28h14l8 34H17z"/><path d="M24 30C12 18 4 20 2 32c6 0 6 6 4 10 6-4 10 0 12 4 2-6 4-10 6-16z"/><path d="M40 30c12-12 20-10 22 2-6 0-6 6-4 10-6-4-10 0-12 4-2-6-4-10-6-16z"/><path class="k" d="M31 34h2v22h-2z"/>`,
+  lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
+  rebel:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M14 18C6 14 4 6 6 0c2 6 6 10 12 12zM50 18c8-4 10-12 8-18-2 6-6 10-12 12z"/>`,
+};
+const A = {
+  peasant:{name:'Крестьяне', one:'Крестьянин', tier:1, atk:1, def:1, dmg:'1', hp:3, spd:4, ini:8, grow:22, skill:'Налогоплательщик: +1 золото в день', up:'Ополченец', upS:'Атк 2 · Защ 1 · 1–2 · ХП 6'},
+  archer:{name:'Лучники', one:'Лучник', tier:2, atk:4, def:3, dmg:'2–4', hp:7, spd:4, ini:9, grow:12, skill:'Стрелок', up:'Арбалетчик', upS:'Атк 4 · Защ 4 · 2–8 · ХП 10'},
+  footman:{name:'Мечники', one:'Мечник', tier:3, atk:4, def:8, dmg:'2–4', hp:16, spd:4, ini:8, grow:10, skill:'Большой щит: вдвое меньше урона от стрел', up:'Латник', upS:'Атк 5 · Защ 9 · 2–5 · ХП 26'},
+  griffin:{name:'Грифоны', one:'Грифон', tier:4, atk:7, def:5, dmg:'5–10', hp:30, spd:7, ini:15, grow:5, skill:'Летает, отвечает на все атаки', up:'Королевский грифон', upS:'Атк 9 · Защ 8 · 5–15 · ХП 35'},
+  priest:{name:'Монахи', one:'Монах', tier:5, atk:12, def:12, dmg:'9–12', hp:54, spd:5, ini:10, grow:3, skill:'Стрелок без штрафа в ближнем бою', up:'Инквизитор', upS:'Атк 16 · Защ 16 · 9–12 · ХП 80'},
+  cavalier:{name:'Рыцари', one:'Рыцарь', tier:6, atk:23, def:21, dmg:'20–30', hp:90, spd:7, ini:11, grow:2, skill:'Разбег: больше урона за каждую пройденную клетку', up:'Паладин', upS:'Атк 24 · Защ 24 · 20–30 · ХП 100'},
+  angel:{name:'Ангелы', one:'Ангел', tier:7, atk:27, def:27, dmg:'45', hp:180, spd:6, ini:11, grow:1, skill:'Летает', up:'Архангел', upS:'Атк 31 · Защ 31 · 50 · ХП 220'},
+};
+const TC = ['#94a3b8','#84cc16','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#f8fafc'];
+const RO = ['I','II','III','IV','V','VI','VII'];
+const TP = '#2dd4bf', TE = '#f472b6', INK = '#e7eaf0', GOLD = '#fbbf24';
+
+const P = (x, y, w, h) => `left:${x}px;top:${y}px;` + (w != null ? `width:${w}px;` : '') + (h != null ? `height:${h}px;` : '');
+const svgIc = k => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[k]}</svg>`;
+
+/* A squad card: count and per-unit HP are separate numbers. */
+function unit(k, o){
+  const u = A[k], n = o.n || 1, top = o.top ?? u.hp, f = top / u.hp, segN = Math.min(n, 10);
+  const cls = ['u', o.team || 'p', o.sel && 'sel', o.target && 'target', o.mg && 'mg', o.card && 'card', f < 1 && 'dm'].filter(Boolean).join(' ');
+  const L = n > 12 ? 3 : n > 5 ? 2 : n > 1 ? 1 : 0;
+  return `<div class="${cls}" data-l="${L}" style="--t:${TC[u.tier - 1]};--f:${f};${P(o.x, o.y, o.w, o.h)}" title="${u.name}: ${n} × ${u.hp} ХП, атака ${u.atk}, тир ${RO[u.tier - 1]}">`
+    + `<i class="ly l3"></i><i class="ly l2"></i><i class="ly l1"></i><i class="bg"></i><i class="ring"></i>`
+    + `<div class="ic">${svgIc(k)}</div>`
+    + `<span class="tn">${RO[u.tier - 1]}</span><span class="tr">${[1,2,3,4,5,6,7].map(i => `<i${i <= u.tier ? ` style="background:${TC[u.tier - 1]}"` : ''}></i>`).join('')}</span>`
+    + `<b class="n"><small>×</small>${n}</b><span class="nm">${u.name}</span>`
+    + `<span class="at"><small>А</small>${u.atk}</span><span class="hp${f < 1 ? ' d' : ''}"><small>ХП</small>${f < 1 ? `${top}/${u.hp}` : u.hp}</span>`
+    + `<i class="bar"><b></b></i><span class="seg">${Array.from({length:segN}, (_, i) => `<i${i === segN - 1 && f < 1 ? ` style="--sf:${f}"` : ''}></i>`).join('')}</span>`
+    + (o.cost != null ? `<span class="cost">${o.cost}</span>` : '') + `</div>`;
+}
+const cell = (x, y, w, h) => `<div class="cell" style="${P(x, y, w, h)}"></div>`;
+const pill = (t, s, c = '') => `<div class="pill ${c}" style="${s}">${t}</div>`;
+const note = (title, text, s, gold) => `<div class="pnl note" style="${s}"><b${gold ? ' class="g"' : ''}>${title}</b>${text}</div>`;
+const lay = (inner, over) => `<svg class="lay${over ? ' over' : ''}" viewBox="0 0 1280 900" aria-hidden="true">${inner}</svg>`;
+function arrow(ax, ay, bx, by, o = {}){
+  const c = o.color || INK, w = o.w || 4, bend = o.bend || 0;
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+  const cx = (ax + bx) / 2 - dy / len * bend, cy = (ay + by) / 2 + dx / len * bend;
+  const a = Math.atan2(by - cy, bx - cx), L = 15, W = 8, px = -Math.sin(a), py = Math.cos(a);
+  const b0x = bx - Math.cos(a) * L, b0y = by - Math.sin(a) * L;
+  return `<path d="M${ax} ${ay} Q${cx} ${cy} ${b0x} ${b0y}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/><polygon points="${bx},${by} ${b0x + px * W},${b0y + py * W} ${b0x - px * W},${b0y - py * W}" fill="${c}"/>`;
+}
+function hero(side, o){
+  return `<div class="pnl hero" style="--team:${side === 'p' ? TP : TE};${P(o.x, o.y)}"><div class="ava">${svgIc(o.icon)}</div><div><b>${o.name}</b><div class="hbar"><b style="width:${o.hp / o.max * 100}%"></b></div><small>${o.sub}</small></div></div>`;
+}
+/* Recruit hand: only tiers I–III ever arrive as cards. */
+function hand(list){
+  const W = 104, G = 16, x0 = 640 - (list.length * W + (list.length - 1) * G) / 2;
+  return list.map(([k, n], i) => unit(k, {x:x0 + i * (W + G), y:744, w:W, h:140, n, card:true, cost:A[k].tier})).join('');
+}
+function hud(o = {}){
+  let h = pill(`Уровень <b>4 из 12</b> · бой`, P(560, 24));
+  if (o.enemy !== false) h += hero('e', {x:24, y:18, icon:'rebel', name:'Мятежный лорд', hp:0.7, max:1, sub:'армия 71 юнит'});
+  if (o.player !== false) h += hero('p', {x:24, y:790, icon:'lord', name:'Лорд Годрик', hp:0.8, max:1, sub:'армия 58 юнитов'});
+  if (o.hand !== false) h += hand(o.handList || [['peasant',6],['peasant',6],['archer',4],['footman',3],['archer',4]]);
+  if (o.controls !== false){
+    h += pill(`Золото <b class="gold-n">14</b>`, 'right:24px;top:26px');
+    h += pill(`Колода забега <b>23</b>`, 'right:24px;top:752px');
+    h += pill(`В руке только тиры <b>I–III</b>`, 'right:24px;top:792px');
+    h += `<div class="btnx" style="right:24px;top:834px;width:200px;height:42px">${o.end || 'Конец хода'}</div>`;
+  }
+  return h;
+}
+
+/* ---------- 5 boards ---------- */
+const BOARDS = [
+{
+  id:'grid', name:'Сетка 4×3', like:'Cross Blitz + слияние',
+  desc:'Дуэль на двух сетках 4×3. Отряды бьют строго по своей колонке, а одинаковые отряды на вашей сетке сливаются.',
+  points:['Отряд атакует первого врага в своей колонке. Пустая колонка — удар по герою.','Слияние: перетащите отряд на такой же, соседство не обязательно.','Фронт принимает удары, тыл — для стрелков и монахов.'],
+  render(){
+    const cx = c => 363 + c * 142, W = 128, H = 84, EY = [108, 200, 292], PY = [404, 496, 588];
+    const E = [[['archer',8],null,['priest',2],null],[null,['peasant',12],null,['griffin',1,18]],[['footman',5,9,'t'],['footman',3],['peasant',9],null]];
+    const Pl = [[['footman',4,null,'s'],['peasant',6,null,'m'],['peasant',5,null,'m'],['archer',7]],[null,['archer',3],null,['priest',1]],[null,null,['griffin',2],null]];
+    let h = '';
+    ['Тыл','Центр','Фронт'].forEach((L, r) => h += `<div class="lbl" style="${P(262, EY[r] + 36)}">${L}</div>`);
+    ['Фронт','Центр','Тыл'].forEach((L, r) => h += `<div class="lbl" style="${P(262, PY[r] + 36)}">${L}</div>`);
+    const put = (grid, ys, team) => grid.forEach((row, r) => row.forEach((s, c) => {
+      h += s ? unit(s[0], {x:cx(c), y:ys[r], w:W, h:H, n:s[1], top:s[2] ?? undefined, team, sel:s[3] === 's', target:s[3] === 't', mg:s[3] === 'm'}) : cell(cx(c), ys[r], W, H);
+    }));
+    put(E, EY, 'e'); put(Pl, PY, 'p');
+    h += pill('×6 + ×5 → <b>Лучники ×5</b>, раны излечены', P(cx(1) + 18, 380), 'gold');
+    h += note('Слияние', 'Два одинаковых отряда дают отряд следующего тира. Выше III тира — только так.', P(1016, 300, 240), true);
+    h += note('Колонка A', 'Мечники бьют раненых Мечников соперника: 4 × (2–4) урона.', P(1016, 430, 240));
+    h += lay(arrow(cx(0) + 64, 398, cx(0) + 64, 382, {w:5}), true);
+    return h + hud();
+  }
+},
+{
+  id:'heroes', name:'Поле как в Героях', like:'Heroes 5',
+  desc:'Квадратная арена 10×6. Отряды ходят по шкале инициативы, большие существа занимают 2×2 клетки.',
+  points:['Ходит отряд, чья очередь на шкале инициативы.','Два одинаковых отряда рядом можно слить; это тратит ход обоих.','Между боями отряды сливаются без ограничений.'],
+  render(){
+    const C = 74, X0 = 270, Y0 = 108, at = (c, r) => [X0 + c * C, Y0 + r * C];
+    const rocks = new Set(['4,1', '5,4']);
+    const units = [
+      ['peasant',18,0,0,'p'], ['priest',2,0,1,'p'], ['archer',9,0,2,'p',null,'m'], ['archer',5,1,3,'p',null,'m'], ['footman',6,3,2,'p',null,'s'], ['griffin',3,1,4,'p',22,null,2],
+      ['archer',11,9,0,'e'], ['peasant',20,6,2,'e',null,'t'], ['archer',6,9,2,'e'], ['footman',5,8,3,'e',9], ['cavalier',1,8,4,'e',null,null,2],
+    ];
+    const occ = new Set(); units.forEach(u => { const s = u[7] || 1; for (let i = 0; i < s; i++) for (let j = 0; j < s; j++) occ.add((u[2] + i) + ',' + (u[3] + j)); });
+    let h = `<div class="pnl" style="${P(X0 - 14, Y0 - 14, 10 * C + 28, 6 * C + 28)}"></div>`;
+    for (let c = 0; c < 10; c++) for (let r = 0; r < 6; r++){
+      const key = c + ',' + r, d = Math.abs(c - 3) + Math.abs(r - 2), reach = d > 0 && d <= 4 && !occ.has(key) && !rocks.has(key);
+      const [x, y] = at(c, r);
+      if (rocks.has(key)) h += `<div style="${P(x + 4, y + 4, C - 8, C - 8)};border-radius:40%;background:#262a31"></div>`;
+      else h += `<div class="cell" style="${P(x + 2, y + 2, C - 4, C - 4)}${reach ? ';background:rgba(45,212,191,.10);border-color:rgba(45,212,191,.5)' : ''}"></div>`;
+    }
+    units.forEach(([k, n, c, r, team, top, flag, size]) => { const s = size || 1, [x, y] = at(c, r); h += unit(k, {x:x + 4, y:y + 4, w:s * C - 8, h:s * C - 8, n, top:top ?? undefined, team, sel:flag === 's', target:flag === 't', mg:flag === 'm'}); });
+    h += pill('Лучники ×9 + ×5 рядом → <b>Мечники ×5</b>', P(X0 - 6, Y0 + 6 * C + 22), 'gold');
+    const q = [['griffin','p',3],['archer','e',11],['archer','p',9],['archer','e',6],['footman','p',6],['peasant','e',20],['cavalier','e',1],['priest','p',2]];
+    h += `<div class="lbl" style="${P(X0, 624)}">Шкала инициативы</div>`;
+    q.forEach(([k, team, n], i) => h += unit(k, {x:X0 + 150 + i * 72, y:606, w:62, h:62, n, team, sel:i === 0}));
+    h += note('Большие существа', 'Грифоны, рыцари и ангелы занимают 2×2 и закрывают проход.', P(1030, 250, 226));
+    h += lay(arrow(at(3, 2)[0] + 70, at(3, 2)[1] + 37, at(6, 2)[0] - 4, at(6, 2)[1] + 37, {color:TP, dash:'8 7', bend:-20}), true);
+    return h + hud();
+  }
+},
+{
+  id:'camp', name:'Лагерь и фронт', like:'Автобой + лагерь',
+  desc:'Фронт из 5 мест сражается сам в конце хода. Внизу лагерь 5×2: там вы сливаете отряды и копите силы.',
+  points:['Бой на фронте идёт автоматически, место напротив решает, кто с кем дерётся.','Сливать можно только в лагере, раненых можно отвести с фронта и вылечить слиянием.','Лагерь целиком переходит на следующий уровень забега.'],
+  render(){
+    const fx = i => 298 + i * 140, W = 124, H = 116;
+    const E = [['peasant',14],['footman',4,11,'t'],['archer',9],null,['griffin',2]];
+    const Pf = [['footman',5,null,'s'],['archer',8],null,['priest',1],['peasant',10]];
+    let h = '';
+    E.forEach((s, i) => h += s ? unit(s[0], {x:fx(i), y:110, w:W, h:H, n:s[1], top:s[2] ?? undefined, team:'e', target:s[3] === 't'}) : cell(fx(i), 110, W, H));
+    Pf.forEach((s, i) => h += s ? unit(s[0], {x:fx(i), y:250, w:W, h:H, n:s[1], team:'p', sel:s[3] === 's'}) : cell(fx(i), 250, W, H));
+    h += pill('Бой в конце хода', P(578, 231), '');
+    h += `<div class="pnl" style="${P(270, 396, 740, 322)}"></div>`;
+    h += `<div class="lbl" style="${P(292, 412)}">Лагерь · переходит на следующий уровень</div>`;
+    const cx = c => 292 + c * 142, CY = [440, 574], cw = 128, ch = 120;
+    const camp = [[['peasant',7,null,'m'],['peasant',7,null,'m'],['archer',4],null,['footman',2,7]],[['archer',5],null,null,['peasant',3],null]];
+    camp.forEach((row, r) => row.forEach((s, c) => h += s ? unit(s[0], {x:cx(c), y:CY[r], w:cw, h:ch, n:s[1], top:s[2] ?? undefined, mg:s[3] === 'm'}) : cell(cx(c), CY[r], cw, ch)));
+    h += pill('7 + 7 → <b>Лучники ×7</b>', P(cx(0) + 70, CY[0] + 128), 'gold');
+    h += note('Раненых — в лагерь', 'Мечники ×2 ранены (7/16). Слейте их с новыми мечниками, и верхний юнит станет здоров.', P(1030, 440, 226));
+    h += lay(arrow(cx(2) + 64, CY[0] - 6, fx(2) + 62, 372, {color:TP, dash:'8 7'}) + arrow(fx(0) + 62, 246, fx(1) + 30, 232, {bend:18}), true);
+    return h + hud();
+  }
+},
+{
+  id:'defense', name:'Оборона', like:'Rush Royale с отрядами',
+  desc:'Волны идут по дорожке, ваши отряды стоят на сетке 5×3. Нанимаете только крестьян, остальное добывается слиянием.',
+  points:['Кнопка найма ставит отряд крестьян на случайную свободную клетку.','Два одинаковых отряда сливаются в отряд тиром выше.','Враг дошёл до конца дорожки — минус жизнь. Босс — каждая пятая волна.'],
+  render(){
+    let s = `<path d="M290 740 V190 H990 V740" fill="none" stroke="#15181e" stroke-width="84" stroke-linejoin="round" stroke-linecap="round"/><path d="M290 740 V190 H990 V740" fill="none" stroke="#262b35" stroke-width="2" stroke-dasharray="10 12"/>`;
+    let h = lay(s);
+    [['peasant',14,290,640,2],['peasant',9,290,470],['archer',6,290,300,5],['footman',3,460,190],['archer',8,860,190],['peasant',11,990,380,1]].forEach(([k, n, x, y, top]) => h += unit(k, {x:x - 31, y:y - 31, w:62, h:62, n, team:'e', top}));
+    h += unit('cavalier', {x:596, y:146, w:92, h:88, n:2, team:'e', top:61}) + pill('Босс волны', P(591, 110), 'hot');
+    const grid = [['archer',6],['footman',3],null,['priest',1],['archer',4],['peasant',12,'m'],['peasant',12,'m'],['archer',4],null,['griffin',1],null,['footman',2],['peasant',5],null,null];
+    const gx = c => 372 + c * 110, gy = r => 282 + r * 110;
+    grid.forEach((g, i) => { const c = i % 5, r = Math.floor(i / 5); h += g ? unit(g[0], {x:gx(c), y:gy(r), w:98, h:98, n:g[1], mg:g[2] === 'm'}) : cell(gx(c), gy(r), 98, 98); });
+    h += pill('12 + 12 → <b>Лучники ×12</b>', P(gx(0), gy(2) + 106), 'gold');
+    h += `<div class="btnx" style="${P(520, 646, 240, 50)};background:${GOLD};color:#101216">Нанять крестьян · 10</div>`;
+    h += pill('Волна <b>12</b> · босс на 15-й', P(24, 26)) + pill('Жизни <b style="color:' + TE + '">● ● ○</b>', 'right:24px;top:26px');
+    h += pill(`Золото <b class="gold-n">40</b>`, P(790, 659));
+    ['peasant','archer','footman'].forEach((k, i) => h += unit(k, {x:430 + i * 150, y:760, w:120, h:110, n:[3,2,1][i]}));
+    h += `<div class="lbl" style="${P(430, 736)}">Уровни найма в забеге · численность при найме</div>`;
+    return h;
+  }
+},
+{
+  id:'hive', name:'Соты', like:'Гексы + «три в ряд»',
+  desc:'Общее поле из гексов, ваша половина снизу. Три одинаковых отряда рядом сливаются сами, как в «три в ряд».',
+  points:['Выставлять отряды можно только на свою половину.','Три одинаковых отряда, касающихся друг друга, сливаются в отряд тиром выше.','Средний ряд ничей: кто занял его, бьёт соперника первым.'],
+  render(){
+    const R = 42, HW = Math.sqrt(3) * R, cols = 9, rows = 7, x0 = 640 - (cols * HW + HW / 2) / 2 + HW / 2, y0 = 150;
+    const at = (c, r) => [x0 + c * HW + (r % 2 ? HW / 2 : 0), y0 + r * 63];
+    const pts = (cx, cy, r) => Array.from({length:6}, (_, i) => { const a = Math.PI / 180 * (60 * i - 90); return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; }).join(' ');
+    let s = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++){
+      const [cx, cy] = at(c, r), fill = r < 3 ? '#1a1519' : r > 3 ? '#131a1b' : '#181b22';
+      s += `<polygon points="${pts(cx, cy, R - 2)}" fill="${fill}" stroke="${r === 3 ? '#2a303b' : '#101216'}" stroke-width="2"/>`;
+    }
+    let h = lay(s);
+    const units = [['cavalier',1,4,0,'e'],['archer',7,3,1,'e'],['priest',1,5,1,'e'],['peasant',12,2,2,'e'],['footman',5,5,2,'e',11,'t'],
+      ['peasant',9,1,4,'p'],['footman',4,5,4,'p',null,'s'],['archer',4,4,4,'p',null,'m'],['archer',5,3,5,'p',null,'m'],['archer',3,4,5,'p',5,'m'],['peasant',6,2,6,'p'],['priest',1,6,6,'p']];
+    units.forEach(([k, n, c, r, team, top, flag]) => { const [x, y] = at(c, r); h += unit(k, {x:x - 33, y:y - 33, w:66, h:66, n, team, top:top ?? undefined, sel:flag === 's', target:flag === 't', mg:flag === 'm'}); });
+    const [mx, my] = at(4, 5);
+    h += pill('3 рядом → <b>Мечники ×4</b>', P(mx - 250, my + 40), 'gold');
+    h += `<div style="${P(360, 620)};display:flex;gap:10px">` + pill('<span style="color:#f472b6">⬢</span> половина соперника') + pill('<span style="color:#8a93a3">⬢</span> ничья линия') + pill('<span style="color:#2dd4bf">⬢</span> ваша половина') + `</div>`;
+    const a = at(5, 4), b = at(5, 3);
+    h += lay(arrow(a[0], a[1] - 38, b[0] - 4, b[1] + 6, {color:TP, dash:'7 6'}), true);
+    return h + hud();
+  }
+},
+];
+
+const DESIGNS = [
+  {id:'tiles', name:'Плашки', desc:'Мягкие плашки с цветом тира и точками тира. Численность в белом ярлыке, атака и ХП снизу.', plus:'Спокойно и читаемо, ближе всего к выбранному флэту.', minus:'Плашки похожи друг на друга, тир различается в основном цветом.'},
+  {id:'chips', name:'Фишки', desc:'Круглые фишки как в настольной игре. Численность под фишкой, раненый верхний юнит показан красной дугой.', plus:'Выглядит как настолка, хорошо на гексах и в сотах.', minus:'Мало места внутри, имя видно только на картах в руке.'},
+  {id:'cards', name:'Карточки', desc:'Мини-карты с портретом и полосой характеристик. Численность в рамке у портрета, как в «Героях».', plus:'Больше всего информации, привычно для ККИ.', minus:'На маленьких клетках становится тесно.'},
+  {id:'line', name:'Контур', desc:'Только линии и моноширинный шрифт. Каждый юнит отряда — сегмент полоски: видно и численность, и раны верхнего.', plus:'Самый дешёвый в производстве, выглядит строго и технично.', minus:'Меньше «сочности», юниты читаются хуже издалека.'},
+  {id:'stack', name:'Стопки', desc:'Отряд выглядит как стопка: чем больше юнитов, тем выше стопка. Крупная цифра численности, тень со сдвигом.', plus:'Численность видна телом отряда, даже не читая цифр.', minus:'Стопки занимают больше места и наезжают на соседей.'},
+];
+
+const MERGES = [
+  {name:'1. Пара', tag:'по умолчанию на эскизах', desc:'Два отряда одного тира и вида дают отряд следующего тира. Численность — меньшая из двух, все раны излечены.',
+   parts:[['peasant',6,3],'+',['peasant',5,2],'→',['archer',5]], plus:'Просто объяснить, быстрый рост.', minus:'Лишние юниты большего отряда сгорают.'},
+  {name:'2. Курс обмена', tag:'как недельный прирост', desc:'Отряды одного тира копят численность. Повышение идёт по курсу: 3 юнита тира N дают 1 юнит тира N+1, остаток остаётся.',
+   parts:[['peasant',10],'→',['archer',3],'+',['peasant',1]], plus:'Численность важна всегда, ничего не сгорает.', minus:'Нужно балансировать курс на каждом тире.'},
+  {name:'3. Три в ряд', tag:'для сот и сеток', desc:'Три одинаковых отряда, стоящих рядом, сливаются сами на месте последнего поставленного. Может вызвать цепочку.',
+   parts:[['archer',4],['archer',4],['archer',4],'→',['footman',4]], plus:'Сочные цепочки, приятно планировать.', minus:'Сложнее контролировать, случайность расстановки.'},
+  {name:'4. Поглощение', tag:'опыт вместо копий', desc:'Отряд поглощает любой ваш отряд ниже тиром и получает опыт. Полная шкала — тир выше, численность сохраняется.',
+   parts:[['footman',4],'+',['peasant',10],'→',['footman',4,null,70]], plus:'Любая карта полезна, нет мёртвых рук.', minus:'Меньше чистого «2048», шкалы надо объяснять.'},
+  {name:'5. Ветки', tag:'как улучшения в «Героях»', desc:'Пара одинаковых отрядов даёт выбор: следующий тир или улучшенная форма того же тира (Лучник → Арбалетчик).',
+   parts:[['archer',5],'×2','→',['footman',5],'или',['archer',5,null,null,'Арбалетчики']], plus:'Решения на каждом слиянии, глубина роглайка.', minus:'Больше юнитов нужно нарисовать: 14 вместо 7.'},
+];
+
+/* ---------- page ---------- */
+const $ = s => document.querySelector(s);
+let bi = 0, di = 0, view = 'one';
+try { const s = JSON.parse(localStorage.getItem('mergeSketch') || '{}'); bi = s.bi || 0; di = s.di || 0; view = s.view || 'one'; } catch (e) {}
+
+function renderControls(){
+  $('#boards').innerHTML = BOARDS.map((b, i) => `<button class="opt" type="button" aria-pressed="${view === 'one' && i === bi}" data-b="${i}"><span class="k">${i + 1}</span>${b.name}</button>`).join('')
+    + `<button class="opt view" type="button" aria-pressed="${view === 'all'}" id="all">Все 25 эскизов</button>`;
+  $('#designs').innerHTML = DESIGNS.map((d, i) => `<button class="opt" type="button" aria-pressed="${view === 'one' && i === di}" data-d="${i}"><span class="k">${'QWERT'[i]}</span>${d.name}</button>`).join('');
+  $('#boards').querySelectorAll('[data-b]').forEach(b => b.onclick = () => go(+b.dataset.b, di));
+  $('#designs').querySelectorAll('[data-d]').forEach(b => b.onclick = () => go(bi, +b.dataset.d));
+  $('#all').onclick = () => { view = view === 'all' ? 'one' : 'all'; save(); paint(); };
+}
+function renderInfo(){
+  const b = BOARDS[bi], d = DESIGNS[di];
+  $('#binfo').innerHTML = `<p class="label">Доска ${bi + 1} · ${b.like}</p><h3>${b.name}</h3><p>${b.desc}</p><ul>${b.points.map(p => `<li>${p}</li>`).join('')}</ul>`;
+  $('#dinfo').innerHTML = `<p class="label">Дизайн ${di + 1}</p><h3>${d.name}</h3><p>${d.desc}</p><p><span class="label">Сильная сторона</span><br>${d.plus}</p><p style="margin:0"><span class="label">Риск</span><br>${d.minus}</p>`;
+}
+function fitAll(){
+  document.querySelectorAll('[data-fit]').forEach(box => { const sc = box.querySelector('.scene'); if (sc) sc.style.transform = `scale(${box.clientWidth / 1280})`; });
+}
+function paint(){
+  renderControls(); renderInfo();
+  const stage = $('#stage'), mx = $('#matrix');
+  if (view === 'all'){
+    stage.hidden = true; mx.hidden = false;
+    let h = '<span></span>' + DESIGNS.map(d => `<span class="hd">${d.name}</span>`).join('');
+    BOARDS.forEach((b, i) => {
+      h += `<span class="rh">${b.name}</span>`;
+      DESIGNS.forEach((d, j) => h += `<button class="mini" data-fit type="button" data-go="${i},${j}" aria-label="${b.name}, ${d.name}"><span class="num">${i + 1}${'QWERT'[j]}</span><div class="scene" data-d="${d.id}">${b.render()}</div></button>`);
+    });
+    mx.innerHTML = h;
+    mx.querySelectorAll('[data-go]').forEach(el => el.onclick = () => { const [i, j] = el.dataset.go.split(',').map(Number); view = 'one'; go(i, j); });
+  } else {
+    stage.hidden = false; mx.hidden = true; mx.innerHTML = '';
+    const sc = $('#scene'); sc.dataset.d = DESIGNS[di].id; sc.innerHTML = BOARDS[bi].render();
+  }
+  requestAnimationFrame(fitAll);
+}
+function save(){ try { localStorage.setItem('mergeSketch', JSON.stringify({bi, di, view})); } catch (e) {} }
+function go(b, d){ bi = b; di = d; view = 'one'; save(); paint(); }
+$('#stage').setAttribute('data-fit', '');
+new ResizeObserver(fitAll).observe(document.body);
+document.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const k = e.key.toLowerCase();
+  if (/^[1-5]$/.test(k)) go(+k - 1, di);
+  const j = 'qwert'.indexOf(k); if (j >= 0 && k.length === 1) go(bi, j);
+  const jr = 'йцуке'.indexOf(k); if (jr >= 0 && k.length === 1) go(bi, jr);
+});
+
+/* merge principle diagrams */
+$('#merges').innerHTML = MERGES.map(m => {
+  const n = m.parts.length, step = 380 / n; let x = 8, inner = '';
+  m.parts.forEach(p => {
+    if (typeof p === 'string'){ inner += `<span class="op" style="left:${x + 12}px">${p}</span>`; x += p.length > 1 ? 44 : 28; return; }
+    const [k, cnt, top, xp, label] = p;
+    inner += unit(k, {x, y:22, w:70, h:88, n:cnt, top:top ?? undefined});
+    if (xp != null) inner += `<div style="position:absolute;${P(x + 6, 116, 58, 5)};border-radius:3px;background:#2a303b;overflow:hidden"><b style="display:block;height:100%;width:${xp}%;background:${GOLD}"></b></div>`;
+    if (label) inner += `<span style="position:absolute;left:${x}px;top:2px;font:700 9.5px var(--fd);color:${GOLD}">${label}</span>`;
+    x += 78;
+  });
+  return `<article class="panel mcard"><p class="label">${m.tag}</p><h3>${m.name}</h3><p>${m.desc}</p><div class="diag" style="overflow-x:auto">${inner}</div><div class="pc"><div><b>Плюс</b>${m.plus}</div><div><b>Минус</b>${m.minus}</div></div></article>`;
+}).join('');
+
+/* run map */
+(function(){
+  const nodes = [['Бой','1'],['Бой','2'],['Событие','3'],['Лагерь','4'],['Элита','5'],['Бой','6'],['Магазин','7'],['Элита','8'],['Лагерь','9'],['Бой','10'],['Элита','11'],['Босс','12']];
+  const col = {'Бой':INK,'Событие':'#8a93a3','Лагерь':TP,'Элита':TE,'Магазин':GOLD,'Босс':'#ef4444'};
+  let s = `<svg viewBox="0 0 1240 230" role="img" aria-label="Карта забега из 12 уровней"><line x1="50" y1="90" x2="1190" y2="90" stroke="#2a303b" stroke-width="3"/>`;
+  nodes.forEach(([t, n], i) => {
+    const x = 50 + i * (1140 / 11), big = t === 'Босс';
+    s += `<circle cx="${x}" cy="90" r="${big ? 26 : 18}" fill="#14171c" stroke="${col[t]}" stroke-width="3"/><text x="${x}" y="95" text-anchor="middle" font-family="Unbounded" font-weight="700" font-size="${big ? 13 : 11}" fill="${col[t]}">${n}</text><text x="${x}" y="${big ? 140 : 134}" text-anchor="middle" font-family="Manrope" font-weight="700" font-size="12.5" fill="#e7eaf0">${t}</text>`;
+  });
+  s += `<rect x="${50 + 4 * 1140 / 11 - 20}" y="20" width="${1190 - (50 + 4 * 1140 / 11) + 40}" height="26" rx="13" fill="#2a1f0c"/><text x="${50 + 4 * 1140 / 11}" y="38" font-family="Unbounded" font-weight="700" font-size="11" fill="#fbbf24">с 5-го уровня в руку приходят только тиры I–III, выше — только слиянием</text>`;
+  s += `<text x="50" y="190" font-family="Manrope" font-size="13.5" fill="#8a93a3">Отряды, их численность, раны и слияния переходят с уровня на уровень. В лагере сливать можно без ограничений и нанимать новых крестьян.</text>`;
+  s += `<text x="50" y="212" font-family="Manrope" font-size="13.5" fill="#8a93a3">Между уровнями выбираете карту в колоду: новый вид отряда тиров I–III, артефакт или заклинание героя.</text></svg>`;
+  $('#run').innerHTML = s;
+})();
+
+/* roster */
+$('#roster').innerHTML = `<table><thead><tr><th>Тир</th><th>Отряд</th><th>Атака</th><th>Защита</th><th>Урон</th><th>ХП</th><th>Скорость</th><th>Инициатива</th><th>Прирост</th><th>Способность</th><th>Улучшение</th></tr></thead><tbody>`
+  + Object.values(A).map((u, i) => { const k = Object.keys(A)[i], c = TC[u.tier - 1];
+    return `<tr><td class="num" style="color:${c}">${RO[u.tier - 1]}</td><td><span class="tic" style="background:color-mix(in srgb,${c} 16%,#1b1f27)"><svg viewBox="0 0 64 64" style="fill:${c}">${ICONS[k].replace(/class="k"/g, 'style="fill:color-mix(in srgb,' + c + ' 16%,#1b1f27)"')}</svg></span>${u.one}</td><td class="num">${u.atk}</td><td class="num">${u.def}</td><td class="num">${u.dmg}</td><td class="num">${u.hp}</td><td class="num">${u.spd}</td><td class="num">${u.ini}</td><td class="num">${u.grow}/нед</td><td class="w">${u.skill}</td><td class="w">${u.up}<br><span class="muted" style="font:500 12px var(--fm)">${u.upS}</span></td></tr>`; }).join('')
+  + `</tbody></table>`;
+
+paint();
+</script>
