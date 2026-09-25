@@ -30,6 +30,14 @@ p{margin:0 0 10px; max-width:70ch;}
 .mbtn[aria-pressed="true"] small{color:#3a3f4a;}
 .mbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
 .mdesc{margin:0; font-size:14px; color:var(--mut); max-width:90ch;}
+.races{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center;}
+.rgroup{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+.rgroup .label{min-width:84px;}
+.rbtn{all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding:6px 12px 6px 6px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font:700 12.5px/1.2 var(--fd);}
+.rbtn i{width:26px; height:26px; border-radius:7px; display:grid; place-items:center; background:color-mix(in srgb,var(--rc) 18%,#1b1f27);}
+.rbtn svg{width:18px; height:18px;} .rbtn svg *{fill:var(--rc);} .rbtn svg .k{fill:#1b1f27;}
+.rbtn[aria-pressed="true"]{border-color:var(--rc); box-shadow:inset 0 0 0 1px var(--rc); background:color-mix(in srgb,var(--rc) 10%,var(--panel));}
+.rbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
 
 /* ---------- game: full width stage ---------- */
 .arena{display:grid; gap:10px; justify-items:center; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
@@ -91,6 +99,10 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile.mg,.tile.pair{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 50%,transparent), 0 0 14px color-mix(in srgb,var(--gold) 40%,transparent);}
 .tile.mg.hov{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 20px var(--gold);}
 .tile.acting{z-index:3; box-shadow:inset 0 0 0 2px #fff, 0 0 18px color-mix(in srgb,var(--t) 70%,transparent);}
+.tile.trio{cursor:pointer; box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 60%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 50%,transparent);}
+.tile.trio:hover{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 22px var(--gold);}
+.tile .mgl.tri{padding:1px 8px; font-size:12px; animation:bob 1.1s ease-in-out infinite;}
+@keyframes bob{50%{translate:-50% -3px;}}
 .tile .mgl{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
 .tile.drop-in{animation:dropin .34s cubic-bezier(.2,1.3,.4,1);}
 @keyframes dropin{0%{transform:scale(1.3) translateY(-12px); opacity:0;} 60%{opacity:1;} 100%{transform:none;}}
@@ -101,6 +113,8 @@ p{margin:0 0 10px; max-width:70ch;}
 .bolt.arrow{width:30px; height:3px; margin:-1.5px 0 0 -15px; border-radius:2px; background:linear-gradient(90deg, transparent, #e7eaf0 60%, #fff); box-shadow:0 0 6px rgba(255,255,255,.6);}
 .bolt.orb{width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:radial-gradient(circle, #fff, #fde68a 45%, rgba(251,191,36,0) 72%); box-shadow:0 0 16px 4px rgba(251,191,36,.55);}
 .bolt.fire{width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:radial-gradient(circle, #fff7ed, #fb923c 45%, rgba(239,68,68,0) 72%); box-shadow:0 0 18px 5px rgba(239,68,68,.5);}
+.bolt.leaf{width:16px; height:10px; margin:-5px 0 0 -8px; border-radius:0 80% 0 80%; background:linear-gradient(135deg,#bbf7d0,#22c55e); box-shadow:0 0 12px 3px rgba(74,222,128,.5);}
+.bolt.spark{width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:radial-gradient(circle,#fff,#f9a8d4 50%,rgba(249,168,212,0) 72%); box-shadow:0 0 12px 4px rgba(249,168,212,.55);}
 .bolt.spill{width:13px; height:13px; margin:-6.5px 0 0 -6.5px; border-radius:50%; background:#fca5a5; box-shadow:0 0 12px 3px rgba(248,113,113,.7);}
 .ring{position:absolute; z-index:4; pointer-events:none; border-radius:12px;}
 .over{position:absolute; inset:0; z-index:30; display:grid; place-items:center; align-content:center; gap:14px; border-radius:20px; background:rgba(11,13,16,.82); text-align:center;}
@@ -196,18 +210,24 @@ td.w{white-space:normal; min-width:220px;}
 .fac{display:flex; align-items:center; gap:10px; margin:18px 0 8px;}
 .fac i{width:12px; height:12px; border-radius:50%;}
 .fac b{font:700 16px var(--fd);}
-@media (prefers-reduced-motion: reduce){ .card,.card .in,.tile,.hero .hb i{transition:none;} .tile.drop-in{animation:none;} }
+.lvrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:12px;}
+.lvrow .label{margin-right:6px;}
+.igal th{vertical-align:bottom;}
+.ihead small{display:block; margin-top:3px; font:500 10px/1.2 var(--fb); color:inherit; opacity:.75; text-transform:none; letter-spacing:0;}
+tr.frow td{padding-top:16px; font:700 13px var(--fd); border-bottom-color:var(--off);}
+@media (prefers-reduced-motion: reduce){ .card,.card .in,.tile,.hero .hb i{transition:none;} .tile.drop-in,.tile .mgl.tri{animation:none;} }
 </style>
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Три режима · Альянс против Инферно</p>
+    <p class="eyebrow" id="eyebrow">Три режима · три расы</p>
     <h1>Поле Альянса</h1>
-    <p class="lede">Юниты стоят там, где их выставили, и бьют по своей колонке. Лишний урон проходит дальше: в юнита за убитым, а потом в героя.</p>
+    <p class="lede">Юниты стоят там, где их выставили, и бьют по своей колонке. Лишний урон проходит дальше: в юнита за убитым, а потом в героя. Тройку одинаковых юнитов можно слить в юнита тиром выше, а можно оставить держать оборону.</p>
   </header>
 
   <div class="modes" id="modes" role="group" aria-label="Режим"></div>
   <p class="mdesc" id="mdesc"></p>
+  <div class="races" id="races"></div>
 
   <section class="arena" aria-label="Поле боя">
     <div class="bar" id="topbar"></div>
@@ -233,13 +253,14 @@ td.w{white-space:normal; min-width:220px;}
         <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
         <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт за своим, стрелки бьют через своих.</li>
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (20 ХП).</li>
-        <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят.</li>
+        <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
+        <li>Расу можно выбрать себе и противнику, в том числе одинаковую.</li>
       </ul></div>
       <div><h3>Тройка («Колонны», «Открытие»)</h3><ul>
-        <li>Поставьте карту рядом с двумя такими же юнитами, стоящими вместе, — они втянутся в неё, и получится юнит тиром выше.</li>
-        <li>Или положите карту прямо на одного из пары — второй втянется туда же.</li>
-        <li>Если новый юнит тоже оказался третьим рядом с парой, улучшение идёт дальше.</li>
-        <li>Золотом подсвечены пары на поле и карты в руке, которые их улучшат.</li>
+        <li>Тройка — три одинаковых юнита, стоящих вплотную по горизонтали или вертикали. По диагонали не считается.</li>
+        <li>Улучшение необязательно. Собрали тройку — юниты загораются золотом со стрелкой ↑. Нажмите на любого из них, и двое других сольются в него: получится юнит тиром выше. Не нажали — тройка так и стоит и закрывает героя.</li>
+        <li>Карта, положенная прямо на юнита из пары, улучшает сразу, как раньше.</li>
+        <li>Золотом подсвечены готовые тройки, пары, которые достроит карта из руки, и такие карты.</li>
       </ul></div>
       <div><h3>Режимы</h3><ul>
         <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
@@ -254,9 +275,9 @@ td.w{white-space:normal; min-width:220px;}
   <div class="panel" id="sndcats"></div>
   <div class="panel" id="sndatk"></div>
 
-  <h2>Иконки: 5 уровней детализации</h2>
-  <p class="lede">От простого силуэта (уровень 1, текущий) до иллюстрации с материалами, объёмом и подсветкой. Нажмите на заголовок столбца, чтобы включить этот уровень в игре.</p>
-  <div class="panel igal" id="icons"></div>
+  <h2>Иконки: 5 других способов показать отряд</h2>
+  <p class="lede">Стиль и детализация те же, меняется сам образ: портрет, оружие или вещь, знак способности, отряд строем, знамя. Первый столбец — текущие фигуры. Нажмите на заголовок столбца, чтобы включить набор в игре.</p>
+  <div class="panel"><div class="lvrow" id="lvrow"></div><div class="igal" id="icons"></div></div>
 
   <h2>Отряды</h2>
   <div id="rosters"></div>
@@ -282,7 +303,7 @@ const ICONS = {
   demonlord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M14 18C6 14 4 6 6 0c2 6 6 10 12 12zM50 18c8-4 10-12 8-18-2 6-6 10-12 12z"/>`,
 };
 /* Material parts and detail strokes layered on the silhouette for detail levels 2–5. */
-const MAT = {metal:'#cbd5e1', gold:'#fbbf24', wood:'#9a6a3a', straw:'#d9b865', skin:'#e8c39e', leather:'#7c4a2d', white:'#eef2f7', red:'#dc2626', fire:'#fb923c', ember:'#fde68a', glow:'#fde047', dark:'#101318', hair:'#2b2230', horn:'#e7e0d4', wine:'#7f1d1d', amber:'#f59e0b'};
+const MAT = {metal:'#cbd5e1', gold:'#fbbf24', wood:'#9a6a3a', straw:'#d9b865', skin:'#e8c39e', leather:'#7c4a2d', white:'#eef2f7', red:'#dc2626', fire:'#fb923c', ember:'#fde68a', glow:'#fde047', dark:'#101318', hair:'#2b2230', horn:'#e7e0d4', wine:'#7f1d1d', amber:'#f59e0b', pink:'#f9a8d4', leaf:'#4ade80', bark:'#7a5230'};
 const DETAIL = {
   peasant:{parts:[[`<rect x="10" y="16" width="30" height="4" rx="2"/><path d="M17 16l3-9h10l3 9z"/>`,'straw'],[`<circle cx="25" cy="26" r="6.3"/>`,'skin'],[`<rect x="45" y="15" width="3.5" height="47"/>`,'wood'],[`<path d="M39 3v11h16V3h-3v8h-3.5V3h-3v8H42V3z"/>`,'metal'],[`<circle cx="22.8" cy="26" r="1"/><circle cx="27.4" cy="26" r="1"/>`,'dark']],
     lines:['M14 47h22','M18 13.6h14','M23.5 29.6h3','M25 40v20']},
@@ -313,6 +334,131 @@ const DETAIL = {
   devil:{parts:[[`<circle cx="28" cy="22" r="2.6"/><circle cx="36" cy="22" r="2.6"/>`,'glow'],[`<rect x="54" y="18" width="3" height="44"/><path d="M50 4v11h11V4h-2.5v7H57V4h-2v7h-2.5V4z"/>`,'gold'],[`<path d="M18 32C9 22 1 24 1 36c6-2 9 2 11 8 2-6 4-9 6-12z"/>`,'wine']],
     lines:['M17 32L6 28','M16 34l-8 4','M28 36q4 3 8 0']},
 };
+/* Sylvan figures and the elf hero. */
+Object.assign(ICONS, {
+  pixie:`<path d="M29 27C20 10 6 8 4 18c-1 7 9 12 25 11z"/><path d="M35 27c9-17 23-19 25-9 1 7-9 12-25 11z"/><path d="M29 32c-12 1-19 9-15 15 3 4 10 1 15-10z"/><path d="M35 32c12 1 19 9 15 15-3 4-10 1-15-10z"/><circle class="k" cx="15" cy="19" r="3"/><circle class="k" cx="49" cy="19" r="3"/><path d="M30 12c-2-5-5-8-8-9l1-1.5c4 1 7 4 9 9z"/><path d="M34 12c2-5 5-8 8-9l-1-1.5c-4 1-7 4-9 9z"/><circle cx="32" cy="17" r="6"/><path d="M29 24h6l3 17H26z"/><path d="M25 40h14l-3 9h-8z"/><rect x="28.6" y="48" width="2.6" height="13"/><rect x="32.8" y="48" width="2.6" height="13"/><path d="M54 48l1.6 4.4L60 54l-4.4 1.6L54 60l-1.6-4.4L48 54l4.4-1.6z"/>`,
+  dancer:`<path d="M12 31C4 25 1 14 5 3c1 10 5 18 11 24z"/><path d="M52 31c8-6 11-17 7-28-1 10-5 18-11 24z"/><path d="M27 21L13 29l1.6 2.6L28 25z"/><path d="M37 21l14 8-1.6 2.6L36 25z"/><path d="M36 7c6-1 11 3 13 9-4-2-8-3-11-2z"/><circle cx="32" cy="11" r="6"/><path d="M26 19h12l-1 19H27z"/><path d="M27 37l-9 25h5.5l8.5-19 8.5 19H46l-9-25z"/><path class="k" d="M27 30h10v2.4H27z"/>`,
+  hunter:`<path d="M50 3c11 13 11 45 0 58l-2.2-1.4c9.6-12 9.6-43 0-55z"/><path d="M50 4.6L30 31.4l1.2 1L51.4 6z"/><path d="M50 59.4L30 32.6l1.2-1L51.4 58z"/><path d="M11 62l3-32h24l3 32z"/><path d="M13 32c0-15 7-24 17-24 7 0 11 4 13 9l-4 3v12z"/><path class="k" d="M29 16c5 0 9 4 9 9v6h-9z"/><rect x="26" y="30.9" width="34" height="2.2"/><path d="M64 32L56 27.6v8.8z"/><path d="M22 27.4l6 4.6-6 4.6 2-4.6z"/><path class="k" d="M20 44c4-3 9-2 10 3-4 3-9 2-10-3z"/>`,
+  druid:`<path d="M18 14c-5-2-7-7-5-12 1.5 3 3.5 4.5 6 5-1-2-.8-4 .3-6 .6 4 2.6 7.4 5.2 9.4z"/><path d="M38 14c5-2 7-7 5-12-1.5 3-3.5 4.5-6 5 1-2 .8-4-.3-6-.6 4-2.6 7.4-5.2 9.4z"/><path d="M12 62l6-34h20l6 34z"/><path d="M16 30c0-11 5-19 12-19s12 8 12 19z"/><ellipse class="k" cx="28" cy="24" rx="6" ry="7"/><path d="M23 27h10l-5 14z"/><path class="k" d="M26.6 44h2.8v16h-2.8z"/><rect x="49" y="16" width="3.4" height="46"/><path d="M50.7 17c-8-1-11-7-9-12 5 1 9 6 9 12z"/><path d="M50.7 17c8-1 11-7 9-12-5 1-9 6-9 12z"/><path d="M50.7 14c-3-4-3-9 0-13 3 4 3 9 0 13z"/>`,
+  unicorn:`<path d="M13 46c-7-5-8-15-3-22 0 5 2 7 4 8-1-7 2-13 8-16-2 5-1 9 1 11z"/><path d="M12 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><path d="M38 15L59 1 43 19z"/><path class="k" d="M44.4 12.6l2.4 1.8-1 1-2.4-1.8zM49.6 9l2.2 1.6-.9.9-2.2-1.6z"/><circle class="k" cx="36" cy="21" r="2.6"/><circle class="k" cx="47" cy="34" r="1.3"/><path class="k" d="M22 30c-2 4-3 8-3 12h2.4c0-4 1-8 3-11z"/>`,
+  treant:`<circle cx="32" cy="17" r="15"/><circle cx="16" cy="25" r="10"/><circle cx="48" cy="25" r="10"/><path class="k" d="M24 30.4c2.4 2 5 3 8 3s5.6-1 8-3v2.6c-2.4 2-5 3-8 3s-5.6-1-8-3z"/><path d="M23 33h18l3 29H20z"/><path d="M24 40L8 34l1.4-2.6L25 36z"/><path d="M40 40l16-6-1.4-2.6L39 36z"/><path d="M9 34l-7-5 5.4.6L6 24l4.6 6z"/><path d="M55 34l7-5-5.4.6L58 24l-4.6 6z"/><path d="M20 62H9l9-6zM44 62h11l-9-6z"/><ellipse class="k" cx="28" cy="43" rx="2.4" ry="1.8"/><ellipse class="k" cx="36" cy="43" rx="2.4" ry="1.8"/><path class="k" d="M28 51c3 2 5 2 8 0v2c-3 2-5 2-8 0z"/>`,
+  gdragon:`<path d="M24 28C14 14 4 12 1 17c4 4 4 10 2 16 4-3 8-2 10 2 1-4 5-5 8-2 0-2 1-4 3-5z"/><path d="M40 28c10-14 20-16 23-11-4 4-4 10-2 16-4-3-8-2-10 2-1-4-5-5-8-2 0-2-1-4-3-5z"/><path d="M27 11L22 1l8 7zM37 11l5-10-8 7z"/><path d="M26 12l6-6 6 6v13H26z"/><path d="M25 26h14l4 22-11 10-11-10z"/><path d="M32 56c6 3 13 1 17-5l2 3.6c-5 7-13 9-20 7z"/><path d="M22 44l-6 8h6l3-4zM42 44l6 8h-6l-3-4z"/><circle class="k" cx="29.2" cy="15" r="1.5"/><circle class="k" cx="34.8" cy="15" r="1.5"/><path class="k" d="M30 21h4l-2 2z"/><path class="k" d="M29 31h6v1.8h-6zM28.5 36h7v1.8h-7zM29 41h6v1.8h-6z"/>`,
+  elflord:`<path d="M13 28L1 18l13 3zM51 28l12-10-13 3z"/><path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M32 8c-5-3-6-7 0-9 6 2 5 6 0 9z"/>`,
+});
+Object.assign(DETAIL, {
+  pixie:{parts:[[`<circle cx="32" cy="17" r="5.3"/>`,'skin'],[`<circle cx="15" cy="19" r="3"/><circle cx="49" cy="19" r="3"/>`,'pink'],[`<path d="M54 48l1.6 4.4L60 54l-4.4 1.6L54 60l-1.6-4.4L48 54l4.4-1.6z"/>`,'glow'],[`<circle cx="30" cy="17" r=".9"/><circle cx="34" cy="17" r=".9"/>`,'dark']],
+    lines:['M10 16l14 8','M54 16l-14 8','M18 42l9-7','M46 42l-9-7']},
+  dancer:{parts:[[`<circle cx="32" cy="11" r="5.3"/>`,'skin'],[`<path d="M36 7c6-1 11 3 13 9-4-2-8-3-11-2z"/>`,'hair'],[`<path d="M12 31C4 25 1 14 5 3c1 10 5 18 11 24z"/><path d="M52 31c8-6 11-17 7-28-1 10-5 18-11 24z"/>`,'metal'],[`<path d="M27 30h10v2.4H27z"/>`,'leather']],
+    lines:['M8 8c0 8 3 14 6 18','M56 8c0 8-3 14-6 18','M32 20v9']},
+  hunter:{parts:[[`<path d="M50 3c11 13 11 45 0 58l-2.2-1.4c9.6-12 9.6-43 0-55z"/>`,'wood'],[`<rect x="26" y="30.9" width="30" height="2.2"/>`,'wood'],[`<path d="M64 32L56 27.6v8.8z"/>`,'metal'],[`<path d="M30.5 17.5c4 .5 6.5 4 6.5 8v4.5h-6.5z"/>`,'skin'],[`<path d="M20 44c4-3 9-2 10 3-4 3-9 2-10-3z"/>`,'leaf']],
+    lines:['M16 34l-2 26','M36 34l2 26','M20 20c2-5 5-8 10-9']},
+  druid:{parts:[[`<path d="M18 14c-5-2-7-7-5-12 1.5 3 3.5 4.5 6 5-1-2-.8-4 .3-6 .6 4 2.6 7.4 5.2 9.4z"/><path d="M38 14c5-2 7-7 5-12-1.5 3-3.5 4.5-6 5 1-2 .8-4-.3-6-.6 4-2.6 7.4-5.2 9.4z"/>`,'horn'],[`<ellipse cx="28" cy="23" rx="5" ry="5"/>`,'skin'],[`<path d="M23 27h10l-5 14z"/>`,'white'],[`<rect x="49" y="16" width="3.4" height="46"/>`,'wood'],[`<path d="M50.7 17c-8-1-11-7-9-12 5 1 9 6 9 12z"/><path d="M50.7 17c8-1 11-7 9-12-5 1-9 6-9 12z"/><path d="M50.7 14c-3-4-3-9 0-13 3 4 3 9 0 13z"/>`,'leaf']],
+    lines:['M18 40l-3 20','M38 40l3 20']},
+  unicorn:{parts:[[`<path d="M38 15L59 1 43 19z"/>`,'gold'],[`<path d="M13 46c-7-5-8-15-3-22 0 5 2 7 4 8-1-7 2-13 8-16-2 5-1 9 1 11z"/>`,'white'],[`<circle cx="36" cy="21" r="2.6"/>`,'dark'],[`<circle cx="37" cy="20" r=".9"/>`,'white']],
+    lines:['M26 33l16-2','M47 30c1.4 1 1.4 2.4 0 3.4']},
+  treant:{parts:[[`<circle cx="32" cy="17" r="15"/><circle cx="16" cy="25" r="10"/><circle cx="48" cy="25" r="10"/>`,'leaf'],[`<path d="M23 33h18l3 29H20z"/>`,'bark'],[`<ellipse cx="28" cy="43" rx="2.4" ry="1.8"/><ellipse cx="36" cy="43" rx="2.4" ry="1.8"/>`,'glow']],
+    lines:['M25 36l-1 24','M39 36l1 24','M20 14q6-4 12 0','M36 10q6-3 10 2']},
+  gdragon:{parts:[[`<path d="M27 11L22 1l8 7zM37 11l5-10-8 7z"/>`,'horn'],[`<circle cx="29.2" cy="15" r="1.6"/><circle cx="34.8" cy="15" r="1.6"/>`,'glow'],[`<path d="M28 30h8l2 14-6 6-6-6z"/>`,'amber']],
+    lines:['M6 18l10 8','M4 26l10 4','M58 18l-10 8','M60 26l-10 4']},
+});
+
+/* ---------- alternative depictions: 5 new ways to show the same unit ---------- */
+const spark = (x, y, r) => `<path d="M${x} ${y - r}l${r * .28} ${r * .72} ${r * .72} ${r * .28}-${r * .72} ${r * .28}-${r * .28} ${r * .72}-${r * .28}-${r * .72}-${r * .72}-${r * .28} ${r * .72}-${r * .28}z"/>`;
+const ring8 = (cx, cy, el) => [0, 45, 90, 135, 180, 225, 270, 315].map(a => `<g transform="rotate(${a} ${cx} ${cy})">${el}</g>`).join('');
+const chev = (x, y) => `<path class="k" d="M${x - 4} ${y}l4 3 4-3v1.8l-4 3-4-3z"/>`;
+const HEADS = {
+  peasant:`<path d="M10 64c2-7 10-10 22-10s20 3 22 10z"/><path class="k" d="M24 54h16l-8 6z"/><path d="M19 28h26v11c0 10-6 17-13 17s-13-7-13-17z"/><path d="M4 25c9-4 47-4 56 0l-5 4H9z"/><path d="M18 23l4-15h20l4 15z"/><rect class="k" x="19.3" y="18" width="25.4" height="3"/><circle class="k" cx="26" cy="36" r="2"/><circle class="k" cx="38" cy="36" r="2"/><rect class="k" x="27" y="46" width="9" height="2" rx="1"/><path d="M35 46.4l15 5.4-.8 2L34.2 48.4z"/>`,
+  archer:`<path d="M46 40L55 7l2.4.6-9 33z"/><path d="M53 6l5-6 2 8z"/><path d="M32 3C19 3 11 14 11 28v12L7 64h50l-4-24V28C53 14 45 3 32 3z"/><path class="k" d="M20 30c0-9 5-15 12-15s12 6 12 15v8c0 8-5 13-12 13s-12-5-12-13z"/><path d="M22.5 31c0-7 4-12 9.5-12s9.5 5 9.5 12v6.5c0 7-4 11-9.5 11s-9.5-4-9.5-11z"/><path class="k" d="M25 30h5v2h-5zM34 30h5v2h-5zM29 42h6v1.6h-6z"/><path class="k" d="M30 55l2 6 2-6z"/>`,
+  footman:`<path d="M5 64c0-6 7-10 13-10h28c6 0 13 4 13 10z"/><path d="M14 27C14 13 22 5 32 5s18 8 18 22v19c0 8-8 13-18 13s-18-5-18-13z"/><path class="k" d="M17 27h30v4H17z"/><rect class="k" x="30.5" y="31" width="3" height="17"/><circle class="k" cx="23" cy="41" r="1.5"/><circle class="k" cx="23" cy="46" r="1.5"/><circle class="k" cx="41" cy="41" r="1.5"/><circle class="k" cx="41" cy="46" r="1.5"/><path d="M29 5l3-5 3 5z"/>`,
+  griffin:`<path d="M20 15L12 2l13 9z"/><path d="M8 64C6 42 12 18 30 11c10-4 19-1 24 7l6 3c2 6 0 11-4 13-2-3-5-4-8-3-3 2-6 3-10 3 2 10 0 20-4 30z"/><path class="k" d="M35 15l12 2-1 1.8-11-1.8z"/><circle class="k" cx="41" cy="21" r="3"/><circle cx="41.8" cy="20.4" r="1"/><path class="k" d="M47 26c3-1 6 0 9 2-3 1-6 1-9-2z"/><path class="k" d="M15 38l6 4 6-4v2.4l-6 4-6-4zM14 49l6 4 6-4v2.4l-6 4-6-4z"/>`,
+  priest:`<path d="M8 64c0-14 9-21 24-21s24 7 24 21z"/><ellipse cx="32" cy="10" rx="18" ry="5"/><ellipse class="k" cx="32" cy="10" rx="13" ry="2.6"/><ellipse class="k" cx="32" cy="29" rx="13.4" ry="15.4"/><ellipse cx="32" cy="29" rx="12" ry="14"/><path class="k" d="M20 19c4-3 8-4 12-4s8 1 12 4v2c-4-2-8-3-12-3s-8 1-12 3z"/><path class="k" d="M24 28h6v1.8h-6zM34 28h6v1.8h-6zM29 36h6v1.6h-6z"/><path class="k" d="M30 48h4v13h-4zM25 52h14v3.5H25z"/>`,
+  cavalier:`<path d="M6 64c0-6 6-9 12-9h26c6 0 12 3 12 9z"/><path d="M22 11C16 1 27-3 36 1c-6 1-10 5-10 11z"/><path d="M13 52V30C13 16 21 8 33 8s19 7 20 17l2 13-8 4v10z"/><path class="k" d="M30 25h24v3H30zM31 31h22v2.6H31z"/><circle class="k" cx="36" cy="40" r="1.4"/><circle class="k" cx="41" cy="40" r="1.4"/><circle class="k" cx="36" cy="45" r="1.4"/><circle class="k" cx="41" cy="45" r="1.4"/><path class="k" d="M13 52.4h34v2.2H13z"/>`,
+  angel:`<path d="M20 34C10 22 2 22 0 32c4 0 5 4 4 8 4-2 8 0 9 4 2-4 4-6 7-8z"/><path d="M44 34c10-12 18-12 20-2-4 0-5 4-4 8-4-2-8 0-9 4-2-4-4-6-7-8z"/><path d="M10 64c0-10 9-16 22-16s22 6 22 16z"/><path d="M19 30c0-11 6-18 13-18s13 7 13 18v18l-5-3V30H24v15l-5 3z"/><ellipse class="k" cx="32" cy="31" rx="10.4" ry="12.4"/><ellipse cx="32" cy="31" rx="9" ry="11"/><ellipse cx="32" cy="6" rx="13" ry="4"/><ellipse class="k" cx="32" cy="6" rx="9" ry="2"/><path class="k" d="M26 30h5v1.6h-5zM33 30h5v1.6h-5zM30 37h4v1.4h-4z"/><path class="k" d="M24 49l8 6 8-6v2.4l-8 6-8-6z"/>`,
+  imp:`<path d="M22 22l-7-19 13 14zM42 22l7-19-13 14z"/><path d="M22 48h20l-4 16H26z"/><path class="k" d="M20 47.4h24v2H20z"/><ellipse cx="32" cy="33" rx="16" ry="15"/><path d="M17 29L1 18l5 17zM47 29l16-11-5 17z"/><path class="k" d="M21 28l9 3.5-1 2.8-8-2.3zM43 28l-9 3.5 1 2.8 8-2.3z"/><path class="k" d="M21 40c7 7 15 7 22 0l-2 6c-5 4-13 4-18 0z"/><path d="M25 42.6l2 3 2-2.4 3 2.6 3-2.6 2 2.4 2-3z"/>`,
+  demon:`<path d="M18 20C8 18 4 8 8 0c2 8 6 12 12 12z"/><path d="M46 20c10-2 14-12 10-20-2 8-6 12-12 12z"/><path d="M4 64c0-8 10-12 18-12h20c8 0 18 4 18 12z"/><path class="k" d="M18 52h28c-3 4-8 6-14 6s-11-2-14-6z"/><path d="M15 26c0-10 7-16 17-16s17 6 17 16v14c0 10-7 17-17 17s-17-7-17-17z"/><path class="k" d="M19 28l11 3.4v2.2l-11-2.6zM45 28l-11 3.4v2.2l11-2.6z"/><circle class="k" cx="25" cy="36" r="2.6"/><circle class="k" cx="39" cy="36" r="2.6"/><circle class="k" cx="32" cy="45" r="3.4"/><circle cx="32" cy="45" r="1.6"/><path class="k" d="M25 50h14l-2 3H27z"/>`,
+  hound:`<path d="M10 44C3 40 2 31 6 24c0 5 2 7 4 8-1-6 2-12 7-15-1 5 0 9 2 11z"/><path d="M10 58c-2-14 4-27 17-31l1-17 9 15c8 2 14 7 17 13h8v8H51c-4 6-10 8-18 8l-7 10z"/><path class="k" d="M34 27l9 1-.4 2-8.6-1z"/><circle class="k" cx="39" cy="32" r="2.6"/><path class="k" d="M46 41h16v2.4H46z"/><path d="M48 42l1.6 2.6 1.6-2.6 1.6 2.6 1.6-2.6 1.6 2.6 1.6-2.6z"/><circle class="k" cx="60" cy="39.6" r="1.1"/><path class="k" d="M16 48l15-5 .8 2.4-15 5z"/>`,
+  succubus:`<path d="M24 13L17 0l11 9zM40 13l7-13-11 9z"/><path d="M4 64c0-8 10-12 28-12s28 4 28 12z"/><path d="M15 27c0-13 7-21 17-21s17 8 17 21v29l-7-4V30H22v22l-7 4z"/><path class="k" d="M21 25c0-9 5-14 11-14s11 5 11 14v8c0 9-5 15-11 15s-11-6-11-15z"/><path d="M22.5 25c0-8 4-12.5 9.5-12.5s9.5 4.5 9.5 12.5v8c0 8-4 13.5-9.5 13.5s-9.5-5.5-9.5-13.5z"/><path class="k" d="M24 27c2.2-2.2 4.8-2.2 7 0-2.2 1.8-4.8 1.8-7 0zM33 27c2.2-2.2 4.8-2.2 7 0-2.2 1.8-4.8 1.8-7 0z"/><path class="k" d="M28.5 39h7l-3.5 2.4z"/>`,
+  charger:`<path d="M22 21C12 19 8 9 12 2c0 6 4 8 6 8-2-4 0-8 2-10 0 6 4 10 6 14z"/><path d="M42 21c10-2 14-12 10-19 0 6-4 8-6 8 2-4 0-8-2-10 0 6-4 10-6 14z"/><path d="M24 14l-4-12 8 8zM40 14l4-12-8 8z"/><path d="M23 12h18l4 12-2 22c-1 9-5 14-11 14s-10-5-11-14l-2-22z"/><path class="k" d="M24 25l7 2.4-1 2.4-6-1.6zM40 25l-7 2.4 1 2.4 6-1.6z"/><rect class="k" x="22.5" y="37" width="19" height="2.6"/><circle class="k" cx="28" cy="52" r="1.9"/><circle class="k" cx="36" cy="52" r="1.9"/><path class="k" d="M30 14l2 6 2-6z"/>`,
+  fiend:`<path d="M15 25C4 23 0 13 2 4c3 8 8 12 15 12zM49 25c11-2 15-12 13-21-3 8-8 12-15 12z"/><path d="M23 13L20 0l9 10zM41 13l3-13-9 10z"/><path d="M4 64c0-8 10-12 18-12h20c8 0 18 4 18 12z"/><path class="k" d="M16 54h32c-3 4-9 7-16 7s-13-3-16-7z"/><path d="M12 31c0-12 9-20 20-20s20 8 20 20v12c0 10-9 17-20 17s-20-7-20-17z"/><path class="k" d="M17 30l12 4v2.4l-12-3.4zM47 30l-12 4v2.4l12-3.4z"/><circle class="k" cx="24" cy="39" r="2.2"/><circle class="k" cx="40" cy="39" r="2.2"/><path class="k" d="M19 45h26c-2 6-7 9-13 9s-11-3-13-9z"/><path d="M22 45l3 6.5 2.5-6.5zM42 45l-3 6.5-2.5-6.5z"/>`,
+  devil:`<path d="M20 16C14 10 14 2 18 0c0 6 3 9 7 10zM44 16c6-6 6-14 2-16 0 6-3 9-7 10z"/><path d="M6 64l6-14 14 6 6 8 6-8 14-6 6 14z"/><path d="M19 25L8 18l11 13zM45 25l11-7-11 13z"/><path class="k" d="M16.6 24c0-11 6.6-17.4 15.4-17.4S47.4 13 47.4 24v10c0 6.4-4.2 12.6-8.4 16.8L32 62.6 25 50.8c-4.2-4.2-8.4-10.4-8.4-16.8z"/><path d="M18 24c0-10 6-16 14-16s14 6 14 16v10c0 6-4 12-8 16l-6 10-6-10c-4-4-8-10-8-16z"/><path class="k" d="M22 26l8 3v2l-8-2.4zM42 26l-8 3v2l8-2.4z"/><circle class="k" cx="26" cy="34" r="1.8"/><circle class="k" cx="38" cy="34" r="1.8"/><path class="k" d="M25 42c4 2.4 9 2.4 14-1v2.2c-5 3-10 3-14 1z"/>`,
+  pixie:`<path d="M24 36C10 22 2 26 4 36c2 6 10 7 20 3z"/><path d="M40 36c14-14 22-10 20 0-2 6-10 7-20 3z"/><path d="M24 42c-8 4-12 12-8 16 4 3 9-2 10-10z"/><path d="M40 42c8 4 12 12 8 16-4 3-9-2-10-10z"/><path d="M28 20c-2-8-6-12-10-14l1-2c5 2 9 7 11 15zM36 20c2-8 6-12 10-14l-1-2c-5 2-9 7-11 15z"/><circle cx="18" cy="5" r="3"/><circle cx="46" cy="5" r="3"/><path d="M27 45h10l3 19H24z"/><circle class="k" cx="32" cy="31" r="13.4"/><circle cx="32" cy="31" r="12"/><path d="M21 32l-9-7 9 1zM43 32l9-7-9 1z"/><ellipse class="k" cx="27" cy="31" rx="2.5" ry="3.3"/><ellipse class="k" cx="37" cy="31" rx="2.5" ry="3.3"/><path class="k" d="M29 37c2 1.6 4 1.6 6 0v1.4c-2 1.6-4 1.6-6 0z"/>`,
+  dancer:`<path d="M4 4l3-1 44 48-3 3z"/><path d="M60 4l-3-1-44 48 3 3z"/><path d="M8 64c0-8 10-12 24-12s24 4 24 12z"/><path d="M18 26c0-12 6-20 14-20s14 8 14 20v10l-4 16H22l-4-16z"/><path d="M21 29L7 18l14 17zM43 29l14-11-14 17z"/><path class="k" d="M21.4 24c0-7 4.6-12 10.6-12s10.6 5 10.6 12v10c0 8-4.6 13-10.6 13s-10.6-5-10.6-13z"/><path d="M23 24c0-6 4-10.5 9-10.5s9 4.5 9 10.5v10c0 7-4 11.5-9 11.5s-9-4.5-9-11.5z"/><path class="k" d="M25 28l5 1v1.6l-5-.8zM39 28l-5 1v1.6l5-.8zM25 34l3 4v2l-3-4zM39 34l-3 4v2l3-4zM29.5 40h5v1.4h-5z"/>`,
+  hunter:`<path d="M50 3c10 11 11 29 4 42l-2.4-1c6-12 5-28-4-39z"/><path d="M6 64c0-8 10-13 26-13s26 5 26 13z"/><path d="M17 28c0-13 7-21 15-21s15 8 15 21v20l-6-3V30H23v15l-6 3z"/><path d="M21 31L8 23l13 12zM43 31l13-8-13 12z"/><path class="k" d="M21.4 28c0-8 4.6-13 10.6-13s10.6 5 10.6 13v7c0 8-4.6 13-10.6 13s-10.6-5-10.6-13z"/><path d="M23 28c0-7 4-11.5 9-11.5s9 4.5 9 11.5v7c0 7-4 11.5-9 11.5s-9-4.5-9-11.5z"/><path class="k" d="M18 19.6h28v2.6H18z"/><path d="M32 17c-2.4-3-2.4-6 0-9 2.4 3 2.4 6 0 9z"/><path class="k" d="M26 30h4.4v1.6H26zM33.6 30H38v1.6h-4.4zM30 40h4v1.4h-4z"/><path d="M44 12c4-6 10-9 14-9-2 4-7 8-13 11z"/><path class="k" d="M20 56c4-3 8-2 10 2-4 3-8 2-10-2z"/>`,
+  druid:`<path d="M20 12c-6-2-9-7-7-12 2 3 4 4 7 4.5-1-2-1-4 0-6 1 4 3 7.5 6 9.5z"/><path d="M44 12c6-2 9-7 7-12-2 3-4 4-7 4.5 1-2 1-4 0-6-1 4-3 7.5-6 9.5z"/><path d="M8 64l5-32C13 18 21 9 32 9s19 9 19 23l5 32z"/><path class="k" d="M20 34c0-10 5-16 12-16s12 6 12 16v6c0 12-5 20-12 24-7-4-12-12-12-24z"/><ellipse cx="32" cy="31" rx="9.4" ry="10"/><path d="M22 35h20c0 11-4 19-10 23-6-4-10-12-10-23z"/><path class="k" d="M25 36c3-2 5-2 7 0 2-2 4-2 7 0v1.8c-3-1.4-5-1.4-7 .4-2-1.8-4-1.8-7-.4z"/><path class="k" d="M26 29h4v1.6h-4zM34 29h4v1.6h-4zM31 44h2l-1 10z"/>`,
+  unicorn:`<path d="M30.4 14L32 0l1.6 14z"/><path class="k" d="M30.8 9.6h2.4l-.2 1.2h-2zM31.2 5.2h1.6l-.2 1h-1.2z"/><path d="M24 14l-4-12 8 8zM40 14l4-12-8 8z"/><path d="M21 16c-8 4-10 14-8 24 2-4 4-6 7-6-2-6 0-12 3-16z"/><path d="M23 12h18l4 12-2 22c-1 9-5 14-11 14s-10-5-11-14l-2-22z"/><path class="k" d="M26.6 12c1 4 3 6.4 5.4 8.4 2.4-2 4.4-4.4 5.4-8.4z"/><path d="M28.4 12c1 3 2 5 3.6 6.4 1.6-1.4 2.6-3.4 3.6-6.4z"/><ellipse class="k" cx="26" cy="29" rx="2.6" ry="3"/><ellipse class="k" cx="38" cy="29" rx="2.6" ry="3"/><circle class="k" cx="28" cy="52" r="1.9"/><circle class="k" cx="36" cy="52" r="1.9"/>`,
+  treant:`<path d="M16 32L4 24l2-2 11 6zM48 32l12-8-2-2-11 6z"/><circle cx="20" cy="15" r="11"/><circle cx="32" cy="11" r="12"/><circle cx="44" cy="15" r="11"/><path class="k" d="M14 22h36v2.6H14z"/><path d="M16 24.6h32l-2 39.4H18z"/><path class="k" d="M20 29l9 1.4V32l-9-.8zM44 29l-9 1.4V32l9-.8z"/><ellipse class="k" cx="25" cy="35" rx="4" ry="2.8"/><ellipse class="k" cx="39" cy="35" rx="4" ry="2.8"/><path class="k" d="M31 37h2l1.4 8h-4.8z"/><path class="k" d="M24 49c4 3 12 3 16 0v3c-4 3-12 3-16 0z"/><path class="k" d="M20.4 40l1.4 20h1.6l-1.4-20zM43.6 40l-1.4 20h-1.6l1.4-20z"/>`,
+  gdragon:`<path d="M9 44L1 42l7-4zM13 34L6 30l8-2z"/><path d="M6 64C6 50 10 36 20 26L18 4l12 14 4-16 4 14c8 1 14 4 18 6l6 6-2 6-16 2 8 4-12 4c-4 4-10 6-14 8l-2 12z"/><path class="k" d="M36 22l7 1-.6 2.6-6-1.2z"/><circle class="k" cx="57" cy="27" r="1.2"/><path class="k" d="M44 36.4l14-1.8v1.6l-12 2z"/><path class="k" d="M12 44l6 3 5-4v2.4l-5 4-6-3zM11 54l6 3 5-4v2.4l-5 4-6-3z"/>`,
+};
+const SWORDV = `<path d="M30 0h4v40h-4z"/><path d="M30 0l2-3 2 3z"/><rect x="24" y="40" width="16" height="3.5" rx="1.5"/><rect x="30" y="43.5" width="4" height="12"/><circle cx="32" cy="58" r="3"/>`;
+const LEAFBLADE = `<path d="M32 2c5 8 6 22 3 36h-6c-3-14-2-28 3-36z"/><path class="k" d="M31.4 9h1.2v27h-1.2z"/><path d="M22 38h20l-4 4H26z"/><rect x="30" y="42" width="4" height="14"/><circle cx="32" cy="59" r="3"/>`;
+const ITEMS = {
+  peasant:`<g transform="rotate(-28 32 32)"><rect x="30.3" y="18" width="3.4" height="46"/><path d="M23 3v14h18V3h-3v10h-4.5V3h-3v10H26V3z"/></g><g transform="rotate(32 32 32)"><rect x="29" y="38" width="5" height="25" rx="2"/><path d="M31 40C26 22 36 6 56 5 44 11 37 23 36 40z"/></g>`,
+  archer:`<path d="M3 24c8-7 18-10 29-10s21 3 29 10l-2.4 2.6C51 21 42 18 32 18s-19 3-26.6 8.6z"/><path d="M5 25L32 42 59 25l1 1.8L32 45.4 4 26.8z"/><rect x="28.6" y="8" width="6.8" height="52" rx="2"/><path d="M32 0l5 9h-10z"/><rect class="k" x="31" y="10" width="2" height="28"/><path d="M26 46h12v7H26z"/><path class="k" d="M29.6 53h4.8l-1 5h-2.8z"/>`,
+  footman:`<g transform="rotate(-42 32 32)">${SWORDV}</g><g transform="rotate(42 32 32)">${SWORDV}</g><circle class="k" cx="32" cy="34" r="19"/><circle cx="32" cy="34" r="17"/><circle class="k" cx="32" cy="34" r="12"/><circle cx="32" cy="34" r="5"/><path d="M30 22h4v7h-4zM30 39h4v7h-4zM20 32h7v4h-7zM37 32h7v4h-7z"/>`,
+  griffin:`<path d="M54 3C34 5 16 21 12 47l6 7c20-4 36-21 36-51z"/><path class="k" d="M52 6L14 52l1.8 1.6L54 8z"/><path class="k" d="M18 36l-5-1 5.4 4zM24 27l-5-1.4 5.6 4zM31 19l-4.4-2 4.8 4.4zM40 44l4.4 1-5 2.6zM46 34l4.6.4-5 3zM50 23l4 0-4.6 3z"/><path d="M13 51L3 61l2.4 2.4 10-9.6z"/>`,
+  priest:`<path d="M4 26c10-4 20-4 27 2v32c-7-6-17-6-27-2z"/><path d="M60 26c-10-4-20-4-27 2v32c7-6 17-6 27-2z"/><path class="k" d="M9 34c6-2 12-2 17 1v1.6c-5-3-11-3-17-1zM9 40c6-2 12-2 17 1v1.6c-5-3-11-3-17-1zM9 46c6-2 12-2 17 1v1.6c-5-3-11-3-17-1zM55 34c-6-2-12-2-17 1v1.6c5-3 11-3 17-1zM55 40c-6-2-12-2-17 1v1.6c5-3 11-3 17-1zM55 46c-6-2-12-2-17 1v1.6c5-3 11-3 17-1z"/><path d="M29.5 0h5v6h6v5h-6v10h-5V11h-6V6h6z"/>`,
+  cavalier:`<g transform="rotate(35 32 32)"><path d="M32-2l3.4 12v54h-6.8V10z"/><path d="M22 46h20l-5-10H27z"/><path d="M35.4 12h20l-5 6 5 6h-20z"/><path class="k" d="M35.4 16.6h13v2.8h-13z"/></g>`,
+  angel:`<path d="M29 42C20 33 9 34 2 39c6 1 8 4 8 7 4-2 8-2 10 0 2-2 5-3 9-2z"/><path d="M35 42c9-9 20-8 27-3-6 1-8 4-8 7-4-2-8-2-10 0-2-2-5-3-9-2z"/><path d="M30 6l2-5 2 5v36h-4z"/><path class="k" d="M31.4 8h1.2v30h-1.2z"/><rect x="26" y="41" width="12" height="4" rx="1.5"/><rect x="30" y="45" width="4" height="12"/><circle cx="32" cy="59.6" r="3.6"/>`,
+  imp:`<rect x="30" y="22" width="4" height="40" rx="1.5"/><path d="M32 0l4.4 9h-2.6v16h-3.6V9h-2.6z"/><path d="M16 5l4 2v8c0 5 4 8 9 8v3.6c-7 0-13-4-13-11z"/><path d="M48 5l-4 2v8c0 5-4 8-9 8v3.6c7 0 13-4 13-11z"/><path d="M13 7l5-7 3 8zM51 7l-5-7-3 8z"/><path d="M34 50c8-2 14 2 16 8l-4-1c-2-3-6-4-12-3z"/>`,
+  demon:`<g transform="rotate(-30 32 32)"><rect x="29.5" y="30" width="5" height="32" rx="2"/><path d="M22 12c0-7 4-11 10-11s10 4 10 11l-3 22H25z"/><path d="M22.4 10l-6.4-2 5-3.4zM41.6 10l6.4-2-5-3.4zM21.4 20l-6.4 1 5.6 3zM42.6 20l6.4 1-5.6 3zM23.4 29l-5 3.4 6 .6zM40.6 29l5 3.4-6 .6zM32 1l-2.4-5h4.8z"/><path class="k" d="M29.5 36h5v1.8h-5zM29.5 42h5v1.8h-5z"/></g>`,
+  hound:`${ring8(32, 30, '<path d="M28.6 10.4L32 1l3.4 9.4z"/>')}<circle cx="32" cy="30" r="21"/><circle class="k" cx="32" cy="30" r="14"/><rect class="k" x="26" y="45" width="12" height="4"/><path d="M32 49l8 7-8 8-8-8z"/><circle class="k" cx="32" cy="56.4" r="2"/>`,
+  succubus:`<path d="M32 62c-12 0-20-8-20-19 0-12 9-17 13-30 2 7 5 9 7 6 2-4 0-8-1-13 10 6 21 20 21 36 0 12-8 20-20 20z"/><path class="k" d="M32 56c-6 0-10-4-10-10 0-6 5-9 7-16 2 5 4 6 5 4 1-2 1-4 0-7 5 3 8 10 8 19 0 6-4 10-10 10z"/><circle cx="32" cy="48" r="4.4"/>`,
+  charger:`<path d="M13 14c0 22 8 42 19 42s19-20 19-42h-8c0 17-5 33-11 33s-11-16-11-33z"/><rect x="10" y="10" width="11" height="6" rx="1.5"/><rect x="43" y="10" width="11" height="6" rx="1.5"/><circle class="k" cx="17.4" cy="26" r="1.5"/><circle class="k" cx="19" cy="37" r="1.5"/><circle class="k" cx="46.6" cy="26" r="1.5"/><circle class="k" cx="45" cy="37" r="1.5"/><circle class="k" cx="25" cy="47" r="1.5"/><circle class="k" cx="39" cy="47" r="1.5"/><path d="M32 43c-5-3-6-9-3-15 0 4 2 5 3 5-1-4 1-9 4-11-1 4 1 8 3 11 1 4-2 8-7 10z"/>`,
+  fiend:`<g transform="rotate(20 32 32)"><rect x="29.5" y="4" width="5" height="58" rx="2"/><path d="M34.5 8c14 0 24 8 26 22-4 4-10 6-16 6-4 0-7-1-10-2z"/><path d="M29.5 12c-8 0-14 4-17 10 4 2 10 2 17 0z"/><path class="k" d="M29.5 44h5v2h-5zM29.5 50h5v2h-5z"/></g>`,
+  devil:`<path d="M8 50L4 16l12 12 6-22 10 18 10-18 6 22 12-12-4 34z"/><rect x="7" y="50" width="50" height="9" rx="2"/><path class="k" d="M7 47.6h50V50H7z"/><path class="k" d="M32 30l5 7-5 7-5-7z"/><circle class="k" cx="18" cy="54.5" r="1.9"/><circle class="k" cx="32" cy="54.5" r="1.9"/><circle class="k" cx="46" cy="54.5" r="1.9"/>`,
+  pixie:`<path d="M11.4 61L8.6 59l30-40 2.8 2z"/><path d="M44 5l2.65 7.36 7.81.24-6.18 4.79 2.19 7.51L44 20.5l-6.47 4.4 2.19-7.51-6.18-4.79 7.81-.24z"/><path class="k" d="M44 11.4l1 2.8 3 .1-2.4 1.8.9 2.9-2.5-1.7-2.5 1.7.9-2.9-2.4-1.8 3-.1z"/>${spark(16, 18, 7)}${spark(54, 40, 6)}${spark(28, 44, 4)}`,
+  dancer:`<g transform="rotate(-36 32 32)">${LEAFBLADE}</g><g transform="rotate(36 32 32)">${LEAFBLADE}</g>`,
+  hunter:`<g transform="rotate(18 32 32)"><rect x="25" y="8" width="2.4" height="18"/><rect x="30.8" y="6" width="2.4" height="20"/><rect x="36.6" y="9" width="2.4" height="17"/><path d="M26.2 0c3 3 3 7 0 10-3-3-3-7 0-10zM32 -2c3 3 3 7 0 10-3-3-3-7 0-10zM37.8 1c3 3 3 7 0 10-3-3-3-7 0-10z"/><path d="M21 24h22l-3 38H24z"/><path class="k" d="M21.6 32h20.8v2.4H21.6zM22.8 52h18.4v2.4H22.8z"/><path class="k" d="M27 40c3-2 7-2 10 1-3 2-7 2-10-1z"/></g>`,
+  druid:`<path d="M18 42C16 20 36 4 58 10 40 12 29 24 25 42z"/><path d="M15 42h10.4l-2 20h-6.4z"/><path class="k" d="M15.4 44.6h9.8v2.2h-9.8z"/><path d="M44 58c-8-2-12-8-10-14 6 2 10 7 10 14z"/><path d="M44 58c8-2 12-8 10-14-6 2-10 7-10 14z"/><circle cx="44" cy="42" r="2.8"/><circle cx="38.6" cy="38.6" r="2.3"/><circle cx="49.4" cy="38.6" r="2.3"/>`,
+  unicorn:`<g transform="rotate(38 32 32)"><path d="M23 60c0-3 4-5 9-5s9 2 9 5l-9-58z"/><path class="k" d="M25.4 48l13.4-4.6.4 2.4-13.8 4.8zM27 36.6l10.4-3.6.4 2.2-10.8 3.8zM28.6 25.6l7.4-2.6.3 2-7.8 2.8zM30 15.4l4.4-1.6.2 1.8-4.8 1.8z"/></g>${spark(12, 14, 7)}${spark(52, 50, 6)}`,
+  treant:`<g transform="rotate(-35 32 32)"><path d="M32 2c8 6 6 10 10 12s4 8 0 10 6 6 2 10-2 8-6 8l-6 20-6-20c-4 0-8-4-6-8s-4-6 0-10-4-8 0-10 2-6 6-12z"/></g><path class="k" d="M13.4 31c0-10.4 8.4-18 18.6-18s18.6 7.6 18.6 18c0 16.4-7.2 29.6-18.6 32C20.6 60.6 13.4 47.4 13.4 31z"/><path d="M31 6h2.4l.6 9h-3.6z"/><path d="M16 30c0-9 7-15 16-15s16 6 16 15z"/><path class="k" d="M15 29.6h34V32H15z"/><path d="M19 32.4h26c0 15-6 26.6-13 28.6-7-2-13-13.6-13-28.6z"/><circle class="k" cx="24" cy="23" r="1.3"/><circle class="k" cx="32" cy="20" r="1.3"/><circle class="k" cx="40" cy="23" r="1.3"/><circle class="k" cx="28" cy="26.6" r="1.3"/><circle class="k" cx="36" cy="26.6" r="1.3"/>`,
+  gdragon:`<ellipse cx="32" cy="36" rx="19" ry="25"/>${chev(24, 20)}${chev(32, 20)}${chev(40, 20)}${chev(20, 30)}${chev(28, 30)}${chev(36, 30)}${chev(44, 30)}${chev(24, 40)}${chev(32, 40)}${chev(40, 40)}${chev(28, 50)}${chev(36, 50)}<path class="k" d="M29 11l3 6-3 4 4 5-1.4 1.2-4.2-6 3-4-3-5.4z"/>`,
+};
+const SIGNS = {
+  peasant:`<rect x="4" y="27" width="56" height="33" rx="3"/><path class="k" d="M4 37.8h56v2.4H4zM4 48.8h56v2.4H4zM18 27h2.4v10.8H18zM38 27h2.4v10.8H38zM9 40.2h2.4v8.6H9zM28 40.2h2.4v8.6H28zM48 40.2h2.4v8.6H48zM18 51.2h2.4V60H18zM38 51.2h2.4V60H38z"/><circle cx="32" cy="12" r="10"/><circle class="k" cx="32" cy="12" r="7"/><path d="M30.6 7h2.8v10h-2.8z"/>`,
+  archer:`<rect x="22" y="40" width="20" height="21" rx="4"/><path d="M6 60C8 30 42 14 56 34l-3.6 1.8C41 20 12 34 9.6 60z"/><path d="M48 34.6L62 30l-3 14.4z"/><path class="k" d="M27 46h10v2H27zM27 51h10v2H27z"/>`,
+  footman:`<path d="M26 8h32v18c0 16-8 24-16 28-8-4-16-12-16-28z"/><path class="k" d="M40.6 14h2.8v32h-2.8zM31 23h22v2.8H31z"/><path d="M2 21.4h14v3H2z"/><path d="M24 23l-8-5v10z"/><g transform="rotate(35 12 44)"><rect x="4" y="42.5" width="14" height="3"/></g><g transform="rotate(-20 15 54)"><path d="M8 52.5h8l5 1.5-5 1.5H8z"/></g>`,
+  griffin:`<rect x="4" y="36" width="24" height="24" rx="5"/><rect x="36" y="4" width="24" height="24" rx="5"/><rect class="k" x="39.5" y="7.5" width="17" height="17" rx="3"/><path d="M42 21l6-11 1.8 1-6 11zM47.6 23l6-11 1.8 1-6 11z"/><path d="M14 34C14 20 22 14 30 14v-5l9 8-9 8v-5c-6 0-10 5-10 14z"/>`,
+  priest:`<rect x="22" y="42" width="20" height="19" rx="4"/><path d="M6 60C8 36 24 22 40 20l.4 3.8C26 26 12 38 9.8 60z"/>${ring8(47, 17, '<rect x="46" y="1" width="2" height="5" rx="1"/>')}<circle cx="47" cy="17" r="8.4"/><circle class="k" cx="47" cy="17" r="4"/>`,
+  cavalier:`<circle cx="22" cy="32" r="16"/><circle class="k" cx="22" cy="32" r="10.6"/><circle cx="48" cy="32" r="12"/><circle class="k" cx="48" cy="32" r="7.4"/><path d="M0 29h52l12 3-12 3H0z"/>`,
+  angel:`<rect x="22" y="22" width="20" height="20" rx="5"/><ellipse class="k" cx="32" cy="27" rx="6" ry="1.8"/><path class="k" d="M29 31h6l2 8h-10z"/><path d="M30 1h4v5h5v4h-5v5h-4v-5h-5V6h5zM30 49h4v5h5v4h-5v5h-4v-5h-5v-4h5zM6 25h4v5h5v4h-5v5H6v-5H1v-4h5zM54 25h4v5h5v4h-5v5h-4v-5h-5v-4h5z"/>`,
+  imp:`<path d="M34 2L13 36h14l-6 26 25-36H32l8-24z"/><path d="M44 6h15v3L49 21h10v3H44v-3l10-12H44z"/><path class="k" d="M42 27L60 5l2 1.8-18 22z"/>`,
+  demon:`<path d="M32 60S4 42 4 22A13 13 0 0 1 32 16a13 13 0 0 1 28 6c0 20-28 38-28 38z"/><path class="k" d="M32 52S11 38 11 23a8.5 8.5 0 0 1 21-4 8.5 8.5 0 0 1 21 4c0 15-21 29-21 29z"/><path d="M32 45S17 35 17 24a5 5 0 0 1 15-2 5 5 0 0 1 15 2c0 11-15 21-15 21z"/>`,
+  hound:`<circle cx="10" cy="46" r="7"/><circle cx="32" cy="46" r="10"/><circle cx="54" cy="46" r="7"/><circle class="k" cx="32" cy="46" r="4"/><path d="M25 3h14l-7 26zM4 15h12l-6 20zM48 15h12l-6 20z"/>`,
+  succubus:`<rect x="8" y="42" width="20" height="19" rx="4"/><path d="M12 40C14 22 28 13 42 17l-1 3.8C29 17 19 25 16 40z"/><path d="M50 36c-7 0-11-4-11-10 0-7 6-9 8-17 1 4 3 5 4 3 1-2 1-4 0-7 6 4 10 11 10 19 0 7-4 12-11 12z"/><path class="k" d="M50 32c-3 0-5-2-5-5s3-4 4-8c1 2 2 3 3 1 2 2 3 5 3 7 0 3-2 5-5 5z"/>`,
+  charger:`<path d="M4 10l20 22L4 54h11l20-22-20-22z"/><path d="M28 10l20 22-20 22h11l20-22-20-22z"/>`,
+  fiend:`<path d="M6 54L4 22l14 13 14-23 14 23 14-13-2 32z"/><path class="k" d="M33.4 12l-4 12 6 6-6 10 4 14h-2.6l-4-14 6-10-6-6 4-12z"/><rect x="4" y="57" width="56" height="5" rx="1.5"/>`,
+  devil:`<path d="M8 30l6-9 6 9h-4v8h-4v-8zM44 30l6-9 6 9h-4v8h-4v-8z"/><path d="M25 22l-4-11 8 6zM39 22l4-11-8 6z"/><circle cx="32" cy="28" r="9"/><circle class="k" cx="28.6" cy="27" r="1.6"/><circle class="k" cx="35.4" cy="27" r="1.6"/><path d="M26 35h12l2 16H24z"/><ellipse class="k" cx="32" cy="52" rx="30" ry="11"/><ellipse cx="32" cy="52" rx="28" ry="9"/><ellipse class="k" cx="32" cy="52" rx="20" ry="5.4"/><path d="M26.4 47h11.2l1 5H25.4z"/>`,
+  pixie:`<rect x="22" y="42" width="20" height="19" rx="4"/><circle cx="8" cy="54" r="2"/><circle cx="11" cy="42" r="2.2"/><circle cx="17" cy="31" r="2.4"/><circle cx="26" cy="23" r="2.6"/><circle cx="37" cy="19" r="2.8"/>${spark(50, 24, 12)}`,
+  dancer:`<path d="M5 5c22 12 38 28 54 54C38 42 22 30 5 5z"/><path d="M59 5C37 17 21 33 5 59 26 42 42 30 59 5z"/><circle class="k" cx="32" cy="32" r="5"/><circle cx="32" cy="32" r="2.6"/>`,
+  hunter:`<rect x="24" y="44" width="18" height="17" rx="4"/><path d="M4 58C6 30 40 12 56 28l-3.2 2.4C41 16 10 32 7.6 58z"/><path d="M49 28.6L62 23l-2.4 13.6z"/><path d="M12 60C14 42 38 30 50 42l-3 2.4C37 36 17 46 15.4 60z"/><path d="M43 42.4l12-4.8-2 12.4z"/>`,
+  druid:`<path d="M8 56C8 24 28 6 58 6c0 30-18 50-50 50z"/><path class="k" d="M10 52.6L53 9.6l1.8 1.8L11.8 54.4z"/><path class="k" d="M34 21h5v7h7v5h-7v7h-5v-7h-7v-5h7z"/>`,
+  unicorn:`<path d="M2 32C12 16 22 10 32 10s20 6 30 22C52 48 42 54 32 54S12 48 2 32z"/><circle class="k" cx="32" cy="32" r="11"/><circle cx="32" cy="32" r="5"/><path class="k" d="M8 56L54 4l4.6 4L12.6 60z"/><path d="M10.6 56.2L54.4 7l1.6 1.4L12.2 57.6z"/>`,
+  treant:`<circle cx="32" cy="32" r="28"/><circle class="k" cx="32" cy="32" r="22.4"/><circle cx="33" cy="31" r="19.4"/><circle class="k" cx="33" cy="31" r="14.4"/><circle cx="34" cy="30" r="11.4"/><circle class="k" cx="34" cy="30" r="6.8"/><circle cx="34" cy="30" r="3"/><path class="k" d="M30 3l4.4 12.4-2.4 7.6-1.6-.6 2-7L28 3.6z"/>`,
+  gdragon:`<path d="M22 2h20l-3 10-7 5-7-5z"/><path d="M22 3l-6-3 5 7zM42 3l6-3-5 7z"/><circle class="k" cx="27.6" cy="7" r="1.6"/><circle class="k" cx="36.4" cy="7" r="1.6"/><path d="M32 18c-7 10-18 20-18 33 0 8 8 13 18 13s18-5 18-13c0-13-11-23-18-33z"/><circle class="k" cx="32" cy="31" r="3.6"/><circle class="k" cx="32" cy="42" r="3.6"/><circle class="k" cx="32" cy="53" r="3.6"/>`,
+};
+/* Squad and banner are composed from the figure and the item. */
+const swapK = s => s.replace(/<(path|rect|circle|ellipse|polygon)\b([^>]*?)\/>/g, (m, t, a) => /class="k"/.test(a) ? `<${t}${a.replace(/\s*class="k"/, '')}/>` : `<${t} class="k"${a}/>`);
+const squad = b => `<g transform="translate(0 2) scale(.56)" opacity=".5">${b}</g><g transform="translate(28 2) scale(.56)" opacity=".5">${b}</g><g transform="translate(12 15) scale(.76)">${b}</g>`;
+const banner = it => `<rect x="7" y="1" width="50" height="4.4" rx="2"/><path d="M12 5.4h40v44L32 63 12 49.4z"/><path class="k" d="M12 43.6l20 13.6 20-13.6v2.6L32 59.8 12 46.2z"/><g transform="translate(18 10.5) scale(.44)">${swapK(it)}</g>`;
+const SETS = [
+  {id:'fig', name:'Фигура', note:'сейчас в игре'},
+  {id:'head', name:'Портрет', note:'лицо крупно'},
+  {id:'item', name:'Оружие и вещь', note:'чем узнаётся'},
+  {id:'sign', name:'Знак способности', note:'что умеет'},
+  {id:'squad', name:'Отряд', note:'строем по трое'},
+  {id:'banner', name:'Знамя', note:'герб отряда'},
+];
+let ICON_SET = 'fig';
+try { const v = localStorage.getItem('fieldIconSet'); if (SETS.some(s => s.id === v)) ICON_SET = v; } catch (e) {}
+function baseOf(key, set){
+  if (set === 'head' && HEADS[key]) return HEADS[key];
+  if (set === 'item' && ITEMS[key]) return ITEMS[key];
+  if (set === 'sign' && SIGNS[key]) return SIGNS[key];
+  if (set === 'squad' && ICONS[key]) return squad(ICONS[key]);
+  if (set === 'banner' && ITEMS[key]) return banner(ITEMS[key]);
+  return ICONS[key];
+}
 const SWORD = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1.5L15 1l-.5 1.5L7 10l-1-1zM4 9l3 3-1 1-1-1-2 2-1-1 2-2-1-1z"/></svg>`;
 const HEART = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.5S1 10 1 5.5A3.5 3.5 0 0 1 8 4a3.5 3.5 0 0 1 7 1.5C15 10 8 14.5 8 14.5z"/></svg>`;
 const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
@@ -324,11 +470,12 @@ try { const v = +localStorage.getItem('fieldIconLevel'); if (v >= 0 && v < 5) IC
 const EL = /<(path|rect|circle|ellipse|polygon)\b([^>]*?)\/>/g;
 const paint = (els, style) => els.replace(EL, (m, t, a) => `<${t}${a.replace(/class="k"/, '')} style="${style}"/>`);
 const paintBase = (base, fill, kfill, extra = '') => base.replace(EL, (m, t, a) => { const k = /class="k"/.test(a); return `<${t}${a.replace(/class="k"/, '')} style="fill:${k ? kfill : fill};${k ? '' : extra}"/>`; });
-const lines = (key, op = .55) => (DETAIL[key]?.lines || []).map(d => `<path d="${d}" style="fill:none;stroke:rgba(8,10,14,${op});stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"/>`).join('');
-const parts = (key, outline) => (DETAIL[key]?.parts || []).map(([els, m]) => paint(els, `fill:${MAT[m]};${outline ? 'stroke:rgba(8,10,14,.55);stroke-width:1;paint-order:stroke' : ''}`)).join('');
-function ico(key, level = ICON_LEVEL){
-  const base = ICONS[key];
-  if (level === 0 || !DETAIL[key]) return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${base}</svg>`;
+const linesOf = (key, op = .55) => (DETAIL[key]?.lines || []).map(d => `<path d="${d}" style="fill:none;stroke:rgba(8,10,14,${op});stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"/>`).join('');
+const partsOf = (key, outline) => (DETAIL[key]?.parts || []).map(([els, m]) => paint(els, `fill:${MAT[m]};${outline ? 'stroke:rgba(8,10,14,.55);stroke-width:1;paint-order:stroke' : ''}`)).join('');
+function ico(key, level = ICON_LEVEL, set = ICON_SET){
+  const base = baseOf(key, set), fig = base === ICONS[key];
+  if (level === 0) return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${base}</svg>`;
+  const parts = (k, o) => fig ? partsOf(k, o) : '', lines = (k, op) => fig ? linesOf(k, op) : '';
   const id = 'ig' + (++icoN), OUT = 'stroke:#0b0d11;stroke-width:2.4;paint-order:stroke;stroke-linejoin:round';
   const grad = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--t) 55%,#fff)"/><stop offset=".5" style="stop-color:var(--t)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--t) 55%,#000)"/></linearGradient>`
     + `<radialGradient id="${id}b"><stop offset="0" style="stop-color:color-mix(in srgb,var(--t) 45%,transparent)"/><stop offset="1" style="stop-color:transparent"/></radialGradient></defs>`;
@@ -340,8 +487,8 @@ function ico(key, level = ICON_LEVEL){
   return `<svg class="ico" viewBox="-6 -6 76 76" aria-hidden="true">${grad}<circle cx="32" cy="32" r="36" style="fill:url(#${id}b)"/><ellipse cx="32" cy="64" rx="22" ry="4" style="fill:rgba(0,0,0,.45)"/>${body}${parts(key, true)}${lines(key, .65)}${rim}</svg>`;
 }
 
-const F = {
-  p:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', units:[
+const FAC = {
+  haven:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', castle:'Haven', col:'#60a5fa', units:[
     {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
     {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
     {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
@@ -350,7 +497,7 @@ const F = {
     {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
     {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
   ]},
-  e:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', units:[
+  inferno:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', castle:'Inferno', col:'#f87171', units:[
     {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, splash:true, ab:'Три головы: задевает соседей цели на 1', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
@@ -359,11 +506,24 @@ const F = {
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
   ]},
+  sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#4ade80', units:[
+    {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', ab:'Пыльца: бьёт через своих', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
+    {key:'dancer', name:'Танцор клинков', atk:1, hp:6, double:true, ab:'Два удара за ход', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
+    {key:'hunter', name:'Охотник', atk:1, hp:6, ranged:true, double:true, bolt:'arrow', ab:'Два выстрела через своих', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
+    {key:'druid', name:'Друид', atk:3, hp:12, ranged:true, bolt:'leaf', heal:2, ab:'Стреляет; в начале хода лечит соседей на 2', homm:'Друид', hs:'Атк 7 · Защ 7 · 7–9 · ХП 34'},
+    {key:'unicorn', name:'Единорог', atk:5, hp:20, blind:true, ab:'Ослепляет: выживший пропускает свой удар', homm:'Единорог', hs:'Атк 12 · Защ 12 · 10–20 · ХП 57'},
+    {key:'treant', name:'Энт', atk:6, hp:36, armor:2, ab:'Кора: каждый удар по нему слабее на 2', homm:'Энт', hs:'Атк 19 · Защ 27 · 7–17 · ХП 175'},
+    {key:'gdragon', name:'Зелёный дракон', atk:11, hp:50, breath:3, ab:'Дыхание: все враги за целью в колонке получают 3', homm:'Зелёный дракон', hs:'Атк 27 · Защ 25 · 30–50 · ХП 200'},
+  ]},
 };
+/* Each side picks a race; the side (colour, rows) stays, the faction behind it changes. */
+const RACE = {p:'haven', e:'inferno'};
+try { const r = JSON.parse(localStorage.getItem('fieldRaces') || 'null'); if (r && FAC[r.p] && FAC[r.e]) Object.assign(RACE, r); } catch (e) {}
+const F = {get p(){ return FAC[RACE.p]; }, get e(){ return FAC[RACE.e]; }};
 const MODES = {
   col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'860px',
-    desc:'Поле 5×4, в руке I и II тир. Поставьте карту к паре таких же юнитов или прямо на одного из них, и получится юнит тиром выше.',
-    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Золотые клетки и золотые юниты означают улучшение: туда карта сольётся с парой.'},
+    desc:'Поле 5×4, в руке I и II тир. Три одинаковых юнита вплотную (не по диагонали) можно слить в юнита тиром выше — нажатием, когда захотите. Карта прямо на юнита из пары улучшает сразу.',
+    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Золотая клетка достраивает тройку; тройка загорается золотом со стрелкой ↑ — нажмите на юнита, в которого её слить, или оставьте как есть. Золотой юнит под выбранной картой — улучшение сразу.'},
   unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.6, .28, .12], unlock:true, bw:'860px',
     desc:'Как «Колонны», но сначала в руку приходит только I тир. Собрали юнита II тира — в колоде появляются карты II тира. Собрали III — появляется III.',
     howto:'Собирайте тройки, чтобы открыть карты старших тиров. Открытые тиры показаны рядом с вашей маной.'},
@@ -386,7 +546,8 @@ const D = ms => RM ? Math.round(ms * 0.2) : ms;
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
 /* ---------- sound: categories with variants ---------- */
-const ACLASS = {peasant:'light', imp:'light', archer:'bow', footman:'blade', griffin:'beast', hound:'beast', priest:'magic', succubus:'magic', angel:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy'};
+const ACLASS = {peasant:'light', imp:'light', archer:'bow', footman:'blade', griffin:'beast', hound:'beast', priest:'magic', succubus:'magic', angel:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy',
+  pixie:'light', dancer:'blade', hunter:'bow', druid:'magic', unicorn:'beast', treant:'heavy', gdragon:'heavy'};
 const AVAR = {light:['Фирменный','Тычок','Взмах','Размах','Щелчок'], blade:['Фирменный','Рубящий','Взмах','Тяжёлый','Резкий'], beast:['Фирменный','Укус','Бросок','Рык','Когти'], bow:['Фирменный','Тетива','Свист','Арбалет','Щелчок'], magic:['Фирменный','Волна','Всплеск','Гул','Импульс'], heavy:['Фирменный','Удар','Замах','Сокрушение','Топот']};
 const CATS = {
   draw:{name:'Вытягивание карты', vars:['Бумага','Щелчок','Шорох','Двойной','Мягкий']},
@@ -472,11 +633,18 @@ const Sfx = {
       case 'charger': this.thud(90, {vol:.2, dur:.09}); this.thud(85, {vol:.2, dur:.09, delay:.09}); this.noise(.18, {vol:.05, lp:500, delay:.05}); break;
       case 'fiend': this.thud(48, {vol:.5, dur:.45}); this.noise(.3, {vol:.08, lp:400, delay:.02, wet:true}); break;
       case 'devil': [55, 82].forEach(f => this.tone(f, .7, {type:'sawtooth', vol:.03, a:.06, lp:300, wet:true})); this.thud(50, {vol:.4, dur:.4, delay:.08}); break;
+      case 'pixie': this.noise(.18, {vol:.04, lp:3200, hp:1400, a:.05}); this.tone(660, .12, {type:'triangle', vol:.025, a:.02, lp:1400}); break;
+      case 'dancer': this.noise(.08, {vol:.07, lp:1400, hp:400, a:.03}); this.noise(.08, {vol:.07, lp:1400, hp:400, a:.03, delay:.11}); this.thud(170, {vol:.12, dur:.07, delay:.12}); break;
+      case 'hunter': this.tone(110, .14, {type:'triangle', vol:.13, a:.002}); this.noise(.16, {vol:.04, lp:2000, hp:700, a:.02, delay:.03}); break;
+      case 'druid': this.noise(.45, {vol:.06, lp:600, hp:120, a:.2, sweep:1400, wet:true}); this.tone(165, .45, {vol:.04, a:.15, lp:500}); break;
+      case 'unicorn': this.thud(110, {vol:.16, dur:.08}); this.thud(100, {vol:.16, dur:.08, delay:.09}); this.noise(.2, {vol:.05, lp:2400, hp:900, a:.05, delay:.12}); break;
+      case 'treant': this.tone(48, .5, {type:'sawtooth', vol:.04, a:.08, lp:220}); this.thud(45, {vol:.5, dur:.45, delay:.1}); break;
+      case 'gdragon': this.noise(.7, {vol:.1, lp:300, sweep:1400, a:.12, wet:true}); this.tone(60, .6, {type:'sawtooth', vol:.04, a:.1, lp:350}); this.thud(55, {vol:.35, dur:.3, delay:.3}); break;
     }
   },
   attack(key, i){
     if (!i) return this.signature(key);
-    const cls = ACLASS[key], tier = Math.max(0, ['p', 'e'].map(s => F[s].units.findIndex(u => u.key === key)).find(x => x >= 0)), f = 200 - tier * 20;
+    const cls = ACLASS[key], tier = Math.max(0, Object.values(FAC).map(f => f.units.findIndex(u => u.key === key)).find(x => x >= 0) ?? 0), f = 200 - tier * 20;
     const V = {
       light:[, () => { this.thud(f, {vol:.25, dur:.1}); this.noise(.05, {vol:.08, lp:1200, hp:300}); }, () => { this.noise(.14, {vol:.07, lp:900, hp:200, a:.07}); this.thud(f, {vol:.22, dur:.1, delay:.12}); }, () => { this.thud(f * .6, {vol:.45, dur:.3}); this.noise(.3, {vol:.08, lp:300}); }, () => { this.noise(.03, {vol:.06, lp:5000, hp:1500}); this.thud(f * 1.4, {vol:.15, dur:.06}); }],
       beast:[, () => { this.noise(.05, {vol:.1, lp:1300, hp:400}); this.thud(f * 1.2, {vol:.15, dur:.06}); }, () => { this.noise(.22, {vol:.07, lp:700, a:.1}); this.thud(f, {vol:.2, dur:.1, delay:.18}); }, () => { this.tone(f * .4, .35, {type:'sawtooth', vol:.05, a:.04, lp:400}); this.thud(f * .7, {vol:.2, dur:.15}); }, () => [0, .05, .1].forEach(d => this.noise(.04, {vol:.06, lp:2500, hp:900, delay:d}))],
@@ -515,7 +683,8 @@ const fieldAt = (r, c) => S.units.find(u => u.where === 'f' && u.r === r && u.c 
 const campAt = (side, i) => S.units.find(u => u.where === 'c' && u.side === side && u.i === i);
 const alive = u => S.units.includes(u);
 const onField = side => S.units.filter(u => u.side === side && u.where === 'f');
-const adj = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c)) === 1;
+/* Trios count only orthogonal neighbours: no diagonals. */
+const adj = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
 function rollType(side){
   const o = M().odds.slice(), max = M().unlock ? S.unlocked[side] : 2;
   for (let i = max + 1; i < 3; i++) o[i] = 0;
@@ -523,7 +692,7 @@ function rollType(side){
   for (let i = 0; i < 3; i++){ if ((x -= o[i]) < 0) return i; } return 0;
 }
 const newCard = side => ({uid:uid++, type:rollType(side)});
-const who = side => side === 'p' ? 'Вы' : 'Инферно';
+const who = side => side === 'p' ? 'Вы' : F.e.name;
 function note(){}
 
 function plan(u, ignoreSleep){
@@ -549,6 +718,13 @@ function completionAt(side, type, cell, excl){
   return null;
 }
 const partnerOf = u => u.type < 6 ? onField(u.side).find(w => w !== u && w.type === u.type && adj(u, w)) : null;
+/* A unit standing in a trio can be upgraded on demand: the other two merge into it. */
+const trioOf = u => u && alive(u) && u.where === 'f' && M().upgrade === 'trio' && u.type < 6 ? completionAt(u.side, u.type, u) : null;
+function readyTrios(){
+  const set = new Set(); if (!S || S.side !== 'p' || S.busy || S.over) return set;
+  onField('p').forEach(u => { if (trioOf(u)) set.add(u.id); });
+  return set;
+}
 function cardUpgradeInfo(side, type){
   const cells = [], units = [];
   if (M().upgrade !== 'trio' || type >= 6) return {cells, units};
@@ -567,7 +743,7 @@ function buildBoard(){
   for (let r = 0; r < ROWS; r++){ CELLS[r] = []; for (let c = 0; c < m.cols; c++) CELLS[r][c] = add(ZONE.p.includes(r) ? 'zp' : 'ze', c + off, r + 1, {r, c}); }
   if (m.camp){
     for (let i = 0; i < CAMP_N; i++){ CAMP.e[i] = add('camp ce', 1, i + 1, {camp:'e', i}); CAMP.p[i] = add('camp cp', 8, i + 2, {camp:'p', i}); }
-    g.insertAdjacentHTML('beforeend', `<span class="camplabel" style="grid-column:1;grid-row:4;color:var(--te)">лагерь<br>Инферно</span><span class="camplabel" style="grid-column:8;grid-row:1;color:var(--tp)">ваш<br>лагерь</span>`);
+    g.insertAdjacentHTML('beforeend', `<span class="camplabel" style="grid-column:1;grid-row:4;color:var(--te)">лагерь<br>${F.e.name}</span><span class="camplabel" style="grid-column:8;grid-row:1;color:var(--tp)">ваш<br>лагерь</span>`);
   }
   g.insertAdjacentHTML('beforeend', `<div class="frontline" style="grid-column:${off} / ${off + m.cols};grid-row:2 / 4"></div><div class="units" id="units"></div><svg class="overlay" id="overlay"></svg>`);
 }
@@ -588,17 +764,17 @@ function hintPairs(){
   return set;
 }
 function syncUnits(dropId){
-  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), pairs = hintPairs();
+  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), pairs = hintPairs(), trios = readyTrios();
   for (const u of S.units){
     let el = TILES.get(u.id);
     if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
       if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
-    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id;
-    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${!mg && pairs.has(u.id) ? ' pair' : ''}${keep}`;
+    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id, tri = !mg && trios.has(u.id);
+    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${!mg && !tri && pairs.has(u.id) ? ' pair' : ''}${keep}`;
     el.style.setProperty('--t', TC[u.type]);
-    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}. ${U(u).ab}`;
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
-    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : '');
+    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${tri ? `\nНажмите: тройка сольётся сюда → ${next}` : ''}`;
+    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : tri ? `<span class="mgl tri">↑</span>` : '');
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
@@ -650,10 +826,11 @@ function renderBars(){
   const me = S.side === 'p' && !S.busy && !S.over;
   const unl = side => M().unlock ? `<span class="chip unl">Карты до <b>${RO[S.unlocked[side]]}</b> тира</span>` : '';
   $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + unl('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
-    + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит Инферно'}</span>`;
+    + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? 'Инферно ходит…' : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель: золото — улучшение.' : 'Выставьте карты, потом «Конец хода».';
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель: золото — улучшение.'
+    : readyTrios().size ? 'Тройка собрана: нажмите на юнита со стрелкой ↑, и двое других сольются в него. Можно не улучшать.' : 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
@@ -757,12 +934,10 @@ async function promote(target, fromDesc){
   }
   await wait(260);
 }
-/* After a trio upgrade the new unit may itself complete another trio: keep going. */
-async function cascade(u){
-  while (alive(u) && u.where === 'f' && u.type < 6){
-    const pair = completionAt(u.side, u.type, u); if (!pair) break;
-    await wait(120); await absorb(u, pair); await promote(u, 'ещё двое рядом');
-  }
+/* Optional trio upgrade: the two neighbours merge into the chosen unit. */
+async function trioUpgrade(u){
+  const pair = trioOf(u); if (!pair) return false;
+  await absorb(u, pair); await promote(u, 'тройка'); return true;
 }
 async function deployCard(side, cardUid, dest, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
@@ -775,11 +950,9 @@ async function deployCard(side, cardUid, dest, fromRect){
   await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick};
-  const pair = !dest.camp && M().upgrade === 'trio' ? completionAt(side, card.type, dest) : null;
   S.units.push(u);
   Sfx.play(dest.camp ? 'camp' : 'place'); syncUnits(u.id); ringAt(toEl, side === 'p' ? '#2dd4bf' : '#f472b6');
-  if (pair){ await wait(150); await absorb(u, pair); await promote(u, 'пара рядом'); await cascade(u); }
-  else await wait(120);
+  await wait(120);
   return true;
 }
 async function upgradeWithCard(side, cardUid, target, fromRect){
@@ -790,7 +963,7 @@ async function upgradeWithCard(side, cardUid, target, fromRect){
   if (!spendCard(side, cardUid)) return false;
   S.sel = null; const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
   await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, TILES.get(target.id) || slotEl(target), side === 'e');
-  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); await cascade(target); }
+  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); }
   else await promote(target, 'карта');
   return true;
 }
@@ -813,7 +986,9 @@ async function kill(v){
   if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
   S.units = S.units.filter(x => x !== v); syncUnits();
 }
-async function damage(t, dmg){
+const eff = (t, dmg) => U(t).armor ? Math.max(1, dmg - U(t).armor) : dmg;
+async function damage(t, raw){
+  const dmg = eff(t, raw);
   t.hp -= dmg; const el = TILES.get(t.id);
   Sfx.play('hurt');
   if (el){
@@ -848,7 +1023,7 @@ async function carry(u, r, c, amount){
   for (let rr = r + d; rr >= 0 && rr < ROWS && amount > 0; rr += d){
     const v = fieldAt(rr, c); if (!v || v.side === u.side) continue;
     await travel(from, mid(CELLS[rr][c]));
-    const excess = amount - v.hp; await damage(v, amount);
+    const excess = eff(v, amount) - v.hp; await damage(v, amount);
     if (excess <= 0 || S.over) return;
     amount = excess; from = mid(CELLS[rr][c]);
   }
@@ -866,12 +1041,15 @@ async function hit(u, t){
   let dmg = A.atk; if (A.ranged && U(t).shield) dmg = Math.ceil(dmg / 2);
   const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
   const sides = A.splash ? [-1, 1].map(dc => fieldAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
-  const excess = dmg - t.hp;
+  const flame = A.breath ? S.units.filter(v => v.where === 'f' && v.side !== u.side && v.c === tc && (v.r - tr) * FWD[u.side] > 0) : [];
+  const excess = eff(t, dmg) - t.hp;
   await damage(t, dmg);
   TILES.get(u.id)?.classList.remove('acting');
+  if (A.blind && alive(t)){ t.stun = true; const b = box(TILES.get(t.id) || slotEl(t)); floatAt(b.x + b.w / 2, b.y + b.h * .3, 'ослеп', 'g'); syncUnits(); }
   if (excess > 0 && !S.over) await carry(u, tr, tc, excess);
   if (behind && behind.side !== u.side && alive(behind)) await damage(behind, Math.max(1, Math.floor(dmg / 2)));
   for (const v of sides) if (alive(v)) await damage(v, 1);
+  for (const v of flame) if (alive(v) && !S.over) await damage(v, A.breath);
 }
 async function heroHit(u){
   const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
@@ -909,7 +1087,7 @@ function checkOver(){
   return !!S.over;
 }
 async function startTurn(side, first){
-  S.units.forEach(u => { if (u.side === side) u.sleep = false; });
+  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; } });
   S.mana[side] = Math.min(S.turn, MANA_MAX);
   for (const u of onField(side).filter(v => U(v).heal)){
     onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); });
@@ -918,7 +1096,7 @@ async function startTurn(side, first){
   if (!first) await drawCards(side, 2, side === 'p');
 }
 
-/* ---------- Inferno AI ---------- */
+/* ---------- opponent AI ---------- */
 function rowFit(side, type, r){
   const A = F[side].units[type];
   if (A.ranged) return r === BACK[side] ? 4 : -6;
@@ -941,11 +1119,13 @@ function cellScore(side, type, r, c){
   return s + Math.random() * .3;
 }
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
-/* Follow the cascade a placement would trigger and score the unit that finally stands there. */
-function finalAfterPlacement(side, type, cell, firstPair){
-  const excl = new Set(firstPair); let t = type + 1, pair;
-  while (t < 6 && (pair = completionAt(side, t, cell, excl))){ pair.forEach(x => excl.add(x)); t++; }
-  return t;
+/* Upgrading is optional for the AI too: it merges a trio only into a unit whose row suits the next tier. */
+async function aiUpgrades(side){
+  for (let g = 0; g < 12 && !S.over; g++){
+    const best = onField(side).filter(u => trioOf(u)).map(u => ({u, s:rowFit(side, u.type + 1, u.r) + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
+    if (!best || best.s < 0) break;
+    await wait(140); await trioUpgrade(best.u);
+  }
 }
 async function aiTurn(){
   const side = 'e', mine = () => S.units.filter(u => u.side === side);
@@ -958,6 +1138,7 @@ async function aiTurn(){
       if (cell && cell.s > 1.5 && !u.sleep) await fromCamp(u, cell);
     }
   }
+  await aiUpgrades(side);
   for (let guard = 0; guard < 14 && !S.over; guard++){
     const aff = S.hand[side].filter(c => c.type + 1 <= S.mana[side]);
     if (!aff.length) break;
@@ -965,10 +1146,11 @@ async function aiTurn(){
     for (const card of aff){
       for (const f of freeCells()){
         const pair = M().upgrade === 'trio' ? completionAt(side, card.type, f) : null;
-        const fin = pair ? finalAfterPlacement(side, card.type, f, pair) : card.type;
-        opts.push({card, kind:'cell', f, s:pair ? 3 + (rowFit(side, fin, f.r) < 0 ? -12 : rowFit(side, fin, f.r)) + fin : cellScore(side, card.type, f.r, f.c) + card.type * .5});
+        let s = cellScore(side, card.type, f.r, f.c) + card.type * .5;
+        if (pair){ const best = Math.max(...[f, ...pair].map(x => rowFit(side, card.type + 1, x.r))); if (best >= 0) s = Math.max(s, 3 + best + card.type + 1); }
+        opts.push({card, kind:'cell', f, s});
       }
-      if (M().upgrade === 'trio') onField(side).filter(u => u.type === card.type && partnerOf(u)).forEach(u => { const fin = finalAfterPlacement(side, u.type, u, [u, partnerOf(u)]); const fit = rowFit(side, fin, u.r); opts.push({card, kind:'onto', u, s:3 + (fit < 0 ? -12 : fit) + fin}); });
+      if (M().upgrade === 'trio') onField(side).filter(u => u.type === card.type && partnerOf(u)).forEach(u => { const fit = rowFit(side, u.type + 1, u.r); opts.push({card, kind:'onto', u, s:3 + (fit < 0 ? -12 : fit) + u.type + 1}); });
       if (M().upgrade === 'stack') mine().filter(u => u.type === card.type && u.type < 6).forEach(u => opts.push({card, kind:'onto', u, s:2 + fitNext(side, u.type, u.r, u.where)}));
       if (M().camp){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null) opts.push({card, kind:'camp', i, s:(F[side].units[card.type + 1]?.ranged ? 1.5 : .2)}); }
     }
@@ -977,6 +1159,7 @@ async function aiTurn(){
     if (best.kind === 'cell') await deployCard(side, best.card.uid, {r:best.f.r, c:best.f.c});
     else if (best.kind === 'onto') await upgradeWithCard(side, best.card.uid, best.u);
     else await deployCard(side, best.card.uid, {camp:true, i:best.i});
+    await aiUpgrades(side);
     renderBars();
   }
 }
@@ -1072,6 +1255,11 @@ $('#bwrap').addEventListener('click', async e => {
     if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
     if (await perform(S.sel, dest)) return;
   }
+  if (dest && dest.unit && dest.unit.side === 'p' && trioOf(dest.unit)){
+    S.sel = null; S.busy = true; renderAll();
+    await trioUpgrade(dest.unit);
+    S.busy = false; renderAll(); return;
+  }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
 $('#end').onclick = endTurn;
@@ -1083,13 +1271,21 @@ function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
   $('#modes').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if (S && S.busy && !S.over) return; MODE_ID = b.dataset.m; try { localStorage.setItem('fieldMode', MODE_ID); } catch (e) {} newGame(); });
   $('#mdesc').textContent = M().desc; $('#howto').textContent = M().howto;
+  $('#eyebrow').textContent = `${M().name} · ${F.p.name} против ${F.e.name}`;
+  $('#races').innerHTML = [['p', 'Вы'], ['e', 'Противник']].map(([side, label]) => `<div class="rgroup" role="group" aria-label="${label}: раса"><span class="label">${label}</span>`
+    + Object.entries(FAC).map(([k, f]) => `<button class="rbtn" type="button" data-side="${side}" data-race="${k}" aria-pressed="${RACE[side] === k}" style="--rc:${f.col}"><i>${svg(f.heroIcon)}</i>${f.name}</button>`).join('') + `</div>`).join('');
+  $('#races').querySelectorAll('[data-race]').forEach(b => b.onclick = () => {
+    if (S && S.busy && !S.over) return;
+    RACE[b.dataset.side] = b.dataset.race; try { localStorage.setItem('fieldRaces', JSON.stringify(RACE)); } catch (e) {}
+    newGame();
+  });
 }
 
 /* ---------- sound lab ---------- */
 function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
 function renderSoundLab(){
   $('#sndcats').innerHTML = `<h3>События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
-  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + ['p', 'e'].flatMap(s => F[s].units.map(u => `<div class="srow"><b>${u.name}<small>${F[s].name}</small></b><div class="svars">${AVAR[ACLASS[u.key]].map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
+  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${AVAR[ACLASS[u.key]].map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
@@ -1101,15 +1297,19 @@ document.addEventListener('click', e => {
 
 /* ---------- icon gallery and roster ---------- */
 function renderIcons(){
-  $('#icons').innerHTML = `<table><thead><tr><th>Юнит</th>${LEVELS.map((n, i) => `<th style="text-align:center"><button class="ihead" type="button" data-lv="${i}" aria-pressed="${i === ICON_LEVEL}">${n}</button></th>`).join('')}</tr></thead><tbody>`
-    + ['p', 'e'].flatMap(side => F[side].units.map((u, i) => `<tr><td><span style="color:${side === 'p' ? 'var(--tp)' : 'var(--te)'}">●</span> ${u.name} <span class="muted" style="font:500 11px var(--fm)">${RO[i]}</span></td>${LEVELS.map((_, lv) => `<td><span class="ibox" style="--t:${TC[i]}">${ico(u.key, lv)}</span></td>`).join('')}</tr>`)).join('')
+  $('#lvrow').innerHTML = `<span class="label">Детализация</span>` + LEVELS.map((n, i) => `<button class="ihead" type="button" data-lv="${i}" aria-pressed="${i === ICON_LEVEL}">${n}</button>`).join('');
+  $('#icons').innerHTML = `<table><thead><tr><th>Юнит</th>${SETS.map(x => `<th style="text-align:center"><button class="ihead" type="button" data-set="${x.id}" aria-pressed="${x.id === ICON_SET}">${x.name}<small>${x.note}</small></button></th>`).join('')}</tr></thead><tbody>`
+    + Object.values(FAC).map(f => `<tr class="frow"><td colspan="${SETS.length + 1}" style="color:${f.col}">${f.name}</td></tr>`
+      + f.units.map((u, i) => `<tr><td>${u.name} <span class="muted" style="font:500 11px var(--fm)">${RO[i]}</span></td>${SETS.map(x => `<td><span class="ibox" style="--t:${TC[i]}">${ico(u.key, ICON_LEVEL, x.id)}</span></td>`).join('')}</tr>`).join('')).join('')
     + `</tbody></table>`;
-  $('#icons').querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { ICON_LEVEL = +b.dataset.lv; try { localStorage.setItem('fieldIconLevel', ICON_LEVEL); } catch (e) {} renderIcons(); renderRoster(); if (S){ rerenderHandFaces(); syncUnits(); } });
+  const apply = () => { renderIcons(); renderRoster(); if (S){ rerenderHandFaces(); syncUnits(); } };
+  $('#lvrow').querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { ICON_LEVEL = +b.dataset.lv; try { localStorage.setItem('fieldIconLevel', ICON_LEVEL); } catch (e) {} apply(); });
+  $('#icons').querySelectorAll('[data-set]').forEach(b => b.onclick = () => { ICON_SET = b.dataset.set; try { localStorage.setItem('fieldIconSet', ICON_SET); } catch (e) {} apply(); });
 }
 function renderRoster(){
-  $('#rosters').innerHTML = ['p', 'e'].map(side => {
-    const us = F[side].units;
-    return `<div class="fac"><i style="background:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"></i><b>${F[side].name}</b><span class="muted" style="font-size:13px">${side === 'p' ? 'замок Haven' : 'замок Inferno'} в «Героях 5»</span></div>`
+  $('#rosters').innerHTML = Object.values(FAC).map(f => {
+    const us = f.units;
+    return `<div class="fac"><i style="background:${f.col}"></i><b>${f.name}</b><span class="muted" style="font-size:13px">замок ${f.castle} в «Героях 5» · герой ${f.hero}</span></div>`
       + `<div class="panel tbl"><table><thead><tr><th>Тир</th><th>Юнит</th><th>Цена</th><th>Урон</th><th>ХП</th><th>Особенность</th><th>В «Героях 5» (по памяти)</th></tr></thead><tbody>`
       + us.map((u, i) => `<tr><td class="num" style="color:${TC[i]}">${RO[i]}</td><td><span class="tic" style="--t:${TC[i]};background:color-mix(in srgb,${TC[i]} 16%,#1b1f27)">${ico(u.key)}</span>${u.name}</td><td class="num">${i < 3 ? i + 1 : 'улучшение'}</td><td class="num">${u.atk}</td><td class="num">${u.hp}</td><td class="w">${u.ab}</td><td class="muted">${u.homm}: <span style="font:500 12px var(--fm)">${u.hs}</span></td></tr>`).join('')
       + `</tbody></table></div>`;
