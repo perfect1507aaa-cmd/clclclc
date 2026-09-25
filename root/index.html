@@ -255,7 +255,6 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   </div>
   <canvas id="mini" class="panel" aria-label="Мини-карта"></canvas>
   <div id="toast" class="toast panel" role="status" aria-live="polite"></div>
-  <div class="pop panel" id="chanPop" hidden></div>
   <div class="legend panel" id="legend" hidden><button class="legend-head" id="legendHead" aria-expanded="true"><span>виды узлов</span><span id="legendArrow">свернуть</span></button><div class="legend-list" id="legendList"></div></div>
 </div>
 
@@ -872,7 +871,7 @@ const LEVELS = [
     spec: { W: 3100, H: 2100, seed: 116, homes: [[450 / 3100, 1650 / 2100], [2650 / 3100, 1650 / 2100], [0.5, 550 / 2100]],
       extra: [].concat(ringPx(450, 1650, 190, 3, -Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]), ringPx(2650, 1650, 190, 3, -Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]),
         ringPx(1550, 550, 190, 3, Math.PI / 2, ['s', 'm', 's'], [5, 10, 5]), [{ x: 1550, y: 1650, sz: 'x', g: 40 }], ringPx(1550, 1650, 200, 3, -Math.PI / 2, 'm', 10)) } },
-  { name: 'Паутина', ai: ['normal', 'normal', 'hard'], hint: 'плотная паутина мелких узлов. очередь — всего три приказа: решайте, какие удары важнее. маршруты и Q экономят клики.',
+  { name: 'Паутина', ai: ['normal', 'normal', 'hard'], hint: 'плотная паутина мелких узлов. решайте, какие удары важнее: пачки в воздухе уходят по одной. маршруты и Q экономят клики.',
     spawn: { first: 60, every: [30, 40], max: 8, at: 'random', sym: 4, style: 'glyph', sz: { s: 0.7, m: 0.3 } },
     spec: { W: 3200, H: 2000, seed: 119, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], grid: { cols: 8, rows: 5 }, weights: { s: 0.5, m: 0.35, l: 0.12, x: 0.03 } } },
   { name: 'Клещи', ai: ['normal', 'normal'], hint: 'двое противников сверху, вы — снизу. они дерутся и друг с другом. новые узлы включаются на линиях между датацентрами — там, где горячо.',
@@ -1004,11 +1003,6 @@ const KIND_CAP = { storage: 400, miner: 50, switch: 60 };
 const KIND_REGEN = { amp: 2, miner: 2.5, storage: 1 / 3, switch: 0, relay: 0.5 };
 const KIND_DEF = { firewall: 1.8, miner: 0.6 };
 const SWITCH_T = 6;
-/* Cutting your own channel gives back half of what it cost; bundles on it are lost. */
-const CUT_REFUND = 0.5;
-/* Bandwidth: a channel lets a bundle up to its width pass at full speed; bigger bundles squeeze through slower. */
-const BW = [0, 40, 120, 300], BW_NAME = ['', 'медь', 'оптоволокно', 'магистраль'], BW_COST = [0, 0, 20, 45];
-const bwMul = (e, n) => n <= BW[e.lvl || 1] ? 1 : Math.sqrt(BW[e.lvl || 1] / n);
 /* Safety cap on how many times routes may carry one packet on. */
 const ORDER_TTL = 8;
 /* Defender bonus by class: the node's owner deals this much more damage per packet. */
@@ -1034,7 +1028,7 @@ function buildGame(map, aiNames, meta) {
     pct: shiftHeld ? 0.5 : 1,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: aiOf(d), next: 1.5 + k * 0.6 + aiOf(d).think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0, kills: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0,
-    used, shake: 0, chanSel: null, queue: [] };
+    used, shake: 0, queue: [] };
   if (G.demo) G.ais = aiNames.map((d, k) => ({ o: k + 1, d: aiOf(d), next: 0.5 + k * 0.4 }));
   // channels a map starts with, finished (indices: homes first, then the extra nodes in order)
   for (const [i, j] of map.links || []) { const r = planRoute(i, j, true); if (!r.err && !edgeBetween(i, j)) makeEdge(i, j, nodes[i].owner || nodes[j].owner, r, 'up'); }
@@ -1271,13 +1265,8 @@ function runQueue() {
   if (!G.queue.length) return;
   G.queue = G.queue.filter(q => { const s = orderState(q); return s.dead ? false : s.wait ? true : !sendArmy(s.hops[0].e, q.i, q.o, s.n, q.j); });
 }
-/* At most this many orders wait at once; a new order for a node that already has one replaces it. */
-const QUEUE_MAX = 3;
-const queueFull = (o, i) => G.queue.filter(q => q.o === o && q.i !== i).length >= QUEUE_MAX;
-/* true when the order has to wait; null when it was refused because the queue is full */
+/* Any number of orders may wait; a new order for a node that already has one replaces it. true when it has to wait. */
 function enqueue(i, j, o, pct) {
-  const st = orderState({ i, j, o, pct });
-  if (st.wait && queueFull(o, i)) return null;
   G.queue = G.queue.filter(q => !(q.o === o && q.i === i));
   G.queue.push({ i, j, o, pct });
   runQueue();
@@ -1744,54 +1733,7 @@ function resolveNodes(dt) {
     } else if (!p.assault.length) p.assault = null;
   }
 }
-/* Upgrade a channel one step (copper -> fibre -> trunk), paid by the richest own end. */
-function upgradeCheck(e, o) {
-  const N = G.nodes, lvl = e.lvl || 1;
-  if (N[e.a].owner !== o && N[e.b].owner !== o) return 'это не ваш канал';
-  if (e.state !== 'up') return 'канал ещё прокладывается';
-  if (lvl >= 3) return 'канал уже магистраль';
-  const payer = [N[e.a], N[e.b]].filter(n => n.owner === o).sort((x, y) => y.v - x.v)[0], cost = BW_COST[lvl + 1];
-  if (payer.v < cost + 1) return `нужно ${cost + 1} пакетов в узле`;
-  return { payer, cost };
-}
-function upgradeChannel(e, o) {
-  const r = upgradeCheck(e, o);
-  if (typeof r === 'string') { if (o === 1) { SFX.error(); toast(r, 2000); } return false; }
-  spend(r.payer, r.cost); e.lvl = (e.lvl || 1) + 1;
-  const [mx, my] = ptAt(e, e.len / 2);
-  G.floats.push({ x: mx, y: my, txt: `${BW_NAME[e.lvl]} · ${BW[e.lvl]}`, o, life: 1.6, max: 1.6 });
-  if (o === 1) SFX.link();
-  return true;
-}
 /* Cutting your own channel: frees both link slots, gives back half the cost to your end; bundles on it are lost. */
-/* What cutting channel e would cut off from o's datacenter: those nodes go grey. */
-function cutLoss(e, o) {
-  if (e.state !== 'up' || G.nodes[e.a].owner !== o || G.nodes[e.b].owner !== o) return [];
-  const keep = linked(o, null, e);
-  return G.nodes.filter(p => p.owner === o && !keep.has(p.i));
-}
-function cutChannel(e, o) {
-  const N = G.nodes, A = N[e.a], B = N[e.b];
-  if (A.owner !== o && B.owner !== o) return false;
-  const lost = cutLoss(e, o);
-  for (const a of e.ar) {
-    if (a.dead) continue;
-    const [x, y] = posAt(e, a.dir, a.d);
-    G.floats.push({ x, y, txt: `−${Math.round(a.n)}`, o: a.o, life: 1.3, max: 1.3 });
-    spark(x, y, a.o);
-  }
-  const k = G.edges.indexOf(e); if (k >= 0) G.edges.splice(k, 1); G.edgeVer = (G.edgeVer || 0) + 1;
-  A.nb = A.nb.filter(f => f !== e); B.nb = B.nb.filter(f => f !== e);
-  for (const [key, list] of G.hash) { const l = list.filter(q => !(q[2] === e.a && q[3] === e.b)); if (l.length) G.hash.set(key, l); else G.hash.delete(key); }
-  const own = N[e.from] && N[e.from].owner === o ? N[e.from] : (A.owner === o ? A : B), back = Math.floor((e.cost || 0) * CUT_REFUND);
-  if (back > 0) { own.v += back; own.base += back; G.floats.push({ x: own.x, y: own.y, txt: `+${back}`, o, life: 1.3, max: 1.3 }); }
-  const [mx, my] = ptAt(e, e.len / 2);
-  for (let q = 0; q < 6; q++) spark(mx + (Math.random() - 0.5) * 20, my + (Math.random() - 0.5) * 20, o);
-  if (o === 1) SFX.cut();
-  if (G.chanSel === e) closePop();
-  prune(o); prune(A.owner === o ? B.owner : A.owner);
-  return true;
-}
 /* Routing (Kiomet-style): a node with a route keeps forwarding every packet it has to its target. */
 const routingOn = () => G && !G.demo && (G.meta.quick || G.meta.level >= 1);
 function routePath(i, j, o) {
@@ -2001,7 +1943,7 @@ function step(dt) {
     }
     if (!e.ar) e.ar = [];
     if (!e.ar.length) continue;
-    for (const a of e.ar) a.d += a.sp * chanMul(e, a.o) * bwMul(e, a.n) * dt;
+    for (const a of e.ar) a.d += a.sp * chanMul(e, a.o) * dt;
     for (const a of e.ar) {
       if (a.dead) continue;
       const end = endD(e, a.dir);
@@ -2222,8 +2164,6 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     const have = avail.get(s.A.i);
     // in this fight an overwhelming bundle loses almost nothing: an experienced player hits with a wide margin so the prize holds
     const k = Math.min(have, D.smart ? Math.max(t.need + 2, Math.floor(have * 0.75)) : t.need + 2);
-    // a big bundle on a thin channel crawls: an experienced player widens the channel first
-    if (D.smart && !s.dest && k > BW[s.e.lvl || 1] * 1.5 && typeof upgradeCheck(s.e, o) === 'object' && have >= k + BW_COST[(s.e.lvl || 1) + 1] + 2 && ai.hands >= 2 && upgradeChannel(s.e, o)) ai.hands--;
     if (sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); book('out', fly); t.sent = 1; }
     if (!t.sent) continue;                                                           // nothing left: the order was not given
     ai.hands--; actions--;
@@ -2243,21 +2183,6 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     }
     cands.sort((a, b) => b.score - a.score);
     for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { ai.hands--; actions--; built = true; break; }
-  }
-  // 3b. locked out: nothing it can take and no channel to lay, because every node within reach of a foreign one has all
-  //     its slots taken by channels inside the network. A person cuts one of those to make room; so does the bot.
-  //     Only a channel the network does not hang on: a cut that parted nodes from the datacenter would grey them out.
-  if (!built && !scored.length && ai.hands >= 2.5 && !G.edges.some(e => e.state === 'grow' && e.builder === o)) {
-    let pick = null;
-    for (const A of mine) {
-      if (A.nb.length < (A.kind === 'hub' ? 5 : TIERS[tierN(A)].links) || A.v < D.minV + 6) continue;
-      // a foreign node with a free slot counts double; a full one still counts, since its owner may make room too
-      const room = N.filter(T => T.owner !== o && (!T.owner || tierN(A) >= 2) && !planRoute(A.i, T.i).err).reduce((s, T) => s + (T.nb.length < linkCap(T) ? 2 : 1), 0);
-      if (!room || (pick && room <= pick.room)) continue;
-      const e = A.nb.find(e => e.state === 'up' && N[other(e, A.i)].owner === o && !cutLoss(e, o).length);
-      if (e) pick = { e, room };
-    }
-    if (pick && cutChannel(pick.e, o)) ai.hands--;
   }
   // 4. supply: the fullest rear node sends a big bundle to the front, when nothing else is in the air;
   //    while the network masses for a strike nothing single node can make, it goes to that node
@@ -2324,15 +2249,6 @@ function aimTarget(sx, sy, src, chans) {
   }
   return best;
 }
-function edgeNear(sx, sy) {
-  let best = null, bd = 13;
-  for (const e of G.edges) {
-    if (!(G.nodes[e.a].seen || G.nodes[e.b].seen)) continue;
-    if (G.nodes[e.a].owner !== 1 && G.nodes[e.b].owner !== 1) continue;
-    for (let d = rad(e.a); d < e.len - rad(e.b); d += 7) { const [x, y] = ptAt(e, d); ts(x, y); const dd = Math.hypot(TX - sx, TY - sy); if (dd < bd) { bd = dd; best = { e, d }; } }
-  }
-  return best;
-}
 const interactive = () => G && !G.demo && !G.paused && !G.ended;
 function dragAction(i, j) {
   const N = G.nodes, e = edgeBetween(i, j);
@@ -2344,7 +2260,6 @@ function dragAction(i, j) {
   const st = orderState({ i, j, o: 1, pct: G.pct });
   if (st.dead) return { ok: false, label: 'это не ваш узел' };
   const repl = orderOf(i) ? ' · заменит приказ' : '', h = st.hops ? st.hops.length : 0, via = h > 1 ? `${h} прыж., ` : '';
-  if (st.wait && queueFull(1, i)) return { ok: false, label: `очередь полна: не больше ${QUEUE_MAX} приказов (${st.wait})` };
   if (st.wait) return { ok: true, kind: 'order', hops: st.hops, queued: true, label: `в очередь: ${st.wait}${repl}` };
   return { ok: true, kind: 'order', hops: st.hops, label: `${via}отправить ${st.n}${repl}` };
 }
@@ -2352,9 +2267,8 @@ function doAction(i, j) {
   const a = dragAction(i, j);
   if (!a.ok) { SFX.error(); return; }
   if (a.kind === 'build') build(i, j, 1, false);
-  else { const r = enqueue(i, j, 1, G.pct); if (r === null) queueFullMsg(); else if (r) SFX.queue(); }
+  else if (enqueue(i, j, 1, G.pct)) SFX.queue();
 }
-function queueFullMsg(n) { SFX.error(); toast(`очередь полна: не больше ${QUEUE_MAX} приказов${n ? ` — ${n} не принято` : ''}`, 2200); }
 /* How many of these nodes could launch for node j right now: with one bundle of a kind in the air, at most one. */
 function launchNow(list, j) {
   if (flyingOf(1, slotOf(1, j)) >= MAX_FLYING) return 0;
@@ -2383,9 +2297,9 @@ function groupSend(j, set) {
   const plan = groupPlan(j, set);
   if (!plan.list.length) { SFX.error(); toast(plan.label, 2500); return; }
   // weaker nodes queue first: a station needs a quiet network, a server or a mainframe can still go after it
-  let waiting = 0, full = 0;
-  for (const it of plan.list.slice().sort((a, b) => tierN(G.nodes[a.i]) - tierN(G.nodes[b.i]))) { const r = enqueue(it.i, j, 1, G.pct); if (r === null) full++; else if (r) waiting++; }
-  if (full) queueFullMsg(full); else if (waiting) SFX.queue();
+  let waiting = 0;
+  for (const it of plan.list.slice().sort((a, b) => tierN(G.nodes[a.i]) - tierN(G.nodes[b.i]))) if (enqueue(it.i, j, 1, G.pct)) waiting++;
+  if (waiting) SFX.queue();
 }
 /* The badge of a waiting order sits at the lower right of its node; a click on it cancels the order. */
 function qPos(p) { const r = nr(p, Math.min(p.vd, 200)) * 1.25 + 14; return { x: p.x + r * 0.75, y: p.y + r * 0.75 }; }
@@ -2417,13 +2331,16 @@ cv.addEventListener('wheel', e => {
 }, { passive: false });
 cv.addEventListener('contextmenu', e => {
   e.preventDefault();
-  if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; return; }
-  // right-click on your channel opens its panel
-  if (interactive() && !ptr) { const near = edgeNear(e.clientX, e.clientY); if (near) openChanPop(near.e, near.d); }
+  if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; }
 });
 cv.addEventListener('pointerdown', e => {
   audioInit(); if (!G || G.demo) return;
-  if (e.button === 2) { if (ptr && (ptr.mode === 'link' || ptr.mode === 'retreat')) { ptr.cancel = true; ptr.target = -1; } else { G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); } return; }
+  // the right button: cancels a drag in progress; otherwise drops every waiting order and the selection
+  if (e.button === 2) {
+    if (ptr && (ptr.mode === 'link' || ptr.mode === 'retreat')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (interactive() && cancelOrders(q => q.o === 1)) SFX.flowOff();
+    G.sel = -1; G.routeFrom = -1; clearGroup(); return;
+  }
   cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 2) {
     const [p1, p2] = [...pointers.values()];
@@ -2499,9 +2416,6 @@ function endPtr(e, cancel) {
   if (!p.moved && !p.cancel) {
     if (p.shift && p.p >= 0 && G.nodes[p.p].owner === 1) { toggleGroup(p.p); return; }
     if (p.p >= 0) return tapNode(p.p);
-    // a tap on your channel opens its panel: shut a port, upgrade, cut
-    const near = edgeNear(p.x, p.y);
-    if (near) { openChanPop(near.e, near.d); return; }
     G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); return;
   }
   if (p.mode === 'link' && !p.cancel && p.target >= 0 && p.target !== p.p) {
@@ -2552,45 +2466,22 @@ function tapNode(i) {
     return;
   }
   if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { doAction(G.sel, i); G.sel = -1; return; }
-  // a tap on a foreign node sends a bundle from every own node linked to it by a finished channel
+  // a tap on a foreign node sends a bundle from every own node linked to it by a channel; one still being laid
+  // takes the order too, and the bundle leaves as soon as the channel is up
   if (p.owner !== 1) {
-    const from = p.nb.filter(e => e.state === 'up' && G.nodes[other(e, i)].owner === 1);
+    const from = p.nb.filter(e => (e.state === 'up' || e.state === 'grow') && G.nodes[other(e, i)].owner === 1);
     if (from.length) {
       // only nodes that may attack it get the order; each launches when its network has a free slot
       const srcs = from.map(e => other(e, i)).filter(k => !(p.owner && tierN(G.nodes[k]) < 2)).sort((a, b) => tierN(G.nodes[a]) - tierN(G.nodes[b]));
       if (!srcs.length) { SFX.error(); toast('атаковать может только сервер или мейнфрейм', 2200); }
-      else { let waiting = 0, full = 0; for (const k of srcs) { const r = enqueue(k, i, 1, G.pct); if (r === null) full++; else if (r) waiting++; } if (full) queueFullMsg(full); else if (waiting) SFX.queue(); }
+      else { let waiting = 0; for (const k of srcs) if (enqueue(k, i, 1, G.pct)) waiting++; if (waiting) SFX.queue(); }
       G.sel = -1; return;
     }
   }
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
 }
-/* The channel panel: upgrade the channel or cut it. */
-function openChanPop(e, d) {
-  const N = G.nodes, el = $('#chanPop'), lvl = e.lvl || 1;
-  G.chanSel = e;
-  const uc = upgradeCheck(e, 1), refund = Math.floor((e.cost || 0) * CUT_REFUND);
-  el.innerHTML = `<div class="pt">${N[e.a].name} — ${N[e.b].name} · ${BW_NAME[lvl]}, пропуск ${BW[lvl]}</div>`
-    + (lvl < 3 ? `<button data-act="up" ${typeof uc === 'string' ? 'disabled' : ''}>улучшить до «${BW_NAME[lvl + 1]}», пропуск ${BW[lvl + 1]}${typeof uc === 'string' ? ` — ${uc}` : ` (−${uc.cost})`}</button>` : '')
-    + `<button data-act="cut">перерезать канал (+${refund}, пачки на нём пропадут${cutLoss(e, 1).length ? `; отрежет от датацентра ${cutLoss(e, 1).length} узл. — они отключатся` : ''})</button>`;
-  el.querySelectorAll('button').forEach(b => b.addEventListener('click', ev => {
-    ev.stopPropagation(); SFX.ui();
-    const act = b.dataset.act;
-    if (act === 'up') upgradeChannel(e, 1); else cutChannel(e, 1);
-    closePop();
-  }));
-  el.hidden = false; placeChanPop(); SFX.select();
-}
-function placeChanPop() {
-  const el = $('#chanPop'), e = G && G.chanSel;
-  if (!e || el.hidden) return;
-  if (!G.edges.includes(e)) { closePop(); return; }
-  const [mx, my] = ptAt(e, e.len / 2); ts(mx, my);
-  const w = el.offsetWidth, h = el.offsetHeight;
-  el.style.left = `${clamp(TX - w / 2, 8, V.w - w - 8)}px`; el.style.top = `${clamp(TY + 18, 8, V.h - h - 70)}px`;
-}
-function closePop() { const el = $('#chanPop'); if (el) el.hidden = true; if (G) G.chanSel = null; }
+function closePop() {}
 
 /* ---------- rendering ---------- */
 const dcol = () => PAL.dark ? [110, 140, 255] : [53, 82, 216];
@@ -2671,8 +2562,8 @@ function render(now) {
     if (pathRange(e, s0, e0)) {
       // a channel between two nodes of one player takes a light tint of that player's colour
       const co = shownOwner(A) && shownOwner(A) === shownOwner(B) ? shownOwner(A) : 0, grey = dark ? [214, 238, 226] : [13, 19, 17];
-      const lw = [0, 1.4, 2.6, 4][e.lvl || 1];
-      ctx.strokeStyle = rgba(co ? mix(grey, PAL.rgb[co], 0.55) : grey, dark ? 0.32 + 0.06 * ((e.lvl || 1) - 1) : 0.34 + 0.06 * ((e.lvl || 1) - 1)); ctx.lineWidth = Math.max(1, lw * S); ctx.stroke();
+      const lw = 1.4;
+      ctx.strokeStyle = rgba(co ? mix(grey, PAL.rgb[co], 0.55) : grey, dark ? 0.32 : 0.34); ctx.lineWidth = Math.max(1, lw * S); ctx.stroke();
       const ar = e.ar.find(a => !a.dead);
       if (ar) { const c = PAL.rgb[ar.o]; ctx.strokeStyle = rgba(c, dark ? 0.3 : 0.35); ctx.lineWidth = Math.max(1, 1.4 * S); ctx.stroke(); }
     }
@@ -2685,10 +2576,7 @@ function render(now) {
       ctx.strokeStyle = rgba(PAL.rgb[2], 0.9); ctx.lineWidth = Math.max(2, 2.5 * S); ctx.beginPath(); ts(gx + nx * w, gy + ny * w); ctx.moveTo(TX, TY); ts(gx - nx * w, gy - ny * w); ctx.lineTo(TX, TY); ctx.stroke();
     }
   }
-  if (G.chanSel && G.edges.includes(G.chanSel)) {
-    const e = G.chanSel;
-    if (pathRange(e, rad(e.a), e.len - rad(e.b))) { ctx.strokeStyle = rgba(PAL.rgb[1], 0.25 + 0.15 * Math.sin(t * 6)); ctx.lineWidth = Math.max(5, 8 * S); ctx.stroke(); }
-  }
+
   // routes: a dotted trail moving from the forwarding node to its target
   if (!G.demo) for (const p of N) {
     if (p.route == null || p.owner !== 1) continue;
@@ -3103,7 +2991,6 @@ function frame(now) {
 }
 function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  placeChanPop();
   if (G && G.shake > 0.05 && !G.paused) { G.shake *= Math.exp(-dt * 6); SHX = (Math.random() - 0.5) * G.shake; SHY = (Math.random() - 0.5) * G.shake; }
   else { SHX = SHY = 0; if (G) G.shake = 0; }
   if (G && !G.paused) { let rem = dt * G.speed; while (rem > 1e-6) { const h = Math.min(rem, 1 / 60); step(h); rem -= h; } }
@@ -3172,9 +3059,9 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
     'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят вдвое быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция, сервер, мейнфрейм. Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки не сталкиваются: они пролетают друг мимо друга. Встречную пачку не обогнать: узел, к которому по каналу летит пачка, не может отправить пачку по этому каналу навстречу.'],
+    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов — можно сразу, пока канал ещё прокладывается: приказ встанет в очередь; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки не сталкиваются: они пролетают друг мимо друга. Встречную пачку не обогнать: узел, к которому по каналу летит пачка, не может отправить пачку по этому каналу навстречу.'],
   ['<path d="M4 20h22" stroke="currentColor" stroke-opacity=".3"/><rect x="5" y="17" width="4" height="4" fill="currentColor"/><rect x="13" y="17" width="4" height="4" fill="none" stroke="currentColor"/><rect x="21" y="17" width="4" height="4" fill="none" stroke="currentColor"/><path d="M7 13V9h16v4" fill="none" stroke="currentColor"/>',
-    'У игрока в воздухе может быть две пачки: одна атака (к чужому или серому узлу) и одна по своей сети (к своему узлу). Пока летит атака, новая атака ждёт; пока летит своя пачка, ждёт следующая своя. Ноутбук пачки не отправляет вовсе. Wi-fi-прыжок тоже считается летящей пачкой.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. В очереди не больше трёх приказов; у узла один приказ, новый заменяет старый. Нажмите значок, чтобы отменить приказ, Delete отменяет приказы выделенных узлов или все. Приказ всей группе исполняется по одному, пачка за пачкой, — не заваливайте сеть приказами. Маршруты тоже ждут своей очереди, а пачка, которую узел пропускает дальше, новой не считается.'],
+    'У игрока в воздухе может быть две пачки: одна атака (к чужому или серому узлу) и одна по своей сети (к своему узлу). Пока летит атака, новая атака ждёт; пока летит своя пачка, ждёт следующая своя. Ноутбук пачки не отправляет вовсе. Wi-fi-прыжок тоже считается летящей пачкой.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. Очередь не ограничена; у узла один приказ, новый заменяет старый. Нажмите значок, чтобы отменить приказ; Delete отменяет приказы выделенных узлов или все, правая кнопка мыши — сразу все. Приказ всей группе исполняется по одному, пачка за пачкой, — не заваливайте сеть приказами. Маршруты тоже ждут своей очереди, а пачка, которую узел пропускает дальше, новой не считается.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Пока у узла идёт бой, он может отправлять пачки только в свои узлы — отступать, но не бить в ответ. Пачки, отрезанные от вашей сети, — в пути и в бою — гибнут. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
@@ -3186,9 +3073,9 @@ const HOW = [
   ['<rect x="3" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="17" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="3" y="17" width="10" height="10" fill="none" stroke="currentColor"/><circle cx="22" cy="22" r="3" fill="currentColor"/>',
     'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Атакуют только сервер и мейнфрейм. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
   ['<path d="M6 24L24 6M9 6l3 3M18 21l3 3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="15" cy="15" r="3" fill="none" stroke="currentColor"/>',
-    'Нажмите на свой канал (или правой кнопкой) — откроется панель канала. Улучшить: медь пропускает пачку до 40 без замедления, оптоволокно до 120, магистраль до 300; пачка больше пропускной способности ползёт медленнее. Перерезать: вернётся половина стоимости, освободится слот, пачки на канале пропадут; если без этого канала часть сети потеряет связь с датацентром, она отключится.', 'Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
+    'Все каналы одинаковые и остаются навсегда: их нельзя ни улучшить, ни перерезать. Отрезать сеть противника можно, только захватив узлы, через которые она держит связь с датацентром.', 'Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
-     'Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Над вашим узлом мигает ▼ с числом и временем, если к нему летит вражеская пачка. Клавиши: Shift — пачка 50%, Q — выделить все узлы, Delete — отменить приказы, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
+     'Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Над вашим узлом мигает ▼ с числом и временем, если к нему летит вражеская пачка. Клавиши: Shift — пачка 50%, Q — выделить все узлы, Delete — отменить приказы, правая кнопка — отменить все, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
 ];
 $('#howList').innerHTML = HOW.map(([svg, a, b]) => `<div><svg viewBox="0 0 30 30">${svg}</svg><p>${a}<br><span class="muted">${b}</span></p></div>`).join('');
 $('#btnHowPlay').addEventListener('click', () => { SFX.ui(); startLevel(0); });
@@ -3218,7 +3105,7 @@ const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал. канал стоит пакетов и остаётся навсегда.',
   2: 'канал готов. нажмите на серый узел — с вашего узла по каналу уйдёт пачка: все пакеты, с зажатым Shift — половина. если узел не может отправить её сейчас, приказ встанет в очередь — значок с номером у узла.',
   3: 'у чужого узла пакеты становятся символами и бьются с гарнизоном. чем больше сторона, тем быстрее она побеждает — кольцо вокруг узла показывает баланс.',
-  4: 'узел взломан. ваша сеть живёт от датацентра — большого узла, с которого вы начали: всё, что потеряет с ним связь, станет серым. потеряете датацентр — отключится вся сеть. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди (до трёх).',
+  4: 'узел взломан. ваша сеть живёт от датацентра — большого узла, с которого вы начали: всё, что потеряет с ним связь, станет серым. потеряете датацентр — отключится вся сеть. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди. правая кнопка мыши отменяет их все.',
 };
 function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
 
@@ -3361,7 +3248,6 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'escape') {
     if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi')) { ptr.cancel = true; ptr.target = -1; return; }
-    if (!G.paused && G.chanSel) { closePop(); return; }
     if (!G.paused && G.routeFrom >= 0) { G.routeFrom = -1; return; }
     if (!G.paused && G.group.size) { clearGroup(); return; }
     if (G.paused) resumeGame(); else pauseGame(); return;
@@ -3395,7 +3281,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, upgradeChannel, cutChannel, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
+window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
 })();
 </script>
 
