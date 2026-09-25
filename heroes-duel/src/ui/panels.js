@@ -195,16 +195,21 @@ export function createUI(h) {
       card.classList.add('hidden');
     },
 
-    showTooltip(html, x, y, color) {
+    showTooltip(html, x, y, color, caption = false) {
       if (!html) {
         tip.classList.add('hidden');
         return;
       }
-      tip.innerHTML = html;
+      if (tip.innerHTML !== html) tip.innerHTML = html;
+      tip.classList.toggle('caption', caption);
       tip.style.setProperty('--team', color || '#8a7040');
       const w = tip.offsetWidth || 220;
-      tip.style.left = `${Math.min(x + 16, window.innerWidth - w - 8)}px`;
-      tip.style.top = `${y + 14}px`;
+      const h = tip.offsetHeight || 60;
+      // Caption sits just below-right of the cursor icon; flip when near the edges.
+      const left = x + 20 + w > window.innerWidth - 8 ? x - w - 14 : x + 20;
+      const top = y + 20 + h > window.innerHeight - 90 ? y - h - 12 : y + 20;
+      tip.style.left = `${Math.max(8, left)}px`;
+      tip.style.top = `${Math.max(8, top)}px`;
       tip.classList.remove('hidden');
     },
 

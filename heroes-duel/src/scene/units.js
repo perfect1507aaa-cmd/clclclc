@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { buildCreatureModel } from './models.js';
 import { cellToWorld, TILE } from './battlefield.js';
 import { tween, easeInOut, easeOut } from './tween.js';
+import { sfx } from '../audio.js';
 
 export class UnitView {
   constructor(unit, color, labelLayer) {
@@ -77,6 +78,8 @@ export class UnitView {
       const to = this.anchorWorld(end.col, end.row);
       this.faceTowards(to);
       const dist = from.distanceTo(to);
+      sfx.step(true);
+      setTimeout(() => sfx.step(true), 250);
       await tween(0.35 + dist * 0.09, (t) => {
         this.group.position.lerpVectors(from, to, t);
         this.group.position.y = from.y + Math.sin(t * Math.PI) * Math.min(1.6, 0.4 + dist * 0.25);
@@ -87,6 +90,7 @@ export class UnitView {
       const from = this.group.position.clone();
       const to = this.anchorWorld(step.col, step.row);
       this.faceTowards(to);
+      sfx.step(false);
       await tween(0.2, (t) => {
         this.group.position.lerpVectors(from, to, t);
         this.group.position.y = from.y + Math.abs(Math.sin(t * Math.PI)) * 0.06;
@@ -94,24 +98,55 @@ export class UnitView {
     }
   }
 
-  async lunge(targetPos) {
+  // Melee strike: wind-up, lunge in, hit at the peak (onImpact), step back.
+  async strikeAnim(targetPos, onImpact) {
     this.faceTowards(targetPos);
     const home = this.group.position.clone();
-    const dir = targetPos.clone().sub(home).setY(0).normalize().multiplyScalar(0.35);
-    await tween(0.16, (t) => this.group.position.copy(home).addScaledVector(dir, t), easeOut);
-    await tween(0.2, (t) => this.group.position.copy(home).addScaledVector(dir, 1 - t), easeInOut);
+    const reach = this.unit.size === 2 ? 0.4 : 0.3;
+    const dir = targetPos.clone().sub(home).setY(0).normalize().multiplyScalar(reach);
+    const ud = this.model.userData;
+    ud.attackKind = 'melee';
+    let hit = false;
+    await tween(0.75, (t) => {
+      ud.attackT = t;
+      const k = t < 0.4 ? -0.15 * (t / 0.4) : t < 0.55 ? -0.15 + 1.15 * ((t - 0.4) / 0.15) : 1 - (t - 0.55) / 0.45;
+      this.group.position.copy(home).addScaledVector(dir, Math.max(-0.15, k));
+      if (!hit && t >= 0.52) {
+        hit = true;
+        onImpact?.();
+      }
+    });
+    ud.attackT = null;
+    this.group.position.copy(home);
   }
 
-  async hitFlash() {
-    const mats = [];
-    this.model.traverse((o) => { if (o.isMesh) mats.push(o); });
-    const saved = mats.map((m) => m.material);
+  // Ranged: draw/raise, release at the peak (onRelease), settle.
+  async shootAnim(targetPos, onRelease) {
+    this.faceTowards(targetPos);
+    const ud = this.model.userData;
+    ud.attackKind = 'shoot';
+    let fired = false;
+    await tween(0.5, (t) => {
+      ud.attackT = t;
+      if (!fired && t >= 0.55) {
+        fired = true;
+        onRelease?.();
+      }
+    });
+    ud.attackT = null;
+  }
+
+  async hurt() {
+    const meshes = [];
+    this.model.traverse((o) => { if (o.isMesh) meshes.push(o); });
+    const saved = meshes.map((m) => m.material);
     const red = new THREE.MeshStandardMaterial({ color: 0xff5040, emissive: 0xaa1100, flatShading: true });
-    mats.forEach((m) => { m.material = red; });
-    const home = this.facing.position.clone();
-    await tween(0.22, (t) => { this.facing.position.x = home.x + Math.sin(t * Math.PI * 6) * 0.04 * (1 - t); });
-    mats.forEach((m, i) => { m.material = saved[i]; });
-    this.facing.position.copy(home);
+    meshes.forEach((m) => { m.material = red; });
+    const ud = this.model.userData;
+    await tween(0.14, (t) => { ud.hurtT = t * 0.5; });
+    meshes.forEach((m, i) => { m.material = saved[i]; });
+    await tween(0.26, (t) => { ud.hurtT = 0.5 + t * 0.5; });
+    ud.hurtT = null;
   }
 
   async die() {

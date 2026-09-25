@@ -6,9 +6,11 @@ import { TIERS, has } from './data/haven.js';
 import { buildBattlefield, buildObstacle, buildHero, cellToWorld } from './scene/battlefield.js';
 import { UnitView, projectile } from './scene/units.js';
 import { updateTweens, wait } from './scene/tween.js';
-import { Battle, makeUnit, key, RANGE_PENALTY_DIST } from './game/battle.js';
+import { Battle, makeUnit, key, totalHp, RANGE_PENALTY_DIST } from './game/battle.js';
 import { decide } from './game/ai.js';
 import { createUI, unitTooltip, esc } from './ui/panels.js';
+import { cursors } from './ui/cursors.js';
+import { sfx, unlockAudio, isMuted, setMuted } from './audio.js';
 
 // ── Renderer, camera, lights ────────────────────────────────────────────────
 const canvas = document.getElementById('scene');
@@ -349,21 +351,39 @@ async function moveUnit(u, path) {
 
 async function strike(att, target, opts) {
   const av = viewOf(att), tv = viewOf(target);
+  let res, reaction;
+  const land = () => {
+    res = state.battle.strike(att, target, opts);
+    tv.updateLabel();
+    floatText(tv, `-${res.dmg}${res.kills ? `  †${res.kills}` : ''}`);
+    if (res.died) {
+      sfx.die(target.id);
+      reaction = tv.die();
+    } else {
+      sfx.hurt(target.id);
+      reaction = tv.hurt();
+    }
+  };
   if (opts.ranged) {
-    av.faceTowards(tv.group.position);
-    await wait(0.12);
-    await projectile(scene, av.group.position, tv.group.position, att.def.model.weapon === 'staff' ? 'magic' : 'arrow');
+    let flight;
+    await av.shootAnim(tv.group.position, () => {
+      sfx.shoot(att.id);
+      const kind = att.def.model.weapon === 'staff' ? 'magic' : 'arrow';
+      flight = projectile(scene, av.group.position, tv.group.position, kind);
+    });
+    await flight;
+    sfx.impact(att.id);
+    land();
   } else {
     tv.faceTowards(av.group.position);
-    await av.lunge(tv.group.position);
+    await av.strikeAnim(tv.group.position, () => {
+      sfx.attack(att.id);
+      land();
+    });
   }
-  const res = state.battle.strike(att, target, opts);
-  tv.updateLabel();
-  floatText(tv, `-${res.dmg}${res.kills ? `  †${res.kills}` : ''}`);
+  await reaction;
   const verb = opts.retaliation ? 'отвечает' : opts.ranged ? 'стреляет в' : 'атакует';
   ui.log(`${nameOf(att)} ${verb}${opts.retaliation ? ':' : ` ${nameOf(target)}:`} ${res.dmg} урона, погибло ${res.kills}.${res.died ? ' Отряд уничтожен.' : ''}`);
-  if (res.died) await tv.die();
-  else await tv.hitFlash();
 }
 
 // ── Floating combat text ────────────────────────────────────────────────────
@@ -414,31 +434,52 @@ function unitAtCell(col, row) {
   return allUnits().find((u) => col >= u.col && col < u.col + u.size && row >= u.row && row < u.row + u.size) || null;
 }
 
-function worldToGrid(p) {
-  return { x: p.x + (GRID.cols - 1) / 2, y: p.z + (GRID.rows - 1) / 2 };
+// Screen position of a footprint's centre (a little above the ground).
+function screenOfFootprint(col, row, size) {
+  const p = cellToWorld(col, row);
+  const off = (size - 1) / 2;
+  const r = canvas.getBoundingClientRect();
+  const s = project(new THREE.Vector3(p.x + off, 0.3, p.z + off), canvas.clientWidth, canvas.clientHeight);
+  return { x: s.x + r.left, y: s.y + r.top };
 }
 
+const angleBetween = (ax, ay, bx, by) => {
+  const d = Math.abs(Math.atan2(ay, ax) - Math.atan2(by, bx));
+  return d > Math.PI ? 2 * Math.PI - d : d;
+};
+// Cursor angle in degrees for an icon pointing along screen vector (dx, dy).
+const iconAngle = (dx, dy) => (Math.atan2(dx, -dy) * 180) / Math.PI;
+
 // Work out what a click at this spot would do for the active unit.
-function computePreview(hit) {
+function computePreview(hit, sx, sy) {
   const b = state.battle, a = state.actor;
   if (!b || !a || state.busy || isAI(a.side) || !hit.point) return null;
   const u = hit.unit;
   if (u && u.side !== a.side) {
+    const tc = screenOfFootprint(u.col, u.row, u.size);
     if (b.canShoot(a)) {
       const r = b.damageRange(a, u, { ranged: true });
-      return { type: 'shoot', target: u, range: r, far: b.distance(a, u) > RANGE_PENALTY_DIST };
+      const from = screenOfFootprint(a.col, a.row, a.size);
+      return { type: 'shoot', target: u, range: r, far: b.distance(a, u) > RANGE_PENALTY_DIST, angle: iconAngle(tc.x - from.x, tc.y - from.y) };
     }
     const opts = b.meleeOptions(a, u, state.reach);
     if (!opts.length) return { type: 'none', target: u };
-    const g = worldToGrid(hit.point);
+    // The side of the target under the cursor picks where we strike from:
+    // compare the cursor's offset from the target centre with each option's direction.
+    const dx = (sx ?? tc.x) - tc.x, dy = (sy ?? tc.y) - tc.y;
+    const centred = Math.hypot(dx, dy) < 6;
     let best = null;
     for (const n of opts) {
-      const cx = n.col + (a.size - 1) / 2, cy = n.row + (a.size - 1) / 2;
-      const d = Math.hypot(cx - g.x, cy - g.y) + n.cost * 0.001;
-      if (!best || d < best.d) best = { d, n };
+      const oc = screenOfFootprint(n.col, n.row, a.size);
+      const score = centred ? n.cost : angleBetween(dx, dy, oc.x - tc.x, oc.y - tc.y) + n.cost * 0.03;
+      if (!best || score < best.score) best = { score, n, oc };
     }
     const path = Battle.path(best.n);
-    return { type: 'melee', target: u, node: best.n, path, range: b.damageRange(a, u, { ranged: false, moved: path.length }) };
+    return {
+      type: 'melee', target: u, node: best.n, path,
+      range: b.damageRange(a, u, { ranged: false, moved: path.length }),
+      angle: iconAngle(tc.x - best.oc.x, tc.y - best.oc.y),
+    };
   }
   if (u === a) return null;
   if (hit.col == null || u) return null;
@@ -454,21 +495,34 @@ function computePreview(hit) {
 }
 
 function previewTooltip(p) {
-  const a = state.actor;
-  if (p.type === 'none') return `${unitTooltip(p.target)}<div class="tip-note">Не дотянуться в этот ход</div>`;
+  const a = state.actor, t = p.target;
   if (p.type === 'move') return null;
+  const head = `<div class="cap-head"><b>${esc(t.def.name)}</b> × ${t.count}<span class="cap-hp">❤ ${totalHp(t)}</span></div>`;
+  if (p.type === 'none') return `${head}<div class="cap-line muted">Не дотянуться в этот ход</div>`;
   const r = p.range;
   const kills = r.killsMin === r.killsMax ? r.killsMin : `${r.killsMin}–${r.killsMax}`;
   const dmg = r.min === r.max ? r.min : `${r.min}–${r.max}`;
   const notes = [];
   if (p.type === 'shoot' && p.far) notes.push('далеко: урон ×½');
-  if (p.type === 'shoot' && has(p.target.def, 'large_shield')) notes.push('большой щит: урон ×½');
-  if (p.type === 'melee' && has(a.def, 'shooter') && !has(a.def, 'no_melee_penalty')) notes.push('стрелок в рукопашной: урон ×½');
-  if (p.type === 'melee' && has(a.def, 'jousting') && p.path.length) notes.push(`разгон: +${p.path.length * 5}%`);
-  const retal = p.type === 'melee' && state.battle.canRetaliate(p.target) && r.killsMax < p.target.count ? 'Ответит ударом' : p.type === 'melee' ? 'Без ответа' : 'Выстрел без ответа';
-  return `${unitTooltip(p.target)}
-    <div class="tip-attack">${p.type === 'shoot' ? '🏹 Выстрел' : '⚔ Атака'}: <b>${dmg}</b> урона, погибнет <b>${kills}</b></div>
-    <div class="tip-note">${[retal, ...notes].join(' · ')}</div>`;
+  if (p.type === 'shoot' && has(t.def, 'large_shield')) notes.push('щит: урон ×½');
+  if (p.type === 'melee' && has(a.def, 'shooter') && !has(a.def, 'no_melee_penalty')) notes.push('рукопашная: урон ×½');
+  if (p.type === 'melee' && has(a.def, 'jousting') && p.path.length) notes.push(`разгон +${p.path.length * 5}%`);
+  let ret;
+  if (p.type === 'shoot') ret = '<div class="cap-ret no">Без ответа</div>';
+  else if (r.killsMin >= t.count) ret = '<div class="cap-ret no">Отряд будет уничтожен</div>';
+  else if (state.battle.canRetaliate(t)) ret = `<div class="cap-ret yes">Ответит ударом${r.killsMax >= t.count ? ', если выживет' : ''}</div>`;
+  else ret = '<div class="cap-ret no">Без ответа: уже отвечал</div>';
+  return `${head}
+    <div class="cap-line">Урон <b>${dmg}</b> · погибнет <b>${kills}</b></div>
+    ${ret}${notes.length ? `<div class="cap-line muted">${notes.join(' · ')}</div>` : ''}`;
+}
+
+function cursorFor(p, hoverUnit) {
+  if (!p) return hoverUnit ? 'help' : '';
+  if (p.type === 'none') return cursors.no();
+  if (p.type === 'move') return has(state.actor.def, 'flyer') ? cursors.fly() : cursors.move();
+  if (p.type === 'shoot') return p.far ? cursors.broken(p.angle) : cursors.arrow(p.angle);
+  return cursors.sword(p.angle);
 }
 
 let hover = {};
@@ -485,13 +539,18 @@ function previewKey(p) {
 
 function handleHover(x, y) {
   hover = pick(x, y);
-  state.preview = state.phase === 'battle' ? computePreview(hover) : null;
-  refreshTiles();
-  let html = null;
-  if (state.preview) html = previewTooltip(state.preview);
-  else if (hover.unit) html = unitTooltip(hover.unit);
-  ui.showTooltip(html, x, y, hover.unit ? SIDES[hover.unit.side].color : null);
-  canvas.style.cursor = state.preview && state.preview.type !== 'none' ? 'pointer' : hover.unit ? 'help' : '';
+  hover.sx = x;
+  hover.sy = y;
+  const prevKey = previewKey(state.preview);
+  state.preview = state.phase === 'battle' ? computePreview(hover, x, y) : null;
+  if (previewKey(state.preview) !== prevKey) refreshTiles();
+  let html = null, caption = false;
+  if (state.preview && state.preview.type !== 'move') {
+    html = previewTooltip(state.preview);
+    caption = true;
+  } else if (hover.unit) html = unitTooltip(hover.unit);
+  ui.showTooltip(html, x, y, hover.unit ? SIDES[hover.unit.side].color : null, caption);
+  canvas.style.cursor = cursorFor(state.preview, hover.unit);
 }
 
 canvas.addEventListener('pointerleave', () => {
@@ -522,7 +581,7 @@ canvas.addEventListener('pointerup', (e) => {
     return;
   }
   if (state.phase !== 'battle') return;
-  const p = touch ? state.preview : computePreview(hit);
+  const p = touch ? state.preview : computePreview(hit, e.clientX, e.clientY);
   if (!p || p.type === 'none') {
     if (hit.unit) ui.showCard(hit.unit);
     return;
@@ -603,6 +662,21 @@ function refreshTiles() {
     v.ring.material.opacity = hot ? 1 : 0.7;
   }
 }
+
+// ── Sound ───────────────────────────────────────────────────────────────────
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
+const soundBtn = document.getElementById('btn-sound');
+const syncSound = () => {
+  soundBtn.textContent = isMuted() ? 'Звук: выкл' : 'Звук: вкл';
+  soundBtn.classList.toggle('on', !isMuted());
+};
+soundBtn.addEventListener('click', () => {
+  setMuted(!isMuted());
+  syncSound();
+  sfx.click();
+});
+syncSound();
 
 // ── Resize & loop ───────────────────────────────────────────────────────────
 function resize() {

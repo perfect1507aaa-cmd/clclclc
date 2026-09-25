@@ -87,6 +87,15 @@ function wings(parent, { at, size, color, tipColor, sweep = 0.55, lift = 0.35 })
   return out;
 }
 
+// ── Action curves ───────────────────────────────────────────────────────────
+// A melee swing: wind-up (raise) until 40%, strike peaks at 55%, then recover.
+function swing(a) {
+  const raise = a < 0.4 ? Math.sin((a / 0.4) * Math.PI / 2) : a < 0.55 ? 1 - (a - 0.4) / 0.15 : 0;
+  const strike = a < 0.4 ? 0 : a < 0.55 ? (a - 0.4) / 0.15 : Math.max(0, 1 - (a - 0.55) / 0.45);
+  return { raise, strike };
+}
+const bump = (a) => (a == null ? 0 : Math.sin(Math.min(1, a) * Math.PI));
+
 // ── Humanoid (tiers 1, 2, 3, 5) ─────────────────────────────────────────────
 export function buildHumanoid(o) {
   const root = new THREE.Group();
@@ -168,11 +177,32 @@ export function buildHumanoid(o) {
   addShield(o, body, armL, k);
 
   const phase = Math.random() * Math.PI * 2;
-  root.userData.idle = (t) => {
+  const ud = root.userData;
+  const baseX = armR.rotation.x;
+  const twoHanded = o.weapon === 'crossbow' || o.weapon === 'greatsword';
+  ud.idle = (t) => {
+    let arm = Math.sin(t * 1.4 + phase) * 0.05, lean = 0, push = 0;
+    if (ud.attackT != null) {
+      if (ud.attackKind === 'shoot') {
+        const k = bump(ud.attackT);
+        if (o.weapon === 'staff') arm -= 1.5 * k;
+        lean = -0.12 * k;
+        push = -0.04 * k;
+      } else {
+        const { raise, strike } = swing(ud.attackT);
+        arm += -1.5 * raise + 0.9 * strike;
+        lean = -0.12 * raise + (twoHanded ? 0.45 : 0.3) * strike;
+        push = 0.12 * strike;
+      }
+    }
+    const h = bump(ud.hurtT);
+    lean -= 0.3 * h;
+    push -= 0.08 * h;
     body.position.y = Math.sin(t * 2 + phase) * 0.012;
-    armR.rotation.x = armR.userData.baseX + Math.sin(t * 1.4 + phase) * 0.05;
+    body.position.z = push;
+    body.rotation.x = lean;
+    armR.rotation.x = baseX + arm;
   };
-  armR.userData.baseX = armR.rotation.x;
   return root;
 }
 
@@ -322,11 +352,26 @@ export function buildGriffin(o) {
   const [wl, wr] = wings(body, { at: [0.16, 1.0, 0.05], size: 0.92, color: o.wing, tipColor: o.head, sweep: 0.75, lift: 0.5 });
 
   const phase = Math.random() * Math.PI * 2;
-  root.userData.idle = (t) => {
+  const ud = root.userData;
+  ud.idle = (t) => {
     const f = Math.sin(t * 1.7 + phase);
-    wl.rotation.z = wl.userData.baseLift + f * 0.14;
-    wr.rotation.z = wr.userData.baseLift + f * 0.14;
+    let lift = f * 0.14, pitch = 0, peck = 0, push = 0;
+    if (ud.attackT != null) {
+      const { raise, strike } = swing(ud.attackT);
+      pitch = -0.45 * raise + 0.25 * strike;
+      peck = 0.7 * strike;
+      lift += 0.6 * raise - 0.35 * strike;
+      push = 0.2 * strike;
+    }
+    const h = bump(ud.hurtT);
+    pitch -= 0.2 * h;
+    lift += Math.sin(t * 30) * 0.25 * h;
+    wl.rotation.z = wl.userData.baseLift + lift;
+    wr.rotation.z = wr.userData.baseLift + lift;
+    body.rotation.x = pitch;
+    body.position.z = push;
     body.position.y = Math.sin(t * 1.7 + phase + 0.6) * 0.02;
+    headG.rotation.x = peck;
     headG.rotation.y = Math.sin(t * 0.6 + phase) * 0.18;
   };
   return root;
@@ -396,9 +441,23 @@ export function buildCavalry(o) {
   add(shield, box(0.03, 0.3, 0.035), mat(o.trim ?? 0xe8e0c8, 'metal'), [0, -0.03, 0.01]);
 
   const phase = Math.random() * Math.PI * 2;
-  root.userData.idle = (t) => {
+  const ud = root.userData;
+  const lanceX = armR.rotation.x;
+  ud.idle = (t) => {
+    let pitch = 0, push = 0, nod = Math.sin(t * 1.1 + phase) * 0.07, arm = 0;
+    if (ud.attackT != null) {
+      const { raise, strike } = swing(ud.attackT);
+      pitch = -0.3 * raise + 0.12 * strike;
+      push = 0.28 * strike;
+      nod -= 0.4 * raise;
+      arm = -0.4 * raise + 0.35 * strike;
+    }
+    pitch -= 0.15 * bump(ud.hurtT);
+    body.rotation.x = pitch;
+    body.position.z = push;
     body.position.y = Math.sin(t * 1.5 + phase) * 0.012;
-    headG.rotation.x = Math.sin(t * 1.1 + phase) * 0.07;
+    headG.rotation.x = nod;
+    armR.rotation.x = lanceX + arm;
   };
   return root;
 }
@@ -440,11 +499,23 @@ export function buildAngel(o) {
   }
 
   const phase = Math.random() * Math.PI * 2;
-  root.userData.idle = (t) => {
+  const ud = root.userData;
+  const swordX = armR.rotation.x;
+  ud.idle = (t) => {
     const f = Math.sin(t * 1.3 + phase);
+    let lift = f * 0.18, arm = 0, lean = 0;
+    if (ud.attackT != null) {
+      const { raise, strike } = swing(ud.attackT);
+      arm = -1.8 * raise + 1.0 * strike;
+      lean = 0.25 * strike;
+      lift += 0.5 * raise - 0.45 * strike;
+    }
+    lean -= 0.25 * bump(ud.hurtT);
+    armR.rotation.x = swordX + arm;
+    body.rotation.x = lean;
     for (const [l, r] of pairs) {
-      l.rotation.z = l.userData.baseLift + f * 0.18;
-      r.rotation.z = r.userData.baseLift + f * 0.18;
+      l.rotation.z = l.userData.baseLift + lift;
+      r.rotation.z = r.userData.baseLift + lift;
     }
     hover.position.y = 0.28 + Math.sin(t * 1.3 + phase - 0.8) * 0.05;
   };

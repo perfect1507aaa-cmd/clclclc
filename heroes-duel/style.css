@@ -271,3 +271,22 @@ kbd { font: 10px/1 var(--font); padding: 1px 4px; border: 1px solid rgba(241,232
   #bestiary-detail { border-left: none; border-top: 1px solid rgba(138,112,64,.4); }
   .tier-row { grid-template-columns: 20px repeat(2, 1fr); }
 }
+
+/* ── Attack caption next to the cursor ─────── */
+#tooltip.caption {
+  padding: 5px 9px 6px; min-width: 150px; max-width: 240px;
+  border: 1px solid rgba(227,194,122,.55); border-left: 3px solid var(--team);
+  background: rgba(18,15,12,.94);
+}
+.cap-head { display: flex; align-items: baseline; gap: 6px; font-size: 13px; white-space: nowrap; }
+.cap-head b { font-weight: normal; color: #fff; }
+.cap-hp { margin-left: auto; padding-left: 8px; color: #f08a7a; font-variant-numeric: tabular-nums; }
+.cap-line { font-size: 12px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.cap-line b { color: var(--gold); font-weight: normal; }
+.cap-line.muted { color: var(--muted); font-size: 11px; }
+.cap-ret { font-size: 12px; margin-top: 3px; padding-left: 14px; position: relative; }
+.cap-ret::before { position: absolute; left: 0; top: 0; }
+.cap-ret.yes { color: #ffb47a; }
+.cap-ret.yes::before { content: "↩"; }
+.cap-ret.no { color: #9fd08a; }
+.cap-ret.no::before { content: "✓"; }
