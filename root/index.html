@@ -362,6 +362,8 @@ const tierN = p => Math.min(tierOf(p.v), p.maxT);
 const radiusFor = v => 16 + Math.sqrt(Math.max(0, v)) * 3.4;
 const REF_R = [radiusFor(19.99), radiusFor(49.99), radiusFor(99.99), radiusFor(200), radiusFor(600)];
 /* How big a node is drawn: it grows with its packets, but a datacenter stops growing at 350. */
+/* How fast a node's lights blink, by class: the server's a little calmer, the datacenter's half as fast. */
+const LED_PACE = [1, 1, 1 / 1.5, 1, 0.5];
 const nr = (p, v) => radiusFor(Math.min(v, 350));
 const dpsOf = v => 0.9 + Math.max(0, v) * 0.028;
 const speedOf = v => 80 + Math.max(0, v) * 0.4;
@@ -1001,7 +1003,7 @@ function canBuild(i, j, o) {
   if (A.infect > 0) return 'узел заражён демоном';
   if (edgeBetween(i, j)) return 'канал уже есть';
   if (B.owner === o) return 'к своему узлу пакет идёт по каналам';
-  if (B.owner !== 0 && tierN(A) < 2 && !(o === 1 && G.fog && !B.vis)) return 'атаковать может только сервер и выше';
+  if (!mayStrike(A, B, o) && !(o === 1 && G.fog && !B.vis)) return 'атаковать может только сервер и выше';
   const cap = A.kind === 'hub' ? 5 : TIERS[tierN(A)].links;
   if (A.nb.length >= cap) {
     if (cap === 0) return 'ноутбук не прокладывает каналы';
@@ -1049,7 +1051,7 @@ function canSend(e, i, o, n, dest) {
   const T = G.nodes[other(e, i)], D = dest != null ? G.nodes[dest] : T;
   // a node in battle can only fall back: along a channel into an own node, never towards a foe
   if (A.assault && A.assault.some(a => a.o !== o && a.n > 0.01) && (T.owner !== o || (D && D.owner !== o))) return 'идёт бой: отступить можно только в свой узел';
-  if (T && T.owner !== o && T.owner !== 0 && tierN(A) < 2) return 'атаковать может только сервер и выше';
+  if (!mayStrike(A, T, o)) return 'атаковать может только сервер и выше';
   return true;
 }
 /* Shortest path along your own finished channels. maxHops overrides the class limit (used when a batch is already en route). */
@@ -1141,6 +1143,9 @@ const chanMul = (e, o) => {
    new launch; a wi-fi jump counts as a bundle in the air. The kind follows the bundle's target, so a strike whose
    target falls to its owner meanwhile becomes a move inside the network. */
 const MAX_FLYING = 1;
+/* May A send packets against T? Striking a foreign node takes a server or better, but joining a fight of your own
+   that is already going on there is reinforcement, which any node that sends bundles may do. */
+const mayStrike = (A, T, o) => !T || T.owner === o || T.owner === 0 || tierN(A) >= 2 || !!(T.assault && T.assault.some(a => a.o === o));
 const slotOf = (o, j) => G.nodes[j] && G.nodes[j].owner === o ? 'own' : 'out';
 const SLOT_BUSY = { own: 'по своей сети уже летит пачка', out: 'атака уже в пути' };
 function flyingOf(o, kind) {
@@ -1164,7 +1169,7 @@ function orderState(q) {
   const N = G.nodes, A = N[q.i], T = N[q.j];
   if (!A || !T || A.owner !== q.o) return { dead: true };
   if (A.infect > 0) return { wait: 'узел заражён демоном' };
-  if (T.owner !== q.o && T.owner !== 0 && tierN(A) < 2) return { wait: 'атаковать может только сервер и выше' };
+  if (!mayStrike(A, T, q.o)) return { wait: 'атаковать может только сервер и выше' };
   const r = bestRoute(q.i, q.j, q.o);
   if (!r.hops) { const e = edgeBetween(q.i, q.j); return { wait: e && e.state !== 'up' ? 'канал ещё прокладывается' : r.err || 'нет маршрута' }; }
   const lb = launchBlock(q.i, q.j); if (lb) return { wait: lb, hops: r.hops };
@@ -1769,7 +1774,9 @@ function connectable(A, p, budget) {
 }
 function updateVision() {
   const N = G.nodes;
-  if (!G.fog) { for (const p of N) { p.vis = p.seen = true; p.lastOwner = p.owner; p.lastV = p.v; } G.visC = G.visPts = null; return; }
+  // with the fog lifted everything is in view, but the fog's memory (last owner and count seen) is left as it was:
+  // bring the fog back and you know only what you knew before
+  if (!G.fog) { for (const p of N) p.vis = p.seen = true; G.visC = G.visPts = null; return; }
   if (!G.connCache) G.connCache = new Map();
   const ver = `${G.edges.length}/${N.length}/${G.edgeVer || 0}`;
   if (G.connVerKey !== ver) { G.connVerKey = ver; G.connVer = (G.connVer || 0) + 1; }
@@ -2168,7 +2175,7 @@ function groupPlan(j, set) {
     if (i === j || A.owner !== 1) continue;
     const n = sendCount(i, G.pct);
     let r;
-    if (T.owner !== 1 && T.owner !== 0 && tierN(A) < 2) r = { err: 1 };
+    if (!mayStrike(A, T, 1)) r = { err: 1 };
     else r = bestRoute(i, j, 1);
     if (!r.hops) { skip++; continue; }
     list.push({ i, n, hops: r.hops }); total += n;
@@ -2356,7 +2363,7 @@ function tapNode(i) {
     const from = p.nb.filter(e => (e.state === 'up' || e.state === 'grow') && G.nodes[other(e, i)].owner === 1);
     if (from.length) {
       // only nodes that may attack it get the order; each launches when its network has a free slot
-      const srcs = from.map(e => other(e, i)).filter(k => !(p.owner && tierN(G.nodes[k]) < 2)).sort((a, b) => tierN(G.nodes[a]) - tierN(G.nodes[b]));
+      const srcs = from.map(e => other(e, i)).filter(k => mayStrike(G.nodes[k], p, 1)).sort((a, b) => tierN(G.nodes[a]) - tierN(G.nodes[b]));
       if (!srcs.length) { SFX.error(); toast('атаковать может только сервер и выше', 2200); }
       else { let waiting = 0; for (const k of srcs) if (enqueue(k, i, 1, G.pct)) waiting++; if (waiting) SFX.queue(); }
       G.sel = -1; return;
@@ -2505,13 +2512,13 @@ function render(now) {
     if (p.vis) {
       const u = rd * S, bright = dark ? rgba(mix(c, [255, 255, 255], 0.5), 1) : rgba(mix(c, [0, 0, 0], 0.1), 1);
       for (const [sx0, sy0, sw, sh] of spr.screens) {
-        const x0 = cx + sx0 * u, y0 = cy + sy0 * u, w = sw * u, h = sh * u, lh = Math.max(3, h / 5), spd = ow ? 1.6 : 0.4, scroll = (t * spd) % 1, base = Math.floor(t * spd);
+        const x0 = cx + sx0 * u, y0 = cy + sy0 * u, w = sw * u, h = sh * u, lh = Math.max(3, h / 5), spd = tier === 0 ? 0 : ow ? 1.6 : 0.4, scroll = (t * spd) % 1, base = Math.floor(t * spd);
         ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip(); ctx.fillStyle = rgba(c, ow ? 0.7 : 0.35);
         for (let j = -1; j < 6; j++) { const yy = y0 + h * 0.12 + (j - scroll) * lh, ln = hash(p.seed + (base + j) * 97) % 100 / 100, ind = (hash(p.seed + (base + j) * 13) % 3) * w * 0.08; ctx.fillRect(x0 + w * 0.1 + ind, yy, (w * 0.75 - ind) * (0.25 + ln * 0.75), Math.max(1, lh * 0.28)); }
         ctx.restore();
       }
       const lsz = Math.max(1.5, u * 0.08), busy = p.fed > 0 || p.hurt > 0.2;
-      spr.leds.forEach(([lx, ly], j) => { const ph = hash(p.seed + j * 57) % 1000 / 1000, sp = ow ? (busy ? 6 : 2) + (hash(p.seed + j) % 5) : 0.4; const on = Math.sin(t * sp * TAU * 0.5 + ph * TAU) > (ow ? -0.2 : 0.6); ctx.fillStyle = on ? bright : rgba(c, 0.25); ctx.fillRect(cx + lx * u - lsz / 2, cy + ly * u - lsz / 2, lsz, lsz); });
+      spr.leds.forEach(([lx, ly], j) => { const ph = hash(p.seed + j * 57) % 1000 / 1000, sp = (ow ? (busy ? 6 : 2) + (hash(p.seed + j) % 5) : 0.4) * LED_PACE[tier]; const on = Math.sin(t * sp * TAU * 0.5 + ph * TAU) > (ow ? -0.2 : 0.6); ctx.fillStyle = on ? bright : rgba(c, 0.25); ctx.fillRect(cx + lx * u - lsz / 2, cy + ly * u - lsz / 2, lsz, lsz); });
       if (p.infect > 0) {
         const dc = dcol(), rr2 = R * 1.2 + 8;
         ctx.setLineDash([3, 4]); ctx.lineDashOffset = t * 12; ctx.strokeStyle = rgba(dc, 0.8); ctx.lineWidth = 1.4;
@@ -2938,7 +2945,7 @@ const HOW = [
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><circle cx="24" cy="15" r="3" fill="currentColor"/><path d="M9 15h12" stroke="currentColor" stroke-dasharray="2 2"/>',
     'При перетаскивании достаточно один раз задеть цель: она запомнится. Отмена — правая кнопка мыши или возврат курсора на исходный узел.', 'Каналы двусторонние: противник может атаковать вас по вашему же каналу.'],
   ['<rect x="3" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="17" y="3" width="10" height="10" fill="none" stroke="currentColor"/><rect x="3" y="17" width="10" height="10" fill="none" stroke="currentColor"/><circle cx="22" cy="22" r="3" fill="currentColor"/>',
-    'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Атакуют только сервер и старше. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
+    'Q или кнопка «все узлы» выделяет все ваши узлы, Shift+рамка или Shift+клик — только нужные. Потом один клик по цели: каждый выделенный узел отправит пачку.', 'К своему узлу пачки идут по вашим каналам, к чужому — через вашу сеть до узла, у которого есть канал к цели. Атакуют только сервер и старше, но подкрепить свой бой, который уже идёт у узла, может и станция. Снять выделение — Esc, правая кнопка или клик по пустому месту.'],
   ['<path d="M6 24L24 6M9 6l3 3M18 21l3 3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="15" cy="15" r="3" fill="none" stroke="currentColor"/>',
     'Все каналы одинаковые и остаются навсегда: их нельзя ни улучшить, ни перерезать. Разорвать сеть противника можно, только захватив узлы, которые её связывают.', 'Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
