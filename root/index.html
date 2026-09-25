@@ -350,21 +350,27 @@ const TIERS = [
   { min: 20, name: 'рабочая станция', regen: 0.8, links: 2, hops: 2, icon: 'm' },
   { min: 50, name: 'сервер',          regen: 1.1, links: 3, hops: 3, icon: 'l' },
   { min: 100, name: 'мейнфрейм',      regen: 1.4, links: 3, hops: 4, icon: 'cab' },
-  { min: 500, name: 'датацентр',      regen: 1.8, links: 4, hops: 5, icon: 'x' },
+  { min: 500, name: 'кластер',        regen: 1.8, links: 4, hops: 5, icon: 'x' },
 ];
-/* Node sizes: how many packets a node regenerates up to. Every node can grow into a datacenter (MAXT keeps the hook
+/* Node sizes: how many packets a node regenerates up to. Every node can grow into a cluster (MAXT keeps the hook
    for ceilings), but past its size only on packets sent in. */
-const CAP = { s: 40, m: 70, l: 100, x: 150 };
-const MAXT = { s: 4, m: 4, l: 4, x: 4 };
+const CAP = { s: 40, m: 70, l: 100, x: 150, h: 200 };
+const MAXT = { s: 4, m: 4, l: 4, x: 4, h: 4 };
+/* The datacenter (size h): each side starts on one. Lose it and your whole network goes dark; take the enemy's and
+   you have beaten that enemy. It defends half as hard again and regenerates faster. */
+const HQ = { def: 1.5, regen: 1.25 };
 const tierOf = v => v >= 500 ? 4 : v >= 100 ? 3 : v >= 50 ? 2 : v >= 20 ? 1 : 0;
 /* The class of a node: by its packets, but never above its ceiling. */
 const tierN = p => Math.min(tierOf(p.v), p.maxT);
 const radiusFor = v => 16 + Math.sqrt(Math.max(0, v)) * 3.4;
 const REF_R = [radiusFor(19.99), radiusFor(49.99), radiusFor(99.99), radiusFor(200), radiusFor(600)];
-/* How big a node is drawn: it grows with its packets, but a datacenter stops growing at 350. */
-/* How fast a node's lights blink, by class: the server's a little calmer, the datacenter's half as fast. */
-const LED_PACE = [1, 1, 1 / 1.5, 1, 0.5];
-const nr = (p, v) => radiusFor(Math.min(v, 350));
+/* How big a node is drawn: it grows with its packets, up to 350. */
+/* How fast a node's lights blink, by class: the server's a little calmer, the mainframe's, the cluster's and the
+   datacenter's half as fast. The two biggest classes are drawn a tenth smaller than their size. */
+const LED_PACE = [1, 1, 1 / 1.5, 0.5, 0.5], ICON_K = [1, 1, 1, 0.9, 0.9];
+/* A datacenter is drawn big whatever it holds. */
+const HQ_R = radiusFor(110);
+const nr = (p, v) => p && p.hq ? Math.max(radiusFor(Math.min(v, 350)), HQ_R) : radiusFor(Math.min(v, 350));
 const dpsOf = v => 0.9 + Math.max(0, v) * 0.028;
 const speedOf = v => 80 + Math.max(0, v) * 0.4;
 const costOf = len => Math.max(3, Math.ceil(len / 40));
@@ -549,19 +555,30 @@ function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10
 
 /* ---------- node icons ---------- */
 function rrPath(x, c, y, w, h, r) { x.beginPath(); x.moveTo(c + r, y); x.arcTo(c + w, y, c + w, y + h, r); x.arcTo(c + w, y + h, c, y + h, r); x.arcTo(c, y + h, c, y, r); x.arcTo(c, y, c + w, y, r); x.closePath(); }
-function nodeSprite(tier, owner) {
-  const d = V.dpr, u0 = Math.max(4, REF_R[tier] * V.s * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${tier}|${owner}|${Math.round(u)}`;
+function nodeSprite(tier, owner, hq) {
+  const d = V.dpr, u0 = Math.max(4, (hq ? HQ_R : REF_R[tier]) * V.s * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${hq ? 'dc' : tier}|${owner}|${Math.round(u)}`;
   let spr = nCache.get(key); if (spr) return spr;
   const S = Math.ceil(u * 2.3), cx = S / 2, cy = S / 2, cv = document.createElement('canvas'); cv.width = cv.height = S;
   const x = cv.getContext('2d'), col = PAL.rgb[owner], dark = PAL.dark;
   const stroke = rgba(dark ? mix(col, [255, 255, 255], owner ? 0.1 : 0.2) : mix(col, [0, 0, 0], 0.15), owner ? 1 : 0.9);
   const fill = rgba(col, dark ? (owner ? 0.1 : 0.06) : (owner ? 0.09 : 0.06)), screenFill = rgba(col, dark ? 0.16 : 0.12);
   x.lineWidth = Math.max(1, u * 0.05); x.strokeStyle = stroke; x.lineJoin = 'round'; x.lineCap = 'round';
-  const leds = [], screens = [], icon = TIERS[tier].icon;
+  const leds = [], screens = [], icon = hq ? 'dc' : TIERS[tier].icon;
   const box = (bx, by, bw, bh, r) => { rrPath(x, cx + bx * u, cy + by * u, bw * u, bh * u, r * u); x.fillStyle = fill; x.fill(); x.stroke(); };
   const line = (a, b, c2, e) => { x.beginPath(); x.moveTo(cx + a * u, cy + b * u); x.lineTo(cx + c2 * u, cy + e * u); x.stroke(); };
   const poly = (pts, f) => { x.beginPath(); pts.forEach(([a, b], k) => k ? x.lineTo(cx + a * u, cy + b * u) : x.moveTo(cx + a * u, cy + b * u)); x.closePath(); x.fillStyle = PAL.bg0; x.fill(); x.fillStyle = f; x.fill(); x.stroke(); };
-  if (icon === 'cab') {
+  if (icon === 'dc') {
+    // the datacenter: one big server cabinet — a status screen across the top, two columns of blade units, feet
+    box(-1.0, -0.95, 2.0, 1.86, 0.08);
+    rrPath(x, cx - 0.84 * u, cy - 0.8 * u, 1.68 * u, 0.26 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.84, -0.8, 1.68, 0.26]);
+    for (let col = 0; col < 2; col++) for (let r = 0; r < 4; r++) {
+      const x0 = -0.84 + col * 0.9, y0 = -0.43 + r * 0.33;
+      box(x0, y0, 0.78, 0.25, 0.03);
+      leds.push([x0 + 0.1, y0 + 0.125], [x0 + 0.22, y0 + 0.125]);
+      for (let v = 0; v < 4; v++) line(x0 + 0.4 + v * 0.09, y0 + 0.07, x0 + 0.4 + v * 0.09, y0 + 0.18);
+    }
+    line(-0.8, 0.91, -0.8, 1.02); line(0.8, 0.91, 0.8, 1.02);
+  } else if (icon === 'cab') {
     // the mainframe: one big cabinet seen from the front-left, its side and roof showing, blades behind the door
     const x0 = -0.62, yb = 0.92, w = 1.0, h = 1.7, dx = 0.36, dy = -0.2, y0 = yb - h, n = 8, st = (h - 0.12) / n;
     poly([[x0 + w, y0], [x0 + w + dx, y0 + dy], [x0 + w + dx, yb + dy], [x0 + w, yb]], fill);
@@ -685,7 +702,7 @@ function genMap(spec) {
   const gar = sz => Math.round({ s: 3 + R() * 4, m: 8 + R() * 6, l: 14 + R() * 10, x: 28 + R() * 17 }[sz]);
   const regions = spec.regions || [];
   const nearestReg = (x, y) => { let b = -1, bd = 1e9; regions.forEach((r, k) => { const d = Math.hypot(r.fx * W - x, r.fy * H - y); if (d < bd) { bd = d; b = k; } }); return b; };
-  (spec.homes || []).forEach((h, k) => { const x = clamp(h[0] * W, M, W - M), y = clamp(h[1] * H, M, H - M); add(x, y, 'x', k + 1, spec.homeV ? spec.homeV[k] : k === 0 && spec.playerV ? spec.playerV : 24, nearestReg(x, y)); });
+  (spec.homes || []).forEach((h, k) => { const x = clamp(h[0] * W, M, W - M), y = clamp(h[1] * H, M, H - M); add(x, y, 'h', k + 1, spec.homeV ? spec.homeV[k] : k === 0 && spec.playerV ? spec.playerV : 24, nearestReg(x, y)); nodes[nodes.length - 1].hq = true; });
   // extra nodes: placed by hand, in map fractions (fx, fy) or in pixels (x, y); o gives a node to a player from the start
   (spec.extra || []).forEach(e => { const x = e.x != null ? e.x : e.fx * W, y = e.y != null ? e.y : e.fy * H; add(x, y, e.sz, e.o || 0, e.g, e.reg != null ? e.reg : nearestReg(x, y)); if (e.kind) nodes[nodes.length - 1].kind = e.kind; });
   segs = (spec.links || []).map(([a, b]) => nodes[a] && nodes[b] ? [nodes[a], nodes[b]] : null).filter(Boolean);
@@ -773,7 +790,7 @@ const LEVELS = [
     spec: { W: 3600, H: 2400, seed: 1010, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], count: 38, maxLen: 520,
     extra: [{ x: 470, y: 2120, sz: 's', g: 4 }, { x: 330, y: 1860, sz: 'm', g: 8 }, { x: 560, y: 1930, sz: 's', g: 6 }, { x: 3130, y: 360, sz: 's', g: 5 }, { x: 2870, y: 560, sz: 'm', g: 9 }] } },
   // ---- second act: each map is built around one idea ----
-  { name: 'Ретранслятор', ai: ['easy', 'easy'], hint: 'в центре — крупный узел. вырастите мейнфрейм (100+ пакетов): у него появится wi-fi. но узел, взятый по воздуху без канала к вашей сети, сразу отключится — бейте так по соседям своей сети.',
+  { name: 'Ретранслятор', ai: ['easy', 'easy'], hint: 'в центре — крупный узел. вырастите мейнфрейм (100+ пакетов): он бьёт сильнее и открывает демона.',
     spawn: { first: 40, every: [25, 35], max: 6, at: 'ring', r: 0.3, style: 'beam' },
     spec: { W: 2800, H: 1900, seed: 112, homes: [[0.5, 0.9], [0.08, 0.12], [0.92, 0.12]],
       extra: [{ x: 1400, y: 820, sz: 'x', g: 40 }].concat(ringPx(1400, 820, 330, 6, Math.PI / 6, 's', 6)), count: 24 } },
@@ -809,7 +826,7 @@ const LEVELS = [
     spawn: { first: 35, every: [22, 30], max: 8, at: 'front', style: 'rings' },
     spec: { W: 3000, H: 2000, seed: 118, homes: [[0.5, 0.92], [0.08, 0.1], [0.92, 0.1]], playerV: 30, extra: [{ x: 1500, y: 1000, sz: 'l', g: 26 }],
       regions: [{ fx: 0.14, fy: 0.2, r: 0.12, n: 3 }, { fx: 0.86, fy: 0.2, r: 0.12, n: 3 }, { fx: 0.22, fy: 0.58, r: 0.18, n: 4 }, { fx: 0.78, fy: 0.58, r: 0.18, n: 4 }, { fx: 0.5, fy: 0.2, r: 0.13, n: 3 }, { fx: 0.5, fy: 0.76, r: 0.14, n: 4 }] } },
-  { name: 'Крепость', ai: ['normal'], hint: 'противник окопался: два мейнфрейма связаны каналами с его главным узлом. мелкие вылазки крепость перемелет — копите силы и бейте одной большой пачкой. на вашей половине включаются новые узлы.',
+  { name: 'Крепость', ai: ['normal'], hint: 'противник окопался: два мейнфрейма связаны каналами с его датацентром. мелкие вылазки крепость перемелет — копите силы и бейте одной большой пачкой. на вашей половине включаются новые узлы.',
     spawn: { first: 30, every: [22, 30], max: 8, at: 'line', line: [0.3, 0.15, 0.3, 0.85], style: 'beam' },
     spec: { W: 3000, H: 1800, seed: 117, homes: [[0.06, 0.5], [0.93, 0.5]], playerV: 30,
       extra: [{ x: 2450, y: 520, sz: 'x', g: 20, o: 2 }, { x: 2450, y: 1280, sz: 'x', g: 20, o: 2 }, { x: 2250, y: 900, sz: 'l', g: 30 }],
@@ -837,7 +854,7 @@ const LEVELS = [
       [0, [[-45, 360, 'm', 12], [0, 360, 'l', 16], [45, 360, 'm', 12], [0, 350, 'm', 10, 1], [-20, 330, 's', 6, 0]]],
       [1, [[180, 350, 's', 6], [0, 350, 'm', 10], [90, 330, 's', 6], [270, 330, 's', 6]]],
       [2, [[135, 360, 'l', 22], [180, 360, 'x', 30], [225, 360, 'l', 22], [180, 360, 'm', 12, 1], [110, 330, 'm', 12, 0], [250, 330, 'm', 12, 2]]]]) },
-  { name: 'Вы окружены', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0.1 }], hint: 'вы окружены: сверху и снизу противники уже раскинули сети к вашему главному узлу. держите кольцо вокруг него и прорывайтесь туда, где тоньше.',
+  { name: 'Вы окружены', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0.1 }], hint: 'вы окружены: сверху и снизу противники уже раскинули сети к вашему датацентру. держите кольцо вокруг него и прорывайтесь туда, где тоньше.',
     spawn: { first: 30, every: [22, 30], max: 10, at: 'ring', r: 0.26, style: 'rings' },
     spec: nets({ W: 3600, H: 3000, seed: 204, homes: [[0.5, 0.5], [0.5, 0.07], [0.5, 0.93]], homeV: [90, 35, 40], count: 40 }, [
       [0, [[0, 330, 'l', 16], [60, 330, 'm', 10], [120, 330, 'm', 10], [180, 330, 'l', 16], [240, 330, 'm', 10], [300, 330, 'm', 10], [0, 330, 'm', 10, 0], [180, 330, 'm', 10, 3]]],
@@ -856,7 +873,7 @@ const LEVELS = [
       [1, [[90, 340, 'm', 12], [45, 340, 's', 6], [0, 340, 'm', 12]]],
       [2, [[90, 340, 'm', 12], [135, 340, 's', 6], [180, 340, 'm', 12]]],
       [3, [[-90, 340, 'm', 12], [-135, 340, 'l', 18], [180, 340, 'm', 12]]]]) },
-  { name: 'Ферма', ai: [{ d: 'hard', hunt: 0.3 }], hint: 'посередине — ферма мейнфреймов. каждый мейнфрейм даёт wi-fi и бьёт сильнее; но пока вы берёте ферму, противник ищет, где перерезать вашу сеть.',
+  { name: 'Ферма', ai: [{ d: 'hard', hunt: 0.3 }], hint: 'посередине — ферма мейнфреймов. каждый мейнфрейм бьёт сильнее; но пока вы берёте ферму, противник ищет, где перерезать вашу сеть.',
     spawn: { first: 50, every: [30, 40], max: 8, at: 'gaps', style: 'beam' },
     spec: nets({ W: 4200, H: 2400, seed: 207, homes: [[0.05, 0.5], [0.95, 0.5]], homeV: [45, 55], count: 34,
       extra: linePx(1700, 800, 2500, 800, 3, 'x', [34, 42, 34]).concat(linePx(1700, 1600, 2500, 1600, 3, 'x', [34, 42, 34])) }, [
@@ -876,7 +893,7 @@ const LEVELS = [
       [1, [[120, 350, 'm', 12], [180, 350, 's', 6], [90, 330, 's', 6]]],
       [2, [[180, 350, 'l', 18], [135, 350, 'm', 12], [225, 350, 'm', 12]]],
       [3, [[240, 350, 'm', 12], [180, 350, 's', 6], [270, 330, 's', 6]]]]) },
-  { name: 'Ядро', ai: [{ d: 'hard', hunt: 0.2 }, { d: 'hard', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'ядро сети: четыре сети по углам, в центре — три мейнфрейма. последний бой: берите ядро и не дайте разорвать свою сеть.',
+  { name: 'Ядро', ai: [{ d: 'hard', hunt: 0.2 }, { d: 'hard', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'ядро сети: четыре датацентра по углам, у каждого своя сеть, в центре — три мейнфрейма. последний бой: берите ядро и держите свой датацентр.',
     spawn: { first: 40, every: [26, 34], max: 12, at: 'center', r: 0.2, sym: 4, style: 'glyph', sz: { m: 0.3, l: 0.5, x: 0.2 } },
     spec: nets({ W: 4800, H: 3200, seed: 210, homes: [[0.05, 0.93], [0.05, 0.07], [0.95, 0.07], [0.95, 0.93]], homeV: [50, 50, 55, 45], count: 48,
       extra: [{ x: 2400, y: 1600, sz: 'l', g: 36 }].concat(ringPx(2400, 1600, 440, 3, -Math.PI / 2, 'x', 48)) }, [
@@ -930,10 +947,10 @@ const HOME = [0.06, 0.12, 0.2, 0.32, 0.45];
 const FIGHT = { k: 0.12, base: 0.35 };
 function makeNode(d, i, used) {
   const cap = CAP[d.sz], v = Math.min(cap, d.g);
-  let name; const pre = { s: 'lt', m: 'ws', l: 'srv', x: 'core' }[d.sz];
+  let name; const pre = { s: 'lt', m: 'ws', l: 'srv', x: 'core', h: 'dc' }[d.sz];
   do { name = `${pre}-${String(1 + Math.floor(Math.random() * 998)).padStart(2, '0')}`; } while (used.has(name));
   used.add(name);
-  return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, maxT: MAXT[d.sz], kind: d.kind || null, owner: d.o, v, vd: v, tier: Math.min(tierOf(v), MAXT[d.sz]), name, seed: Math.floor(Math.random() * 1e6),
+  return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, hq: !!d.hq, maxT: MAXT[d.sz], kind: d.kind || null, owner: d.o, v, vd: v, tier: Math.min(tierOf(v), MAXT[d.sz]), name, seed: Math.floor(Math.random() * 1e6),
     hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
 }
 /* A level names a bot by difficulty, or as { d: difficulty, ...overrides } (e.g. hunt: how much it goes for you). */
@@ -1140,7 +1157,7 @@ const chanMul = (e, o) => {
    A player may have two bundles in the air at a time, one of each kind: one inside the own network (on its way to an
    own node) and one strike (on its way to a foreign or grey node). While one flies, the next launch of the same kind
    waits. A laptop never launches. A bundle passing on through a relay node or a node's route is the same bundle, not a
-   new launch; a wi-fi jump counts as a bundle in the air. The kind follows the bundle's target, so a strike whose
+   new launch; a jump counts as a bundle in the air. The kind follows the bundle's target, so a strike whose
    target falls to its owner meanwhile becomes a move inside the network. */
 const MAX_FLYING = 1;
 /* May A send packets against T? Striking a foreign node takes a server or better, but joining a fight of your own
@@ -1228,8 +1245,8 @@ function liveNearSpot(o, minGap) {
   }
   return null;
 }
-function liveNode(x, y, sz, o, g, kind) {
-  const P = makeNode({ x, y, sz, o, g, kind }, G.nodes.length, G.used);
+function liveNode(x, y, sz, o, g, kind, hq) {
+  const P = makeNode({ x, y, sz, o, g, kind, hq }, G.nodes.length, G.used);
   G.nodes.push(P);
   G.waves.push({ x, y, r: P.capR, life: 1, max: 1, o, soft: true });
   return P;
@@ -1263,7 +1280,7 @@ function spawnBot() {
   if (!o) return false;
   const at = liveBotSpot(); if (!at) return false;
   G.botsMade++;
-  liveNode(at.x, at.y, 'x', o, 30, null);
+  liveNode(at.x, at.y, 'h', o, 30, null, true);
   // a few free nodes around its home so it can start growing at once
   for (let k = 0, made = 0; k < 12 && made < 3; k++) {
     const a = Math.random() * TAU, d = 240 + Math.random() * 150, x = at.x + Math.cos(a) * d, y = at.y + Math.sin(a) * d;
@@ -1422,44 +1439,18 @@ function drawArrivals(t) {
   }
 }
 
-/* ---------- wi-fi ----------
-   Player only: a mainframe can throw a batch straight to any node in its range, over the air, ignoring channels
-   and the three-channel limit. Drag from the badge beside the mainframe; then it recharges. */
-const WIFI = { cd: 15 };
-const wifiPos = p => { const r = nr(p, p.vd) * 1.25 + 14; return { x: p.x + r * 0.75, y: p.y - r * 0.75 }; };
-const hasWifi = p => p.owner === 1 && tierN(p) >= 3 && !(p.infect > 0);
-function wifiCheck(i, j) {
-  const A = G.nodes[i], T = G.nodes[j];
-  if (!T || j === i || !T.seen) return 'выберите узел';
-  if (!hasWifi(A)) return 'wi-fi есть только у мейнфрейма и датацентра';
-  if (A.wifiCd > 0) return `wi-fi перезаряжается: ${Math.ceil(A.wifiCd)} с`;
-  const r = rangeN(A);
-  if (Math.hypot(T.x - A.x, T.y - A.y) > r) return `слишком далеко: дальность ${r}`;
-  if (sendCount(i, G.pct) < 1) return 'в узле нет пакетов';
-  const lb = launchBlock(i, j); if (lb) return lb;
-  return true;
-}
-function sendWifi(i, j) {
-  const r = wifiCheck(i, j);
-  if (r !== true) { SFX.error(); toast(r, 2200); return false; }
-  const A = G.nodes[i], T = G.nodes[j], n = sendCount(i, G.pct), d = Math.hypot(T.x - A.x, T.y - A.y);
-  spend(A, n); A.wifiCd = WIFI.cd;
-  G.jumps.push({ o: 1, n, from: i, to: j, t: 0, dur: d * 1.15 / (BASE_SPEED * SPEED_MUL[3]), h: Math.min(280, 60 + d * 0.3), seed: Math.floor(Math.random() * 1e6) });
-  SFX.daemon();
-  return true;
-}
+/* ---------- jumps ----------
+   A bundle flying over the map on a parabola, straight from one node to another. */
 function jumpPos(J, u) {
   const A = G.nodes[J.from], T = G.nodes[J.to];
   return [A.x + (T.x - A.x) * u, A.y + (T.y - A.y) * u - Math.sin(Math.PI * u) * J.h];
 }
 function stepJumps(dt) {
-  for (const p of G.nodes) if (p.wifiCd > 0) p.wifiCd = Math.max(0, p.wifiCd - dt);
   for (const J of G.jumps) {
     J.t += dt;
     if (J.t >= J.dur) { J.done = true; const T = G.nodes[J.to]; arrive(T, J.n, J.o, T.x, T.y - nr(T, T.vd), undefined, 0, SPEED_MUL[3]); }
   }
   G.jumps = G.jumps.filter(J => !J.done);
-  if (!G.demo && !store.wifihint && G.nodes.some(hasWifi)) { store.wifihint = 1; save(); toast('мейнфрейм открыл wi-fi: потяните от значка у мейнфрейма к любому узлу в радиусе — пачка перелетит без каналов.', 9000); }
 }
 
 /* ---------- daemon ----------
@@ -1597,7 +1588,7 @@ function fall(p, n, o) {
   if (o === 1 || p.owner === 1 || p.assault.some(a => a.o === 1)) SFX.hit();
 }
 /* How hard a node's own packets hit: class bonus and a firewall. */
-const defMult = p => (1 + HOME[tierN(p)]) * (p.kind === 'firewall' ? 1.8 : 1);
+const defMult = p => (1 + HOME[tierN(p)]) * (p.kind === 'firewall' ? 1.8 : 1) * (p.hq ? HQ.def : 1);
 const linkCap = p => p.kind === 'hub' ? 5 : Math.max(3, TIERS[tierN(p)].links);
 function resolveNodes(dt) {
   const up = n => Math.ceil(n - 1e-6);
@@ -1671,6 +1662,7 @@ function captureNode(B, o, leftover) {
   B.route = null;
   B.owner = o; B.v = Math.max(0, leftover || 0) + bounty; if (B.v < 1) B.v = 1; B.pop = 1; B.glitch = 0.9; B.hurt = 0; B.base = B.v; B.held = 0; B.infect = 0;
   if (bounty > 0) G.floats.push({ x: B.x, y: B.y, txt: `+${bounty}`, o, life: 1.6, max: 1.6 });
+  B.hq = false;
   prune(old, o); prune(o);
   G.waves.push({ x: B.x, y: B.y, r: nr(B, B.v), life: 1.3, max: 1.3, o });
   B.lostFrom = old; B.lostAt = G.time;
@@ -1679,12 +1671,15 @@ function captureNode(B, o, leftover) {
   if (o === 1) { G.stats.captured++; SFX.capture(); if (G.tut && G.tut < 4) { G.tut = 4; tutNext(); } }
   else if (old === 1) SFX.lost();
 }
-/* A network lives as one piece. When a capture splits o's nodes into parts (joined by finished channels between o's
-   own nodes), the part with the most nodes stays (on a tie, the one with more packets) and the rest go grey.
-   linked(o) is the part that stays; skipNode / skipEdge pretend that node or channel is gone. */
+/* A network lives from its datacenter and as one piece. When a capture splits o's nodes into parts (joined by
+   finished channels between o's own nodes), the part with the most nodes stays (on a tie, the one with more packets),
+   and so does the datacenter's part; the rest go grey. Without its datacenter the whole network goes grey.
+   linked(o) is what stays; skipNode / skipEdge pretend that node or channel is gone. */
+const hqOf = o => G.nodes.find(p => p.owner === o && p.hq) || null;
 function linked(o, skipNode, skipEdge) {
-  const N = G.nodes, done = new Set();
-  let best = new Set(), bestV = -1;
+  const N = G.nodes, done = new Set(), H = hqOf(o);
+  if (!H || H === skipNode) return new Set();
+  let best = new Set(), bestV = -1, home = null;
   for (const P of N) {
     if (P.owner !== o || P === skipNode || done.has(P.i)) continue;
     const part = new Set([P.i]), q = [P.i]; let v = 0;
@@ -1697,11 +1692,13 @@ function linked(o, skipNode, skipEdge) {
         if (N[j].owner === o && N[j] !== skipNode && !done.has(j)) { done.add(j); part.add(j); q.push(j); }
       }
     }
+    if (part.has(H.i)) home = part;
     if (part.size > best.size || (part.size === best.size && v > bestV)) { best = part; bestV = v; }
   }
+  if (home && home !== best) for (const i of home) best.add(i);
   return best;
 }
-/* The nodes o would lose if X fell (X itself included): X and the smaller parts its fall would split off. */
+/* The nodes o would lose if X fell (X itself included): X and the parts its fall would split off; everything if X is the datacenter. */
 function hangsOn(X) {
   if (!X.owner) return [];
   const keep = linked(X.owner, X);
@@ -1709,7 +1706,7 @@ function hangsOn(X) {
 }
 /* What X's owner would lose if X fell, for the bots: the nodes and packets that would go grey. */
 function cutValue(X) {
-  return hangsOn(X).filter(p => p !== X).reduce((s, p) => s + p.v + 15, 0);
+  return hangsOn(X).filter(p => p !== X).reduce((s, p) => s + p.v + 15, 0) + (X.hq ? 400 : 0);
 }
 /* A node cut off from the main part of its network goes grey: it stays on the map with its channels, its packets are gone and
    nobody gets them. Its owner's bundles that left from it are lost as well. */
@@ -1729,7 +1726,7 @@ function goGrey(P) {
 }
 /* Whatever o's network no longer reaches dies with the cut: bundles on channels with no end in the network, bundles
    running into the part that is going grey, swarms fighting at a node none of whose channels leads back into the
-   network, and wi-fi jumps from outside it. So a cut-off bundle can never take a node afterwards. */
+   network, and jumps from outside it. So a cut-off bundle can never take a node afterwards. */
 function cutOff(o, keep, lost) {
   const gone = (n, x, y) => { G.floats.push({ x, y, txt: `−${Math.round(n)}`, o, life: 1.3, max: 1.3 }); spark(x, y, o); };
   for (const e of G.edges) {
@@ -1751,11 +1748,11 @@ function prune(o, by) {
   const keep = linked(o), lost = G.nodes.filter(p => p.owner === o && !keep.has(p.i));
   cutOff(o, keep, new Set(lost.map(p => p.i)));
   if (!lost.length) return 0;
-  const packets = lost.reduce((s, p) => s + p.v, 0);
+  const packets = lost.reduce((s, p) => s + p.v, 0), noHq = !hqOf(o);
   for (const P of lost) goGrey(P);
   if (!G.demo) {
-    if (o === 1) { SFX.lost(); toast(`сеть разорвана: меньшая часть — ${lost.length} узл. — отключилась (−${Math.round(packets)} пакетов)`, 4000); }
-    else if (by === 1) { SFX.capture(); toast(`вы разорвали сеть противника: меньшая часть — ${lost.length} узл. — отключилась`, 4000); }
+    if (o === 1) { SFX.lost(); toast(noHq ? 'датацентр потерян: вся сеть отключилась' : `сеть разорвана: меньшая часть — ${lost.length} узл. — отключилась (−${Math.round(packets)} пакетов)`, 4000); }
+    else if (by === 1) { SFX.capture(); toast(noHq ? 'датацентр противника взят: вся его сеть отключилась' : `вы разорвали сеть противника: меньшая часть — ${lost.length} узл. — отключилась`, 4000); }
   }
   return lost.length;
 }
@@ -1809,7 +1806,7 @@ function step(dt) {
   for (const p of N) {
     if (p.infect > 0) { p.infect = Math.max(0, p.infect - dt); p.v = Math.max(0, p.v - DAEMON.drain * dt); p.hurt = Math.max(p.hurt, 0.3); continue; }
     if (p.owner && p.v < p.cap) {
-      const k = p.kind === 'amp' ? 2 : 1;
+      const k = (p.kind === 'amp' ? 2 : 1) * (p.hq ? HQ.regen : 1);
       const add = Math.min(p.cap - p.v, TIERS[tierN(p)].regen * k * dt); p.v += add; p.base += add;
     }
   }
@@ -2243,11 +2240,7 @@ cv.addEventListener('pointerdown', e => {
   if (interactive()) { const qb = qNear(e.clientX, e.clientY); if (qb) { cancelOrders(q => q === qb); SFX.flowOff(); ptr = null; return; } }
   const dp = interactive() && G.daemon && G.daemon.state === 'idle' ? daemonPos() : null;
   if (dp) { ts(dp.x, dp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 18) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'daemon', target: -1 }; return; } }
-  if (interactive()) for (const q of G.nodes) {
-    if (!hasWifi(q)) continue;
-    const wp = wifiPos(q); ts(wp.x, wp.y);
-    if (Math.hypot(TX - e.clientX, TY - e.clientY) < 16) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: q.i, moved: false, mode: 'wifi', target: -1 }; return; }
-  }
+
   const p = interactive() ? hit(w.x, w.y) : -1;
   // shift: click toggles an own node in the group, drag on empty space draws a selection box
   setShift(e.shiftKey);
@@ -2269,19 +2262,18 @@ cv.addEventListener('pointermove', e => {
   const w = fromS(e.clientX, e.clientY);
   hover = interactive() ? hit(w.x, w.y) : -1;
   let overD = false; if (!ptr && interactive() && G.daemon && G.daemon.state === 'idle') { const dp = daemonPos(); ts(dp.x, dp.y); overD = Math.hypot(TX - e.clientX, TY - e.clientY) < 18; }
-  if (!ptr && interactive()) for (const q of G.nodes) { if (!hasWifi(q)) continue; const wp = wifiPos(q); ts(wp.x, wp.y); if (Math.hypot(TX - e.clientX, TY - e.clientY) < 16) overD = true; }
   G.overQ = !ptr && interactive() ? qNear(e.clientX, e.clientY) : null; if (G.overQ) overD = true;
   G.overDaemon = overD;
   cv.style.cursor = hover >= 0 || overD ? 'pointer' : ptr && ptr.mode === 'pan' && ptr.moved ? 'grabbing' : 'default';
   if (!ptr || ptr.id !== e.pointerId) return;
-  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi' || ptr.mode === 'retreat') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
+  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'retreat') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
   ptr.x = e.clientX; ptr.y = e.clientY;
   if (!ptr.moved && Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 7) { ptr.moved = true; closePop(); }
   if (ptr.mode === 'retreat') {
     // the exit nearest to the pointer; only own nodes linked to the battle count
     if (ptr.moved && !ptr.cancel) { let best = -1, bd = 1e9; for (const e of retreatExits(ptr.p)) { const q = G.nodes[other(e, ptr.p)]; ts(q.x, q.y); const d = Math.hypot(TX - ptr.x, TY - ptr.y); if (d < bd) { bd = d; best = q.i; } } ptr.target = best; }
   }
-  else if (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi') {
+  else if (ptr.mode === 'link' || ptr.mode === 'daemon') {
     if (!ptr.cancel) {
       const exact = hit(w.x, w.y), h = ptr.mode === 'daemon' ? exact : aimTarget(ptr.x, ptr.y, ptr.p, ptr.mode === 'link');
       if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1;
@@ -2302,7 +2294,6 @@ function endPtr(e, cancel) {
   if (cancel || !interactive()) return;
   if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
   if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
-  if (p.mode === 'wifi') { if (!p.cancel && p.target >= 0) sendWifi(p.p, p.target); return; }
   if (p.mode === 'retreat' && p.moved) { if (!p.cancel && p.target >= 0) retreat(p.p, p.target); return; }
   if (!p.moved && !p.cancel) {
     if (p.shift && p.p >= 0 && G.nodes[p.p].owner === 1) { toggleGroup(p.p); return; }
@@ -2502,7 +2493,7 @@ function render(now) {
         a0 += span;
       }
     }
-    const spr = nodeSprite(tier, ow), scale = rd * S / spr.u, size = spr.cv.width / d * scale;
+    const ik = p.hq ? 1 : ICON_K[tier], spr = nodeSprite(tier, ow, p.hq), scale = rd * ik * S / spr.u, size = spr.cv.width / d * scale;
     const gl = p.vis ? p.glitch : 0;
     if (gl > 0.02) {
       const sl = 6, sh = spr.cv.height / sl;
@@ -2510,7 +2501,7 @@ function render(now) {
       if (dark) { ctx.globalAlpha = 0.35 * gl; ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(spr.cv, cx - size / 2 + 3, cy - size / 2, size, size); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
     } else ctx.drawImage(spr.cv, cx - size / 2, cy - size / 2, size, size);
     if (p.vis) {
-      const u = rd * S, bright = dark ? rgba(mix(c, [255, 255, 255], 0.5), 1) : rgba(mix(c, [0, 0, 0], 0.1), 1);
+      const u = rd * ik * S, bright = dark ? rgba(mix(c, [255, 255, 255], 0.5), 1) : rgba(mix(c, [0, 0, 0], 0.1), 1);
       for (const [sx0, sy0, sw, sh] of spr.screens) {
         const x0 = cx + sx0 * u, y0 = cy + sy0 * u, w = sw * u, h = sh * u, lh = Math.max(3, h / 5), spd = tier === 0 ? 0 : ow ? 1.6 : 0.4, scroll = (t * spd) % 1, base = Math.floor(t * spd);
         ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip(); ctx.fillStyle = rgba(c, ow ? 0.7 : 0.35);
@@ -2518,7 +2509,7 @@ function render(now) {
         ctx.restore();
       }
       const lsz = Math.max(1.5, u * 0.08), busy = p.fed > 0 || p.hurt > 0.2;
-      spr.leds.forEach(([lx, ly], j) => { const ph = hash(p.seed + j * 57) % 1000 / 1000, sp = (ow ? (busy ? 6 : 2) + (hash(p.seed + j) % 5) : 0.4) * LED_PACE[tier]; const on = Math.sin(t * sp * TAU * 0.5 + ph * TAU) > (ow ? -0.2 : 0.6); ctx.fillStyle = on ? bright : rgba(c, 0.25); ctx.fillRect(cx + lx * u - lsz / 2, cy + ly * u - lsz / 2, lsz, lsz); });
+      spr.leds.forEach(([lx, ly], j) => { const ph = hash(p.seed + j * 57) % 1000 / 1000, sp = (ow ? (busy ? 6 : 2) + (hash(p.seed + j) % 5) : 0.4) * (p.hq ? 0.5 : LED_PACE[tier]); const on = Math.sin(t * sp * TAU * 0.5 + ph * TAU) > (ow ? -0.2 : 0.6); ctx.fillStyle = on ? bright : rgba(c, 0.25); ctx.fillRect(cx + lx * u - lsz / 2, cy + ly * u - lsz / 2, lsz, lsz); });
       if (p.infect > 0) {
         const dc = dcol(), rr2 = R * 1.2 + 8;
         ctx.setLineDash([3, 4]); ctx.lineDashOffset = t * 12; ctx.strokeStyle = rgba(dc, 0.8); ctx.lineWidth = 1.4;
@@ -2540,15 +2531,15 @@ function render(now) {
     ts(p.x, p.y);
     // labels keep clear of the node as drawn: a node packed past its size is drawn bigger
     const lr = Math.max(p.capR, nr(p, shownV(p)));
-    if (p.kind) {
-      // special node: its tag above the node
+    if (p.kind || p.hq) {
+      // special node or datacenter: its tag above the node
       const ko = shownOwner(p);
-      ctx.font = `500 10px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = ko ? PAL.lab[ko] : PAL.fg2; ctx.globalAlpha = 0.85;
-      ctx.fillText(`[${KINDS[p.kind].tag}]`, TX, TY - (lr * 1.2 + 18) * S - 4); ctx.globalAlpha = 1;
+      ctx.font = `${p.hq ? 700 : 500} 10px ${FONT}`; ctx.textAlign = 'center'; ctx.fillStyle = ko ? PAL.lab[ko] : PAL.fg2; ctx.globalAlpha = 0.85;
+      ctx.fillText(`[${p.hq ? 'датацентр' : KINDS[p.kind].tag}]`, TX, TY - (lr * 1.2 + 18) * S - 4); ctx.globalAlpha = 1;
     }
     if (p.owner === 1 && p.incoming > 0) {
       // an enemy bundle is on its way here: how many and how soon
-      const blink = 0.55 + 0.45 * Math.sin(t * 10), yy = TY - (lr * 1.2 + (p.kind ? 34 : 18)) * S - 4;
+      const blink = 0.55 + 0.45 * Math.sin(t * 10), yy = TY - (lr * 1.2 + (p.kind || p.hq ? 34 : 18)) * S - 4;
       ctx.font = `700 11px ${FONT}`; ctx.fillStyle = PAL.lab[p.incomingO || 2]; ctx.globalAlpha = blink;
       ctx.fillText(`▼ ${secret(p.seed + 5, t)} · ${p.incomingEta.toFixed(1)}с`, TX, yy); ctx.globalAlpha = 1;
     }
@@ -2615,7 +2606,7 @@ function render(now) {
     drawComet(d => posAt(e, a.dir, Math.max(startD(e, a.dir), a.d - d)), a.n, a.o, a.seed, t, sz, 1);
     ts(hx, hy); heads.push([TX, TY, a.n, a.o, a.seed]);
   }
-  // wi-fi jumps: a bundle on a parabola over the map
+  // jumps: a bundle on a parabola over the map
   for (const J of G.jumps) {
     const u = J.t / J.dur, [hx, hy] = jumpPos(J, u);
     if (hidden(J.o)) continue;
@@ -2656,7 +2647,6 @@ function render(now) {
       ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh); ctx.setLineDash([]);
     }
     if (hover >= 0 && hover !== G.sel && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (nr(p, p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
-    for (const q of N) if (hasWifi(q) && q.vis) drawWifiBadge(q, t);
     drawQueue(t);
     if (G.daemon) {
       const D = G.daemon;
@@ -2683,7 +2673,6 @@ function render(now) {
       for (const k of chainSources(ptr)) { const q = N[k]; ts(q.x, q.y); const r = (nr(q, q.vd) * 1.2 + 12) * S; brackets(TX, TY, r, Math.max(5, r * 0.25)); }
       if (ptr.target >= 0) drawGroupPreview(ptr.target, ptr.x, ptr.y, t, new Set(chainSources(ptr)));
     }
-    else if (ptr && ptr.mode === 'wifi' && !ptr.cancel) drawWifiPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
     else if (ptr && ptr.mode === 'retreat' && ptr.moved && !ptr.cancel) drawRetreatPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
     else if (!ptr && G.group.size && hover >= 0 && !G.overQ) drawGroupPreview(hover, null, null, t);
     else {
@@ -2769,20 +2758,6 @@ function drawPreview(src, tgt, px, py, t) {
     ts(A.x, A.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
   }
 }
-function drawWifiBadge(p, t) {
-  const wp = wifiPos(p); ts(wp.x, wp.y);
-  const x = TX, y = TY, c = PAL.rgb[1], ready = !(p.wifiCd > 0), r = 9;
-  ctx.save();
-  ctx.fillStyle = PAL.dark ? 'rgba(4,10,8,0.92)' : 'rgba(242,246,243,0.95)';
-  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
-  ctx.strokeStyle = rgba(c, ready ? 0.95 : 0.3); ctx.lineWidth = 1.2; ctx.stroke();
-  if (!ready) { ctx.strokeStyle = rgba(c, 0.9); ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - p.wifiCd / WIFI.cd)); ctx.stroke(); }
-  // the wi-fi sign: a dot and two arcs
-  ctx.globalAlpha = ready ? 1 : 0.4; ctx.strokeStyle = rgba(c, 1); ctx.fillStyle = rgba(c, 1); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.arc(x, y + 3.5, 1.3, 0, TAU); ctx.fill();
-  for (const rr of [3.6, 6.2]) { ctx.beginPath(); ctx.arc(x, y + 3.5, rr, -Math.PI * 0.78, -Math.PI * 0.22); ctx.stroke(); }
-  ctx.restore();
-}
 function drawRetreatPreview(src, tgt, px, py, t) {
   const S = cam.z, B = G.nodes[src];
   if (tgt < 0) { ts(B.x, B.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 5]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.6); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]); return; }
@@ -2790,19 +2765,6 @@ function drawRetreatPreview(src, tgt, px, py, t) {
   ts(T.x, T.y); const rr = (nr(T, T.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6); ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
   if (ok) { const e = r.e, fwd = e.a === src; if (pathRange(e, rad(e.a), e.len - rad(e.b))) { ctx.setLineDash([4, 5]); ctx.lineDashOffset = -t * 40 * (fwd ? 1 : -1); ctx.strokeStyle = rgba(col, 0.95); ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]); } }
   label(ok ? `отступить: ${r.n} (−${Math.round(RETREAT_LOSS * 100)}%)` : r, px, py, ok, ok ? PAL.rgb[1] : null);
-}
-function drawWifiPreview(src, tgt, px, py, t) {
-  const A = G.nodes[src], S = cam.z;
-  ts(A.x, A.y); ctx.strokeStyle = rgba(PAL.rgb[1], 0.25); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(TX, TY, rangeN(A) * S, 0, TAU); ctx.stroke();
-  if (tgt < 0) { const wp = wifiPos(A); ts(wp.x, wp.y); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.stroke(); return; }
-  const B = G.nodes[tgt], r = wifiCheck(src, tgt), ok = r === true, col = ok ? PAL.rgb[1] : PAL.rgb[2];
-  const J = { from: src, to: tgt, h: Math.min(280, 60 + Math.hypot(B.x - A.x, B.y - A.y) * 0.3) };
-  ctx.strokeStyle = rgba(col, 0.8); ctx.lineWidth = 1.4; ctx.beginPath();
-  for (let q = 0; q <= 32; q++) { const [x, y] = jumpPos(J, q / 32); ts(x, y); if (q) ctx.lineTo(TX, TY); else ctx.moveTo(TX, TY); }
-  ctx.stroke();
-  ts(B.x, B.y); const rr = (nr(B, B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
-  ctx.strokeStyle = rgba(col, 1); brackets(TX, TY, rr, Math.max(8, rr * 0.3));
-  label(ok ? `wi-fi: отправить ${sendCount(src, G.pct)}` : r, px, py, ok);
 }
 function drawRoutePreview(src, tgt, px, py, t) {
   const A = G.nodes[src], S = cam.z;
@@ -2926,20 +2888,18 @@ function buildLevelGrid() {
 }
 const HOW = [
   ['<rect x="4" y="12" width="22" height="12" fill="none" stroke="currentColor"/><rect x="6.5" y="14.5" width="4" height="7.5" fill="none" stroke="currentColor"/><rect x="13" y="14.5" width="4" height="7.5" fill="none" stroke="currentColor"/><rect x="19.5" y="14.5" width="4" height="7.5" fill="none" stroke="currentColor"/><rect x="12" y="6" width="6" height="6" fill="none" stroke="currentColor"/><path d="M15 6V2" stroke="currentColor"/><circle cx="15" cy="2" r="1" fill="currentColor"/>',
-    'Сеть живёт одним куском. Если захват узла разрывает её на части (части не связаны готовыми каналами между вашими узлами), остаётся та часть, где больше узлов, а остальные становятся серыми — каналы остаются, а пакеты пропадают и никому не достаются. При равенстве остаётся часть, где больше пакетов.', 'Захватите узел-перемычку противника — и меньшая половина его сети отключится. Стартовый узел — обычный, как все. На картах со временем включаются новые серые узлы.'],
+    'Датацентр — главный сервер: каждая сторона начинает с него. Возьмите датацентр противника — и он побеждён: вся его сеть отключается. Потеряете свой — проиграете. Датацентр защищается в полтора раза сильнее и восстанавливается быстрее.', 'Если захват узла разрывает сеть на части (части не связаны готовыми каналами между вашими узлами), остаются часть, где больше узлов, и часть с датацентром, а остальные становятся серыми — каналы остаются, а пакеты пропадают и никому не достаются. На картах со временем включаются новые серые узлы.'],
   ['<circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-dasharray="2 3"/><circle cx="15" cy="15" r="2.4" fill="currentColor"/><text x="23" y="9" font-size="7" fill="currentColor" font-family="monospace">?</text>',
     'Туман войны: видны только узлы, к которым вы можете проложить канал прямо сейчас (в дальности вашего узла, у которого есть свободный слот; у цели тоже есть слот; путь не пересекает каналы и узлы). Они серые: видно класс, но не хозяина. Чей узел — становится ясно, только когда его соединит с вашим готовый канал. Чужие каналы, пачки и бои видны лишь там, где касаются вашей сети. Числа видны только ваши: у остальных — медленно меняющиеся символы.',
     'Выйти из боя: потяните от узла, который вы осаждаете, к своему узлу, соединённому с ним каналом, — ваши пакеты уйдут домой, потеряв 10%. Наводиться точно не нужно: при перетаскивании цель выбирается по близости к курсору и вдоль ваших каналов.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M9 15h5l3-3h4" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="15" y="27" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">-12</text>',
-    'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят вдвое быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция (20), сервер (50), мейнфрейм (100), датацентр (500). Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050, датацентр 1250. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3, датацентр — до 4. Сам по себе узел растёт только до своего размера (не больше 150): выше — на присланных пакетах.'],
+    'Потяните от своего узла к другому: проложится канал, и по нему уйдёт пачка пакетов. Канал стоит пакетов, остаётся навсегда и не пересекает другие. По своим каналам (между двумя вашими узлами, они в вашем оттенке) пачки летят вдвое быстрее, по каналам к чужим узлам — на 10% медленнее.', 'Класс узла растёт с числом пакетов — чёрточки под числом: ноутбук, станция (20), сервер (50), мейнфрейм (100), кластер (500). Дальность канала растёт с классом узла: ноутбук 480, станция 620, сервер 800, мейнфрейм 1050, кластер 1250. Ноутбук канал не строит, станция держит до 2, сервер и мейнфрейм — до 3, кластер — до 4. Сам по себе узел растёт только до своего размера (не больше 150): выше — на присланных пакетах.'],
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
-    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов — можно сразу, пока канал ещё прокладывается: приказ встанет в очередь; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, датацентр — ещё быстрее, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки не сталкиваются: они пролетают друг мимо друга. Встречную пачку не обогнать: узел, к которому по каналу летит пачка, не может отправить пачку по этому каналу навстречу.'],
+    'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов — можно сразу, пока канал ещё прокладывается: приказ встанет в очередь; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, кластер — ещё быстрее, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки не сталкиваются: они пролетают друг мимо друга. Встречную пачку не обогнать: узел, к которому по каналу летит пачка, не может отправить пачку по этому каналу навстречу.'],
   ['<path d="M4 20h22" stroke="currentColor" stroke-opacity=".3"/><rect x="5" y="17" width="4" height="4" fill="currentColor"/><rect x="13" y="17" width="4" height="4" fill="none" stroke="currentColor"/><rect x="21" y="17" width="4" height="4" fill="none" stroke="currentColor"/><path d="M7 13V9h16v4" fill="none" stroke="currentColor"/>',
     'У игрока в воздухе может быть две пачки: одна атака (к чужому или серому узлу) и одна по своей сети (к своему узлу). Пока летит атака, новая атака ждёт; пока летит своя пачка, ждёт следующая своя. Ноутбук пачки не отправляет вовсе. Wi-fi-прыжок тоже считается летящей пачкой.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. Очередь не ограничена; у узла один приказ, новый заменяет старый. Нажмите значок, чтобы отменить приказ; Delete отменяет приказы выделенных узлов или все, правая кнопка мыши — сразу все. Приказ всей группе исполняется по одному, пачка за пачкой, — не заваливайте сеть приказами. Маршруты тоже ждут своей очереди, а пачка, которую узел пропускает дальше, новой не считается.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Пока у узла идёт бой, он может отправлять пачки только в свои узлы — отступать, но не бить в ответ. Пачки, отрезанные от вашей сети, — в пути и в бою — гибнут. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
-  ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
-    'Wi-Fi мейнфрейма и датацентра: у них есть значок. Потяните от него к любому узлу в радиусе — пачка перелетит по воздуху, без каналов и без лимита в 3 канала.', 'Так можно достать узел, к которому не проложить канал. После прыжка wi-fi перезаряжается 15 секунд.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><rect x="21" y="11" width="7" height="8" fill="none" stroke="currentColor"/><path d="M10 15h10" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/><path d="M17 12l3 3-3 3" fill="none" stroke="currentColor"/>',
     'Маршрутизация, со 2-го уровня: дважды нажмите на свой узел, затем на другой — узел будет сам пересылать туда все свои пакеты, и накопленные, и новые.', 'Так строятся цепочки снабжения к фронту. Цель может быть своим узлом или чужим, если к нему есть канал из вашей сети. Снять маршрут: дважды нажать на узел и затем на него же.'],
   ['<rect x="2" y="11" width="7" height="8" fill="none" stroke="currentColor"/><circle cx="24" cy="15" r="3" fill="currentColor"/><path d="M9 15h12" stroke="currentColor" stroke-dasharray="2 2"/>',
@@ -2977,7 +2937,7 @@ const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал. канал стоит пакетов и остаётся навсегда.',
   2: 'канал готов. нажмите на серый узел — с вашего узла по каналу уйдёт пачка: все пакеты, с зажатым Shift — половина. если узел не может отправить её сейчас, приказ встанет в очередь — значок с номером у узла.',
   3: 'у чужого узла пакеты становятся символами и бьются с гарнизоном. чем больше сторона, тем быстрее она побеждает — кольцо вокруг узла показывает баланс.',
-  4: 'узел взломан. ваша сеть живёт одним куском: если её разорвут, меньшая часть станет серой. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди. правая кнопка мыши отменяет их все.',
+  4: 'узел взломан. ваш главный узел — датацентр: возьмите датацентр противника, чтобы победить, и не отдайте свой. если сеть разорвут, меньшая часть станет серой. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди. правая кнопка мыши отменяет их все.',
 };
 function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
 
@@ -3010,8 +2970,9 @@ function hudTick(now) {
 function startLevel(i) {
   const L = LEVELS[i];
   buildGame(genMap(L.spec), L.ai, { level: i, title: `${String(i + 1).padStart(2, '0')} ${L.name}`, fog: true, spawn: L.spawn });
-  // in the campaign the opponents start with twice the packets
-  for (const p of G.nodes) if (p.owner >= 2) { p.v *= 2; p.vd = p.base = p.lastV = p.v; p.tier = Math.min(tierOf(p.v), p.maxT); }
+  // in the campaign the opponents start with twice the packets, four times as many in the first ten missions
+  const foeK = i < 10 ? 4 : 2;
+  for (const p of G.nodes) if (p.owner >= 2) { p.v *= foeK; p.vd = p.base = p.lastV = p.v; p.tier = Math.min(tierOf(p.v), p.maxT); }
   enterGame();
   if (i === 0) setTimeout(() => { if (G && G.tut === 1) tutNext(); }, 700);
   if (i === 1) setTimeout(() => { if (G && G.meta.level === 1 && !G.ended) toast('новое: маршрутизация. дважды нажмите на свой узел, затем на другой — узел будет пересылать туда все свои пакеты.', 9000); }, 900);
@@ -3023,7 +2984,7 @@ function startQuick() {
   enterGame();
 }
 function homeFocus(instant) {
-  const mine = G.nodes.filter(p => p.owner === 1).sort((a, b) => b.v - a.v)[0]; if (!mine) return;
+  const mine = hqOf(1) || G.nodes.filter(p => p.owner === 1).sort((a, b) => b.v - a.v)[0]; if (!mine) return;
   const z = clamp(Math.min(V.w / 1500, V.h / 950), 0.55, 1.0);
   if (instant) { cam.x = mine.x; cam.y = mine.y; cam.z = z; cam.tx = null; clampCam(); } else focusOn(mine.x, mine.y, z);
 }
@@ -3086,7 +3047,7 @@ addEventListener('keydown', e => {
   if (!G || G.demo) return;
   const k = e.key.toLowerCase();
   if (k === 'escape') {
-    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'wifi')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; return; }
     if (!G.paused && G.routeFrom >= 0) { G.routeFrom = -1; return; }
     if (!G.paused && G.group.size) { clearGroup(); return; }
     if (G.paused) resumeGame(); else pauseGame(); return;
@@ -3120,7 +3081,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
+window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
 })();
 </script>
 
