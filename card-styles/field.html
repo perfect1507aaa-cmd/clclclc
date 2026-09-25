@@ -28,23 +28,16 @@ p{margin:0 0 10px; max-width:70ch;}
 .pillar span{font-size:13.5px; color:var(--mut);}
 
 /* ---------- game layout ---------- */
-.variants{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
-.vbtn{all:unset; box-sizing:border-box; cursor:pointer; padding:9px 14px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font:700 12.5px/1.2 var(--fd);}
-.vbtn small{display:block; margin-top:3px; font:500 11px/1.2 var(--fb); color:var(--mut);}
-.vbtn[aria-pressed="true"]{background:var(--ink); color:#0b0d10; border-color:var(--ink);}
-.vbtn[aria-pressed="true"] small{color:#3a3f4a;}
-.vbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
-.vdesc{margin:0; font-size:14px; color:var(--mut); max-width:80ch;}
 .game{display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:18px; align-items:start;}
-.arena{display:grid; gap:10px; min-width:0; justify-items:center;}
-.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:min(100%,620px);}
+.arena{display:grid; gap:10px; min-width:0; justify-items:center; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:min(100%,680px);}
 .hero{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:12px; background:var(--panel); border:1px solid var(--line); min-width:210px;}
 .hero .ava{width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb,var(--team) 18%,#1b1f27);}
 .hero .ava svg{width:25px; height:25px;} .hero .ava svg *{fill:var(--team);} .hero .ava svg .k{fill:color-mix(in srgb,var(--team) 18%,#1b1f27);}
 .hero b{display:block; font:700 12.5px/1.2 var(--fd);}
 .hero .hb{width:120px; height:6px; margin-top:5px; border-radius:3px; background:var(--off); overflow:hidden;}
-.hero .hb i{display:block; height:100%; background:var(--team); transition:width .35s;}
-.hero small{font:700 13px var(--fm); margin-left:auto; padding-left:8px;}
+.hero .hb i{display:block; height:100%; background:var(--team); transition:width .45s;}
+.hero .hv{margin-left:auto; min-width:34px; padding:3px 7px; border-radius:8px; background:#0b0d10; box-shadow:inset 0 0 0 1.5px #5b2a2a; color:#fca5a5; font:700 14px/1.2 var(--fd); text-align:center;}
 .chip{padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line); font:700 12px/1.2 var(--fd); color:var(--mut); white-space:nowrap;}
 .chip b{color:var(--ink);}
 .chip.turn{margin-left:auto;}
@@ -59,78 +52,83 @@ p{margin:0 0 10px; max-width:70ch;}
 .ehand i{width:18px; height:26px; margin-left:-6px; border-radius:4px; background:linear-gradient(135deg,#3a1f33,#241521); box-shadow:inset 0 0 0 1px #5a2e4d, 0 2px 4px rgba(0,0,0,.4);}
 .ehand i:first-child{margin-left:0;}
 
-/* ---------- board ---------- */
-.board-wrap{position:relative; width:min(100%,600px); padding:12px; border-radius:24px; box-sizing:border-box;
-  background:radial-gradient(90% 60% at 50% 50%, rgba(255,255,255,.035), transparent 70%), #0e1014;
-  box-shadow:inset 0 0 0 1px #222734, 0 24px 50px rgba(0,0,0,.45); user-select:none; -webkit-user-select:none;}
-.grid{position:relative; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
+/* ---------- board: camp | 4x4 field | camp ---------- */
+.board-wrap{position:relative; width:min(100%,680px); padding:12px; border-radius:24px; box-sizing:border-box;
+  background:radial-gradient(90% 60% at 50% 50%, rgba(255,255,255,.035), transparent 70%), #0e1014; box-shadow:inset 0 0 0 1px #222734, 0 24px 50px rgba(0,0,0,.45);}
+.grid{position:relative; display:grid; grid-template-columns:1fr 6px repeat(4,1fr) 6px 1fr; gap:8px;}
 .cell{position:relative; aspect-ratio:1; border-radius:14px;
   background:radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,.06), transparent 55%), linear-gradient(180deg, var(--c1), var(--c2));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06), inset 0 -3px 0 rgba(0,0,0,.35), 0 0 0 1px var(--cb);}
 .cell.zp{--c1:#16242a; --c2:#11191d; --cb:#1d3134;}
 .cell.ze{--c1:#261a24; --c2:#1b141a; --cb:#382535;}
 .cell::after{content:""; position:absolute; left:50%; top:50%; width:20%; height:20%; translate:-50% -50%; rotate:45deg; border:1.5px solid rgba(255,255,255,.06); border-radius:3px;}
-.cell.back::before{content:""; position:absolute; inset:6px; border-radius:10px; border:1px dashed rgba(255,255,255,.05);}
+.cell.camp{--c1:#1a1d24; --c2:#14161b; background:repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 6px, transparent 6px 12px), linear-gradient(180deg, var(--c1), var(--c2));}
+.cell.camp.cp{--cb:#27504b;} .cell.camp.ce{--cb:#4d2b44;}
+.cell.camp::after{width:26%; height:20%; rotate:0deg; border:none; border-radius:0; background:rgba(255,255,255,.06); clip-path:polygon(50% 0,100% 100%,0 100%);}
+.camplabel{align-self:center; justify-self:center; text-align:center; font:700 9.5px/1.3 var(--fd); letter-spacing:.05em; text-transform:uppercase;}
 .cell.drop{cursor:pointer; animation:pulse 1.3s ease-in-out infinite;}
 .cell.hov{box-shadow:inset 0 0 0 2px var(--ink), 0 0 0 1px var(--cb);}
 @keyframes pulse{0%,100%{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--tp) 45%,transparent), 0 0 0 1px var(--cb);} 50%{box-shadow:inset 0 0 0 2px var(--tp), 0 0 14px color-mix(in srgb,var(--tp) 40%,transparent), 0 0 0 1px var(--cb);}}
-.frontline{position:absolute; left:-4px; right:-4px; top:50%; height:2px; margin-top:-1px; pointer-events:none;
-  background:linear-gradient(90deg, transparent, var(--te) 20%, #fff 50%, var(--tp) 80%, transparent); opacity:.55; filter:drop-shadow(0 0 5px rgba(255,255,255,.4));}
-.zl{position:absolute; left:14px; font:700 9.5px/1 var(--fd); letter-spacing:.06em; text-transform:uppercase; pointer-events:none;}
+.frontline{grid-column:3 / 7; grid-row:2 / 4; align-self:center; height:2px; pointer-events:none; background:linear-gradient(90deg, transparent, var(--te) 20%, #fff 50%, var(--tp) 80%, transparent); opacity:.55; filter:drop-shadow(0 0 5px rgba(255,255,255,.4));}
 .units{position:absolute; inset:0; pointer-events:none;}
 .overlay{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:6;}
 
-.tile{position:absolute; box-sizing:border-box; border-radius:14px; pointer-events:auto; cursor:pointer; container-type:size;
+.tile{position:absolute; box-sizing:border-box; border-radius:14px; pointer-events:auto; cursor:pointer; container-type:size; touch-action:none;
   background:linear-gradient(180deg, color-mix(in srgb,var(--t) 24%,#1d222b), color-mix(in srgb,var(--t) 10%,#15191f));
   box-shadow:inset 0 0 0 2px var(--team), inset 0 1px 0 rgba(255,255,255,.12), 0 8px 16px rgba(0,0,0,.45);
-  transition:left .38s cubic-bezier(.3,.8,.3,1), top .38s cubic-bezier(.3,.8,.3,1);}
-.tile.p{--team:color-mix(in srgb,var(--tp) 80%,transparent);} .tile.e{--team:color-mix(in srgb,var(--te) 80%,transparent);}
-.tile .ic{position:absolute; left:50%; top:44%; width:46cqmin; height:46cqmin; translate:-50% -50%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+  transition:left .45s cubic-bezier(.3,.8,.3,1), top .45s cubic-bezier(.3,.8,.3,1);}
+.tile.p{--team:color-mix(in srgb,var(--tp) 80%,transparent);} .tile.e{--team:color-mix(in srgb,var(--te) 80%,transparent); cursor:default;}
+.tile .ic{position:absolute; left:50%; top:43%; width:51cqmin; height:51cqmin; translate:-50% -50%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
 .tile .ic svg{width:100%; height:100%;}
 .tile svg *{fill:var(--t);} .tile svg .k{fill:color-mix(in srgb,var(--t) 18%,#1b1f27);}
 .tile .tr{position:absolute; left:9%; top:8%; font:700 max(8px,11cqmin)/1 var(--fd); color:var(--t);}
-.tile .zz{position:absolute; right:8%; top:8%; font:700 max(8px,10cqmin)/1 var(--fd); color:var(--mut);}
-.tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,14cqmin)/1.2 var(--fd);}
+.tile .zz{position:absolute; right:8%; top:7%; width:max(16px,22cqmin); height:max(11px,15cqmin);}
+.tile .zz svg *{fill:#c7d2fe;}
+.tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,14cqmin)/1.2 var(--fd); transform-origin:center;}
 .tile .st svg{width:max(9px,11cqmin); height:max(9px,11cqmin);}
 .tile .st.a{left:6%; background:var(--ink); color:#0b0d10;} .tile .st.a svg *{fill:#0b0d10;}
 .tile .st.h{right:6%; background:#0b0d10; color:#fca5a5; box-shadow:inset 0 0 0 1.5px #5b2a2a;} .tile .st.h svg *{fill:var(--hpc);}
 .tile .st.h.d{color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
-.tile.sleep{filter:saturate(.55) brightness(.8);}
+.tile.sleep .ic{opacity:.62;}
 .tile.sel{box-shadow:inset 0 0 0 2px var(--team), 0 0 0 3px var(--tp), 0 8px 16px rgba(0,0,0,.45);}
-.tile.trio{box-shadow:inset 0 0 0 2px var(--gold), 0 0 16px color-mix(in srgb,var(--gold) 40%,transparent), 0 8px 16px rgba(0,0,0,.45);}
-.tile .upb{all:unset; position:absolute; left:50%; top:-12px; translate:-50% 0; z-index:3; padding:3px 9px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10.5px/1.25 var(--fd); white-space:nowrap; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.5);}
-.tile .upb:focus-visible{outline:2px solid var(--ink);}
-.tile.drop-in{animation:dropin .42s cubic-bezier(.2,1.4,.4,1);}
-@keyframes dropin{0%{transform:scale(1.45) translateY(-18px); opacity:0;} 60%{opacity:1;} 100%{transform:none;}}
-@container (max-width:64px){ .tile .tr,.tile .zz{display:none;} .tile .st{padding:1px 3px;} .tile .st svg{display:none;} }
-.float{position:absolute; z-index:20; pointer-events:none; font:700 18px/1 var(--fd); color:var(--hpc); text-shadow:0 2px 6px #000; translate:-50% -50%;}
-.float.g{color:var(--gold);} .float.t{color:var(--tp);}
-.proj{position:absolute; z-index:15; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; pointer-events:none; background:#fff; box-shadow:0 0 10px 3px var(--pc,#fff);}
-.ring{position:absolute; z-index:4; pointer-events:none; border-radius:16px; box-shadow:0 0 0 2px var(--tp);}
-.spark{position:absolute; z-index:5; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:2px; pointer-events:none;}
+.tile.mg{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 55%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 45%,transparent);}
+.tile.mg.hov{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 24px var(--gold);}
+.tile.acting{z-index:3; box-shadow:inset 0 0 0 2px #fff, 0 0 0 3px color-mix(in srgb,#fff 40%,transparent), 0 0 22px color-mix(in srgb,var(--t) 70%,transparent);}
+.tile .mgl{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
+.tile.drop-in{animation:dropin .45s cubic-bezier(.2,1.3,.4,1);}
+@keyframes dropin{0%{transform:scale(1.35) translateY(-14px); opacity:0;} 60%{opacity:1;} 100%{transform:none;}}
+@container (max-width:60px){ .tile .tr{display:none;} .tile .st{padding:1px 3px;} .tile .st svg{display:none;} }
+.float{position:absolute; z-index:20; pointer-events:none; font:700 24px/1 var(--fd); color:#fff; -webkit-text-stroke:5px #7f1d1d; paint-order:stroke fill; translate:-50% -50%;}
+.float.g{-webkit-text-stroke-color:#78350f;} .float.t{-webkit-text-stroke-color:#134e4a;}
+.bolt{position:absolute; z-index:15; left:0; top:0; pointer-events:none;}
+.bolt.arrow{width:30px; height:3px; margin:-1.5px 0 0 -15px; border-radius:2px; background:linear-gradient(90deg, transparent, #e7eaf0 60%, #fff); box-shadow:0 0 6px rgba(255,255,255,.6);}
+.bolt.orb{width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:radial-gradient(circle, #fff, #fde68a 45%, rgba(251,191,36,0) 72%); box-shadow:0 0 16px 4px rgba(251,191,36,.55);}
+.bolt.fire{width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:radial-gradient(circle, #fff7ed, #fb923c 45%, rgba(239,68,68,0) 72%); box-shadow:0 0 18px 5px rgba(239,68,68,.5);}
+.ring{position:absolute; z-index:4; pointer-events:none; border-radius:16px;}
 .over{position:absolute; inset:0; z-index:30; display:grid; place-items:center; align-content:center; gap:14px; border-radius:24px; background:rgba(11,13,16,.82); text-align:center;}
 .over b{font:700 28px var(--fd);}
 
 /* ---------- hand ---------- */
-.handwrap{position:relative; width:min(100%,620px); height:190px;}
-.card{position:absolute; left:0; top:34px; width:100px; height:142px; z-index:1; perspective:700px; cursor:grab; touch-action:none;
+.handwrap{position:relative; width:min(100%,680px); height:196px;}
+.card{position:absolute; left:0; top:34px; width:104px; height:148px; z-index:1; perspective:700px; cursor:grab; touch-action:none; -webkit-user-drag:none;
   transform:translate(var(--x),var(--y)) rotate(var(--a)); transition:transform .38s cubic-bezier(.2,.8,.2,1), opacity .2s;}
 .card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 30px)) rotate(0deg) scale(1.1); z-index:40;}
+.card:focus-visible{outline:2px solid var(--tp); outline-offset:3px; border-radius:12px;}
 .card.ghosted{opacity:.2;}
 .card .in{position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.3,.7,.3,1);}
 .card.back .in{transform:rotateY(180deg);}
 .face,.backf{position:absolute; inset:0; border-radius:12px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; overflow:hidden;}
 .face{background:linear-gradient(180deg,#20252f,#171a21); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 55%,#2a303b), 0 10px 22px rgba(0,0,0,.5);}
-.face .art{position:absolute; left:7px; right:7px; top:7px; height:62px; border-radius:8px; display:grid; place-items:center;
+.face .art{position:absolute; left:7px; right:7px; top:7px; height:66px; border-radius:8px; display:grid; place-items:center;
   background:radial-gradient(80% 90% at 50% 20%, color-mix(in srgb,var(--t) 38%,#1b1f27), color-mix(in srgb,var(--t) 12%,#15181e));}
-.face .art svg{width:40px; height:40px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));}
+.face .art svg{width:46px; height:46px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));}
 .face svg *{fill:var(--t);} .face svg .k{fill:color-mix(in srgb,var(--t) 22%,#1b1f27);}
 .face .cost{position:absolute; left:4px; top:4px; z-index:2; width:24px; height:24px; border-radius:50%; background:var(--mana); color:#0b0d10; font:700 12px/24px var(--fd); text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.5);}
 .card.poor .face .cost{background:var(--off); color:var(--mut);}
 .card.poor .face{filter:saturate(.45) brightness(.72);}
 .face .tr{position:absolute; right:10px; top:10px; font:700 10px var(--fd); color:var(--t); text-shadow:0 1px 3px #000;}
-.face .nm{position:absolute; left:6px; right:6px; top:74px; text-align:center; font:800 11px/1.15 var(--fb);}
-.face .ab{position:absolute; left:7px; right:7px; top:90px; text-align:center; font:500 9px/1.25 var(--fb); color:var(--mut);}
+.face .nm{position:absolute; left:6px; right:6px; top:78px; text-align:center; font:800 11px/1.15 var(--fb);}
+.face .ab{position:absolute; left:7px; right:7px; top:94px; text-align:center; font:500 9px/1.25 var(--fb); color:var(--mut);}
 .face .sts{position:absolute; left:7px; right:7px; bottom:7px; display:flex; justify-content:space-between;}
 .face .sts span{display:flex; align-items:center; gap:3px; padding:2px 6px; border-radius:6px; font:700 11px/1.2 var(--fd);}
 .face .sts svg{width:10px; height:10px;}
@@ -144,19 +142,19 @@ p{margin:0 0 10px; max-width:70ch;}
 .deck i{position:absolute; inset:0; border-radius:10px; background:repeating-linear-gradient(45deg,#1b2b30 0 6px,#16232a 6px 12px); box-shadow:inset 0 0 0 1.5px #2f5a5a, 0 4px 10px rgba(0,0,0,.4);}
 .deck i:nth-child(2){translate:-3px -3px;} .deck i:nth-child(3){translate:-6px -6px;}
 .deck b{position:absolute; left:50%; bottom:-22px; translate:-50% 0; font:700 11px var(--fd); color:var(--mut); white-space:nowrap;}
-.fly{position:fixed; z-index:200; pointer-events:none; width:100px; height:142px; left:0; top:0; transform-origin:0 0;}
+.fly{position:fixed; z-index:200; pointer-events:none; width:104px; height:148px; left:0; top:0; transform-origin:0 0;}
 .fly .face,.fly .backf{transform:none;}
-.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,620px);}
+.fly.tilefly{width:auto; height:auto;}
+.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,680px);}
 .btn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:999px; background:var(--ink); color:#0b0d10; font:700 13px/1 var(--fd);}
 .btn.ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--off);}
 .btn.ghost[aria-pressed="false"]{color:var(--mut);}
 .btn[disabled]{opacity:.4; cursor:default;}
 .btn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
 .hint{font-size:13px; color:var(--mut);}
-
 .side{display:grid; gap:12px;}
 .side .panel{padding:14px 16px;}
-.legend{display:grid; gap:7px; margin-top:6px; font-size:12.5px; color:var(--mut);}
+.legend{display:grid; gap:7px; margin-top:8px; font-size:12.5px; color:var(--mut);}
 .legend span{display:flex; gap:8px; align-items:center;}
 .legend i{width:22px; height:3px; border-radius:2px; flex:none;}
 .log{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:5px; max-height:330px; overflow:auto; font-size:12.5px; line-height:1.4;}
@@ -164,15 +162,8 @@ p{margin:0 0 10px; max-width:70ch;}
 .log li.p{border-color:var(--tp); color:var(--ink);} .log li.e{border-color:var(--te);} .log li.sys{border-color:var(--gold); color:#f3e4bf;}
 
 /* ---------- docs ---------- */
-.vcards{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px;}
-.vcard ul,.rules ul,.rules ol{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
-.vcard .pm{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; font-size:13px;}
-.vcard .pm b{display:block; font:500 10.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
-.mini-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:3px; width:150px; margin:10px 0;}
-.mini-grid i{aspect-ratio:1; border-radius:4px; background:#171a21; position:relative;}
-.mini-grid i.ze{background:#261a24;} .mini-grid i.zp{background:#16242a;}
-.mini-grid i.u{box-shadow:inset 0 0 0 2px currentColor;}
 .rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px;}
+.rules ul,.rules ol{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
 .tbl{overflow-x:auto;}
 table{border-collapse:collapse; width:100%; min-width:720px; font-size:13.5px;}
 th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
@@ -190,29 +181,24 @@ td.w{white-space:normal; min-width:220px;}
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Концепция боя · Альянс против Инферно · поле 5×4</p>
+    <p class="eyebrow">Режим «Колонны» с лагерем · Альянс против Инферно · поле 4×4</p>
     <h1>Поле Альянса</h1>
-    <p class="lede">Карточная дуэль без передвижений. Ваши две линии снизу, две вражеские сверху, нейтральных клеток больше нет. Юниты выходят из руки и бьют вперёд. Тир растёт, только когда три одинаковых юнита стоят рядом.</p>
+    <p class="lede">Карточная дуэль без передвижений. Ваши две линии снизу, две вражеские сверху, сбоку у каждого лагерь на три места. Юнит бьёт по своей колонке. Тир растёт, когда на юнита кладёшь такую же карту или такого же юнита из лагеря.</p>
   </header>
 
   <div class="pillars">
-    <div class="pillar"><b>Поле 5×4</b><span>Фронт и тыл у вас снизу, у Инферно сверху.</span></div>
-    <div class="pillar"><b>Мана = номер хода</b><span>До 10. Карта I тира стоит 1, II тира — 2.</span></div>
-    <div class="pillar"><b>Рука</b><span>Только I и II тир, колода бесконечная. На старте 6, дальше +2 за ход.</span></div>
-    <div class="pillar"><b>Бьют только вперёд</b><span>Бой идёт сам в конце хода. Как именно — зависит от варианта.</span></div>
-    <div class="pillar"><b>Три рядом → тир выше</b><span>Три одинаковых юнита, стоящих рядом, становятся одним юнитом следующего тира.</span></div>
+    <div class="pillar"><b>Поле 4×4 и лагерь</b><span>Две ваши линии, две вражеские и по три места в лагере сбоку.</span></div>
+    <div class="pillar"><b>Мана = номер хода</b><span>До 10. Карта стоит столько, какого она тира: 1, 2 или 3.</span></div>
+    <div class="pillar"><b>Рука I–III тира</b><span>Колода бесконечная: 55% I тира, 30% II, 15% III.</span></div>
+    <div class="pillar"><b>Наложение = тир выше</b><span>Такой же юнит поверх другого, картой или из лагеря, даёт юнита следующего тира.</span></div>
+    <div class="pillar"><b>Колонны</b><span>Юнит бьёт ближайшего врага в своей колонке. Пусто — удар по герою.</span></div>
   </div>
 
   <h2>Поле</h2>
-  <div class="variants" id="variants" role="group" aria-label="Вариант правил"></div>
-  <p class="vdesc" id="vdesc"></p>
-
   <section class="game" aria-label="Песочница боя">
     <div class="arena">
       <div class="bar" id="topbar"></div>
-      <div class="board-wrap" id="bwrap">
-        <div class="grid" id="grid"></div>
-      </div>
+      <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
       <div class="bar" id="botbar"></div>
       <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
       <div class="actions">
@@ -226,53 +212,49 @@ td.w{white-space:normal; min-width:220px;}
     <aside class="side">
       <div class="panel">
         <h3>Как играть</h3>
-        <p style="font-size:13.5px;margin:0">Перетащите карту на подсвеченную клетку двух нижних линий или кликните карту, потом клетку. Кликните юнита, чтобы увидеть кнопку улучшения, когда рядом стоят ещё двое таких же.</p>
+        <p style="font-size:13.5px;margin:0">Перетащите карту на пустую клетку двух нижних линий или в лагерь справа. На такого же юнита — улучшение, он подсвечен золотом. Юнита из лагеря перетащите на поле или на такого же юнита. Можно и кликами: сначала карта или юнит, потом цель.</p>
         <div class="legend">
           <span><i style="background:var(--te)"></i>удар по юниту</span>
           <span><i style="background:var(--gold)"></i>удар по герою</span>
-          <span><i style="background:var(--tp)"></i>шаг вперёд</span>
         </div>
       </div>
       <div class="panel"><h3>Журнал боя</h3><ul class="log" id="log"></ul></div>
     </aside>
   </section>
 
-  <h2>Три варианта боя</h2>
-  <p class="lede">Во всех трёх юниты стоят там, где их выставили, и бьют только вперёд, к сопернику. Разница в том, как далеко они достают и можно ли двигаться.</p>
-  <div class="vcards" id="vcards"></div>
-
-  <h2>Общие правила</h2>
+  <h2>Правила режима</h2>
   <div class="rules">
     <div class="panel"><h3>Ход</h3><ol>
       <li>Мана = номер хода, не больше 10. Остаток сгорает.</li>
       <li>Добор 2 карты (в руке до 9). На первом ходу — 6 стартовых.</li>
-      <li>Выставляете карты на свободные клетки двух своих линий.</li>
-      <li>Улучшаете тройки.</li>
-      <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
+      <li>За ману ставите карты на поле, в лагерь или поверх такого же юнита.</li>
+      <li>Бесплатно переводите юнитов из лагеря на поле или сливаете их.</li>
+      <li>Конец хода: юниты на поле бьют по очереди, от фронта к тылу, слева направо.</li>
     </ol></div>
-    <div class="panel"><h3>Тройка и сон</h3><ul>
-      <li>Три одинаковых юнита, касающихся друг друга (по диагонали тоже), становятся одним юнитом следующего тира на месте выбранного.</li>
-      <li>Новый юнит полностью здоров и спит 1 ход, как и только что выставленный.</li>
-      <li>Бесы не спят: бьют в тот же ход.</li>
+    <div class="panel"><h3>Лагерь и улучшение</h3><ul>
+      <li>Лагерь — три места сбоку. Там юниты не бьют и неуязвимы.</li>
+      <li>Из лагеря на поле можно, обратно нельзя.</li>
+      <li>Такой же юнит поверх другого (картой из руки или из лагеря) → юнит тиром выше, здоровый и спящий 1 ход.</li>
+      <li>В руке только I–III тир, так что грифонов и выше собирают только наложением.</li>
     </ul></div>
-    <div class="panel"><h3>Герой</h3><ul>
-      <li>У каждого героя 20 ХП.</li>
-      <li>Бьёт героя тот, кому некого бить: пустая колонка соперника, в «Наступлении» — край поля.</li>
-      <li>Пещерные демоны бьют героя вдвое сильнее.</li>
+    <div class="panel"><h3>Бой и герой</h3><ul>
+      <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт, если спереди свой; стрелки бьют через своих.</li>
+      <li>В колонке нет врагов — удар по герою. У героя 20 ХП.</li>
+      <li>Выставленный юнит спит 1 ход; сон проходит и в лагере. Бесы не спят.</li>
     </ul></div>
   </div>
-  <p class="fix">Раз юниты больше не собираются в пачки, каждая карта — один юнит, а слияние перетаскиванием я убрал. Улучшение тремя юнитами рядом осталось. Лучник ослаблен больше чем вдвое: было 2 урона и 5 ХП со стрельбой через всё поле, стало 1 урон, 4 ХП и дальность 2 клетки.</p>
+  <p class="fix">Решил сам, правится быстро: улучшенный юнит засыпает на ход, поэтому улучшать выгоднее в лагере; перевод из лагеря на поле бесплатный; наложение карты стоит её обычную цену.</p>
 
   <h2>Отряды</h2>
-  <p class="lede">Одиночные юниты, числа наши. Сила тира (урон × ХП) растёт примерно втрое, поэтому тройка честно меняется на одного юнита тиром выше. В правом столбце для сверки характеристики из «Героев 5» по памяти; их нужно проверить.</p>
+  <p class="lede">Одиночные юниты, числа наши. Сила тира (урон × ХП) растёт примерно втрое, в «Героях 5» для сверки характеристики по памяти.</p>
   <div id="rosters"></div>
 
   <h2>Что решить дальше</h2>
   <div class="panel"><ul style="margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px">
-    <li>Какой вариант боя оставить, или смешать: например, «Натиск» с шагом вперёд для рыцарей и жеребцов.</li>
-    <li>Бой в конце своего хода (сейчас) или одновременный в конце раунда?</li>
-    <li>Всего 10 своих клеток: хватает ли маны до 10, или ограничить её шестью?</li>
-    <li>Нужны ли пачки вообще: вернуть численность на карте можно как редкую награду («Отряд ополченцев ×3»).</li>
+    <li>Засыпает ли юнит после улучшения прямо на поле?</li>
+    <li>Сколько стоит перевод из лагеря: бесплатно или 1 мана?</li>
+    <li>Можно ли накладывать карту на юнита другого вида того же тира?</li>
+    <li>Хватает ли 4 колонок, или бой теперь слишком быстрый к герою?</li>
   </ul></div>
 </div>
 
@@ -297,49 +279,32 @@ const ICONS = {
 };
 const SWORD = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1.5L15 1l-.5 1.5L7 10l-1-1zM4 9l3 3-1 1-1-1-2 2-1-1 2-2-1-1z"/></svg>`;
 const HEART = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.5S1 10 1 5.5A3.5 3.5 0 0 1 8 4a3.5 3.5 0 0 1 7 1.5C15 10 8 14.5 8 14.5z"/></svg>`;
+const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
 
-/* Single units. Power (atk × HP) grows ~3x per tier; the archer is deliberately weak. */
 const F = {
   p:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', units:[
     {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
-    {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, range:2, ab:'Стреляет через своих, дальность 2', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
+    {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
     {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
-    {key:'griffin', name:'Грифон', atk:4, hp:11, diag:true, ab:'Бьёт и по диагонали вперёд', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
-    {key:'priest', name:'Монах', atk:5, hp:20, ranged:true, range:3, ab:'Стреляет через своих, дальность 3', homm:'Монах', hs:'Атк 12 · Защ 12 · 9–12 · ХП 54'},
-    {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает и того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
+    {key:'griffin', name:'Грифон', atk:4, hp:11, diag:true, ab:'Если в колонке пусто, бьёт по диагонали', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
+    {key:'priest', name:'Монах', atk:5, hp:20, ranged:true, bolt:'orb', ab:'Стреляет через своих', homm:'Монах', hs:'Атк 12 · Защ 12 · 9–12 · ХП 54'},
+    {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
     {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
   ]},
   e:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', units:[
-    {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: бьёт в ход высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
+    {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, splash:true, ab:'Три головы: задевает соседей цели на 1', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
-    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, range:3, ab:'Стреляет через своих, дальность 3', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
+    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', ab:'Стреляет огнём через своих', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
     {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'Два удара за ход', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
   ]},
 };
-const VARIANTS = {
-  col:{name:'Колонны', tag:'бьют по всей колонке',
-    desc:'Юнит бьёт ближайшего врага в своей колонке на любом расстоянии. Ближний бой перекрывается своим юнитом спереди, стрелки бьют через своих. Если в колонке врагов нет — удар по герою.',
-    rules:['Цель — первый враг в колонке, дальность не важна.','Юнит ближнего боя за своим юнитом ждёт.','Пустая колонка соперника — удар по герою.'],
-    plus:'Самый простой: поле читается с первого взгляда.', minus:'Тыл почти не отличается от фронта для врага.',
-    mini:{e:[[0,1],[1,3]], p:[[2,1],[3,3]]}},
-  push:{name:'Натиск', tag:'только клетка перед собой',
-    desc:'Юнит бьёт только клетку прямо перед собой. Лучник достаёт на 2 клетки, монах и суккуб на 3, грифон ещё и по диагонали. Вражеский тыл защищён фронтом. Пустая колонка соперника — удар по герою.',
-    rules:['Ближний бой достаёт на 1 клетку, стрелки на 2–3.','Вражеский тыл достают только стрелки и грифон.','Пустая колонка соперника — удар по герою.'],
-    plus:'У фронта и тыла разные роли, стрелки ценны.', minus:'Возможен тупик, если у обоих нет стрелков.',
-    mini:{e:[[0,2],[1,2]], p:[[2,2],[3,2]]}},
-  march:{name:'Наступление', tag:'шаг вперёд, если бить некого',
-    desc:'Если достать некого, юнит делает шаг вперёд, в том числе на вражеские клетки и занимая их. Лучник стреляет на 2 клетки, грифон бьёт и по диагонали. Дошёл до края поля — бьёт героя.',
-    rules:['Нет цели в досягаемости — шаг вперёд на свободную клетку.','Занятая вами вражеская клетка закрыта для его высадки.','С дальнего края юнит бьёт героя.'],
-    plus:'Давление и прорывы, поле меняется каждый ход.', minus:'Сложнее просчитать, нужны анимации движения.',
-    mini:{e:[[0,4]], p:[[1,1],[3,1]]}},
-};
 const TC = ['#94a3b8','#84cc16','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#f8fafc'];
 const RO = ['I','II','III','IV','V','VI','VII'];
-const ROWS = 4, COLS = 5, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1};
-const HERO_HP = 20, HAND_MAX = 9, MANA_MAX = 10, T2_SHARE = 0.35;
+const ROWS = 4, COLS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1};
+const HERO_HP = 20, HAND_MAX = 9, MANA_MAX = 10, ODDS = [0.55, 0.30, 0.15];
 const U = u => F[u.side].units[u.type];
 const svg = k => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[k]}</svg>`;
 const $ = s => document.querySelector(s);
@@ -347,40 +312,73 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const D = ms => RM ? Math.round(ms * 0.2) : ms;
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
-/* ---------- sound: synthesized with WebAudio ---------- */
+/* ---------- sound: soft, low, percussive; compressor + small room reverb ---------- */
 const Sfx = {
-  ctx:null, on:true,
-  ensure(){ try { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (this.ctx.state === 'suspended') this.ctx.resume(); } catch (e) {} },
-  tone(f, dur, type = 'sine', vol = .2, to = null, delay = 0){
+  ctx:null, on:true, out:null, verb:null,
+  ensure(){
+    try {
+      if (!this.ctx){
+        const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const comp = c.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4;
+        const master = c.createGain(); master.gain.value = .8; master.connect(comp).connect(c.destination);
+        const len = c.sampleRate * 1.4, ir = c.createBuffer(2, len, c.sampleRate);
+        for (let ch = 0; ch < 2; ch++){ const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++){ lp += ((Math.random() * 2 - 1) - lp) * .25; d[i] = lp * Math.pow(1 - i / len, 3); } }
+        const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = .22; conv.connect(wet).connect(master);
+        this.out = master; this.verb = conv;
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) {}
+  },
+  env(g, t, a, dur, vol){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); },
+  route(node, wet){ node.connect(this.out); if (wet) node.connect(this.verb); },
+  tone(f, dur, {type = 'sine', vol = .15, a = .005, to = null, delay = 0, wet = false} = {}){
     const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+    o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur * .7);
+    this.env(g, t, a, dur, vol); o.connect(g); this.route(g, wet); o.start(t); o.stop(t + dur + .05);
   },
-  noise(dur, vol = .2, freq = 1500, q = .8, delay = 0){
-    const c = this.ctx, t = c.currentTime + delay, len = Math.ceil(c.sampleRate * dur), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-    s.buffer = b; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; g.gain.value = vol;
-    s.connect(f).connect(g).connect(c.destination); s.start(t);
+  noise(dur, {vol = .1, lp = 1200, hp = 60, a = .004, delay = 0, wet = false, sweep = null} = {}){
+    const c = this.ctx, t = c.currentTime + delay, len = Math.ceil(c.sampleRate * (dur + .05)), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const s = c.createBufferSource(), l = c.createBiquadFilter(), h = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = b; l.type = 'lowpass'; l.frequency.setValueAtTime(lp, t); if (sweep) l.frequency.exponentialRampToValueAtTime(sweep, t + dur);
+    h.type = 'highpass'; h.frequency.value = hp;
+    this.env(g, t, a, dur, vol); s.connect(h).connect(l).connect(g); this.route(g, wet); s.start(t); s.stop(t + dur + .05);
   },
-  play(name, arg){
+  bell(f, {vol = .05, dur = 1.2, delay = 0} = {}){ [[1, 1], [2.76, .45], [5.4, .2]].forEach(([m, v]) => this.tone(f * m, dur / m ** .4, {vol:vol * v, a:.003, delay, wet:true})); },
+  metal(base, {vol = .04, dur = .35, delay = 0} = {}){ [1, 1.51, 2.36, 3.3].forEach((m, i) => this.tone(base * m, dur * (1 - i * .15), {type:'triangle', vol:vol / (i + 1), a:.002, delay, wet:true})); },
+  thud(f = 90, {vol = .35, dur = .22, delay = 0} = {}){ this.tone(f, dur, {vol, a:.004, to:f * .6, delay}); this.noise(dur * .5, {vol:vol * .25, lp:500, delay}); },
+  play(name){
     if (!this.on || !this.ctx) return;
     try {
       switch (name){
-        case 'draw': this.noise(.14, .18, 3200, .7); this.tone(1400, .05, 'triangle', .04, 900, .05); break;
-        case 'pick': this.noise(.06, .1, 4200, 1); break;
-        case 'fly': this.noise(.3, .12, 1800, .5); break;
-        case 'deploy': this.tone(140, .28, 'sine', .38, 42); this.noise(.2, .2, 500, .7); this.tone(440 + (arg || 0) * 110, .22, 'triangle', .07, null, .04); break;
-        case 'hit': this.noise(.11, .3, 1100, 1.1); this.tone(220, .09, 'square', .05, 90); break;
-        case 'shot': this.tone(1500, .16, 'sine', .07, 380); this.noise(.08, .06, 5000, .6); break;
-        case 'die': this.tone(320, .4, 'sawtooth', .05, 55); this.noise(.3, .08, 700, .6, .05); break;
-        case 'hero': this.tone(90, .5, 'sine', .45, 38); this.noise(.35, .22, 380, .6); break;
-        case 'up': [523, 659, 784, 1047].forEach((f, i) => this.tone(f, .22, 'triangle', .12, null, i * .08)); break;
-        case 'move': this.noise(.16, .1, 900, .6); break;
-        case 'turn': this.tone(660, .12, 'sine', .08); this.tone(990, .16, 'sine', .07, null, .1); break;
-        case 'win': [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, .3, 'triangle', .12, null, i * .11)); break;
-        case 'lose': [392, 330, 262, 196].forEach((f, i) => this.tone(f, .35, 'sine', .12, null, i * .15)); break;
+        case 'draw': this.noise(.16, {vol:.05, lp:1800, hp:500, a:.03}); break;
+        case 'pick': this.noise(.07, {vol:.035, lp:1500, hp:400, a:.01}); break;
+        case 'fly': this.noise(.34, {vol:.035, lp:900, hp:200, a:.14}); break;
+        case 'place': this.thud(78, {vol:.4, dur:.26}); this.noise(.08, {vol:.05, lp:2200, hp:900, delay:.01}); break;
+        case 'camp': this.thud(120, {vol:.22, dur:.18}); break;
+        case 'up': this.bell(392, {vol:.06}); this.bell(587, {vol:.05, delay:.12}); this.thud(70, {vol:.25, dur:.3}); break;
+        case 'move': this.thud(140, {vol:.12, dur:.1}); this.thud(130, {vol:.1, dur:.1, delay:.12}); break;
+        case 'impact': this.thud(110, {vol:.28, dur:.14}); break;
+        case 'die': this.noise(.5, {vol:.07, lp:900, sweep:120, a:.02, wet:true}); this.tone(110, .45, {vol:.08, to:55}); break;
+        case 'hero': this.thud(52, {vol:.55, dur:.6}); this.noise(.5, {vol:.06, lp:300, wet:true}); break;
+        case 'turn': this.bell(660, {vol:.035, dur:.9}); break;
+        case 'win': [392, 494, 587, 784].forEach((f, i) => this.bell(f, {vol:.05, delay:i * .14})); break;
+        case 'lose': [330, 262, 196].forEach((f, i) => this.bell(f, {vol:.05, delay:i * .2})); break;
+        /* per-unit attacks */
+        case 'peasant': this.noise(.09, {vol:.12, lp:700, hp:150}); this.thud(160, {vol:.14, dur:.08}); break;
+        case 'archer': this.tone(98, .16, {type:'triangle', vol:.14, a:.002}); this.tone(196, .1, {type:'triangle', vol:.05, a:.002}); this.noise(.05, {vol:.03, lp:1600, hp:500}); break;
+        case 'footman': this.noise(.12, {vol:.05, lp:1400, hp:300, a:.05}); this.metal(620, {vol:.05, delay:.1}); break;
+        case 'griffin': this.noise(.3, {vol:.08, lp:600, hp:80, a:.12}); this.thud(130, {vol:.2, dur:.1, delay:.24}); break;
+        case 'priest': this.bell(523, {vol:.05, dur:1}); this.bell(784, {vol:.03, dur:.9, delay:.05}); break;
+        case 'cavalier': this.thud(95, {vol:.18, dur:.1}); this.thud(95, {vol:.18, dur:.1, delay:.11}); this.metal(380, {vol:.06, delay:.24, dur:.45}); break;
+        case 'angel': [523, 659, 784].forEach((f, i) => this.tone(f, .9, {vol:.04, a:.08, delay:i * .03, wet:true})); this.metal(880, {vol:.03, delay:.2}); break;
+        case 'imp': this.noise(.07, {vol:.06, lp:1600, hp:600}); this.tone(420, .06, {type:'triangle', vol:.03}); break;
+        case 'demon': this.thud(80, {vol:.3, dur:.16}); this.tone(65, .22, {type:'sawtooth', vol:.03, a:.02}); break;
+        case 'hound': this.noise(.05, {vol:.1, lp:1300, hp:400}); this.tone(72, .28, {type:'sawtooth', vol:.04, a:.03}); break;
+        case 'succubus': this.noise(.35, {vol:.08, lp:700, hp:120, a:.1, sweep:1500}); this.tone(150, .3, {vol:.05, a:.08}); break;
+        case 'charger': this.thud(90, {vol:.2, dur:.1}); this.thud(85, {vol:.2, dur:.1, delay:.1}); this.noise(.2, {vol:.05, lp:500, delay:.05}); break;
+        case 'fiend': this.thud(48, {vol:.5, dur:.5}); this.noise(.3, {vol:.08, lp:400, delay:.02, wet:true}); break;
+        case 'devil': [55, 82, 110].forEach(f => this.tone(f, .8, {type:'sawtooth', vol:.025, a:.06, wet:true})); this.thud(50, {vol:.4, dur:.4, delay:.1}); break;
       }
     } catch (e) {}
   },
@@ -388,113 +386,102 @@ const Sfx = {
 document.addEventListener('pointerdown', () => Sfx.ensure(), {capture:true});
 
 /* ---------- state ---------- */
-let S, VAR = 'col', SHOW_ARROWS = true, uid = 1;
-try { const v = localStorage.getItem('fieldVariant'); if (v && VARIANTS[v]) VAR = v; } catch (e) {}
-const CELLS = [], TILES = new Map();
+let S, SHOW_ARROWS = true, uid = 1;
+const CELLS = [], CAMP = {p:[], e:[]}, TILES = new Map();
 const other = s => s === 'p' ? 'e' : 'p';
-const unitAt = (r, c) => S.units.find(u => u.r === r && u.c === c);
+const fieldAt = (r, c) => S.units.find(u => u.where === 'f' && u.r === r && u.c === c);
+const campAt = (side, i) => S.units.find(u => u.where === 'c' && u.side === side && u.i === i);
 const alive = u => S.units.includes(u);
-const newCard = () => ({uid:uid++, type:Math.random() < T2_SHARE ? 1 : 0});
+const onField = side => S.units.filter(u => u.side === side && u.where === 'f');
+const rollType = () => { const x = Math.random(); return x < ODDS[0] ? 0 : x < ODDS[0] + ODDS[1] ? 1 : 2; };
+const newCard = () => ({uid:uid++, type:rollType()});
 const who = side => side === 'p' ? 'Вы' : 'Инферно';
 function say(side, text){ S.log.unshift({side, text}); S.log.length = Math.min(S.log.length, 90); renderLog(); }
 
-/* What a unit does at resolution, under the current variant. */
 function plan(u, ignoreSleep){
-  if (!u || (u.sleep && !ignoreSleep)) return null;
+  if (!u || u.where !== 'f' || (u.sleep && !ignoreSleep)) return null;
   const A = U(u), d = FWD[u.side];
-  const reach = VAR === 'col' ? 9 : (A.ranged ? A.range : 1);
-  for (let k = 1; k <= reach; k++){
-    const r = u.r + d * k; if (r < 0 || r >= ROWS) break;
-    const v = unitAt(r, u.c); if (!v) continue;
+  for (let r = u.r + d; r >= 0 && r < ROWS; r += d){
+    const v = fieldAt(r, u.c); if (!v) continue;
     if (v.side !== u.side) return {kind:'hit', t:v};
-    if (!A.ranged) break;
+    if (!A.ranged) return null;
   }
-  if (A.diag) for (const dc of [-1, 1]){ const v = unitAt(u.r + d, u.c + dc); if (v && v.side !== u.side) return {kind:'hit', t:v}; }
-  if (VAR === 'march'){
-    const r = u.r + d;
-    if (r < 0 || r >= ROWS) return {kind:'hero'};
-    if (!unitAt(r, u.c)) return {kind:'move', r, c:u.c};
-    return null;
-  }
-  const enemyInCol = S.units.some(v => v.side !== u.side && v.c === u.c);
-  const friendAhead = S.units.some(v => v.side === u.side && v.c === u.c && (v.r - u.r) * d > 0);
-  if (!enemyInCol && (A.ranged || !friendAhead)) return {kind:'hero'};
+  const enemyInCol = S.units.some(v => v.where === 'f' && v.side !== u.side && v.c === u.c);
+  if (!enemyInCol && A.diag) for (const dc of [-1, 1]){ for (let r = u.r + d; r >= 0 && r < ROWS; r += d){ const v = fieldAt(r, u.c + dc); if (v && v.side !== u.side) return {kind:'hit', t:v}; } }
+  if (!enemyInCol) return {kind:'hero'};
   return null;
 }
-function trioFor(u){
-  if (!u || u.type >= 6) return null;
-  const near = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c)) === 1;
-  const fr = S.units.filter(v => v !== u && v.side === u.side && v.type === u.type);
-  for (const v of fr) for (const w of fr){
-    if (v.id >= w.id) continue;
-    if ((near(u, v) && (near(u, w) || near(v, w))) || (near(u, w) && near(v, w))) return [u, v, w];
-  }
-  return null;
-}
-const canDeploy = (side, r, c) => ZONE[side].includes(r) && c >= 0 && c < COLS && !unitAt(r, c);
 
 /* ---------- board DOM ---------- */
 function buildBoard(){
-  const g = $('#grid'); g.innerHTML = ''; CELLS.length = 0; TILES.clear();
-  for (let r = 0; r < ROWS; r++){ CELLS[r] = [];
-    for (let c = 0; c < COLS; c++){
-      const el = document.createElement('div');
-      el.className = 'cell ' + (ZONE.p.includes(r) ? 'zp' : 'ze') + (r === 0 || r === 3 ? ' back' : '');
-      el.dataset.r = r; el.dataset.c = c; g.appendChild(el); CELLS[r][c] = el;
-    }
-  }
-  g.insertAdjacentHTML('beforeend', `<div class="frontline"></div><div class="units" id="units"></div><svg class="overlay" id="overlay"></svg>`);
+  const g = $('#grid'); g.innerHTML = ''; CELLS.length = 0; CAMP.p = []; CAMP.e = []; TILES.clear();
+  const add = (cls, col, row, data) => { const el = document.createElement('div'); el.className = 'cell ' + cls; el.style.gridColumn = col; el.style.gridRow = row; Object.assign(el.dataset, data); g.appendChild(el); return el; };
+  for (let r = 0; r < ROWS; r++){ CELLS[r] = []; for (let c = 0; c < COLS; c++) CELLS[r][c] = add(ZONE.p.includes(r) ? 'zp' : 'ze', c + 3, r + 1, {r, c}); }
+  for (let i = 0; i < CAMP_N; i++){ CAMP.e[i] = add('camp ce', 1, i + 1, {camp:'e', i}); CAMP.p[i] = add('camp cp', 8, i + 2, {camp:'p', i}); }
+  g.insertAdjacentHTML('beforeend', `<span class="camplabel" style="grid-column:1;grid-row:4;color:var(--te)">лагерь<br>Инферно</span><span class="camplabel" style="grid-column:8;grid-row:1;color:var(--tp)">ваш<br>лагерь</span><div class="frontline"></div><div class="units" id="units"></div><svg class="overlay" id="overlay"></svg>`);
 }
-const cellBox = (r, c) => { const el = CELLS[r][c]; return {x:el.offsetLeft, y:el.offsetTop, w:el.offsetWidth, h:el.offsetHeight}; };
-const center = (r, c) => { const b = cellBox(r, c); return {x:b.x + b.w / 2, y:b.y + b.h / 2}; };
+const slotEl = u => u.where === 'c' ? CAMP[u.side][u.i] : CELLS[u.r][u.c];
+const box = el => ({x:el.offsetLeft, y:el.offsetTop, w:el.offsetWidth, h:el.offsetHeight});
+const mid = el => { const b = box(el); return {x:b.x + b.w / 2, y:b.y + b.h / 2}; };
 function tileInner(u){
   const A = U(u), d = u.hp < A.hp;
-  const tr = S && S.side === 'p' && !S.busy && u.side === 'p' && trioFor(u);
-  const sel = S && S.sel && S.sel.unit === u.id;
-  return `<span class="tr">${RO[u.type]}</span>${u.sleep ? '<span class="zz">сон</span>' : ''}<div class="ic">${svg(A.key)}</div>`
-    + `<span class="st a">${SWORD}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}${u.hp}</span>`
-    + (sel && tr ? `<button class="upb" type="button" data-up="${u.id}">↑ ${F[u.side].units[u.type + 1].name}</button>` : '');
+  return `<span class="tr">${RO[u.type]}</span>${u.sleep ? `<span class="zz" title="спит">${ZZZ}</span>` : ''}<div class="ic">${svg(A.key)}</div>`
+    + `<span class="st a">${SWORD}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>`;
 }
-function placeTile(el, u){ const b = cellBox(u.r, u.c); el.style.left = b.x + 'px'; el.style.top = b.y + 'px'; el.style.width = b.w + 'px'; el.style.height = b.h + 'px'; }
+function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
 function syncUnits(dropId){
-  const layer = $('#units'), seen = new Set();
-  const trio = new Set(); if (S.side === 'p' && !S.busy) S.units.filter(u => u.side === 'p').forEach(u => { const t = trioFor(u); if (t) t.forEach(x => trio.add(x.id)); });
+  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel);
   for (const u of S.units){
     let el = TILES.get(u.id);
-    if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u); if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
-    const keep = el.classList.contains('drop-in') ? ' drop-in' : '';
-    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${S.sel && S.sel.unit === u.id ? ' sel' : ''}${trio.has(u.id) ? ' trio' : ''}${keep}`;
+    if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
+      if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
+    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u);
+    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${S.sel && S.sel.unit === u.id ? ' sel' : ''}${mg ? ' mg' : ''}${keep}`;
     el.style.setProperty('--t', TC[u.type]);
-    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}. ${U(u).ab}`;
-    el.innerHTML = tileInner(u); placeTile(el, u); seen.add(u.id);
+    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}. ${U(u).ab}`;
+    el.innerHTML = tileInner(u) + (mg ? `<span class="mgl">↑ ${F[u.side].units[u.type + 1].name}</span>` : '');
+    placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
+  CELLS.flat().concat(CAMP.p).forEach(el => el.classList.toggle('drop', T.cells.includes(el)));
   renderOverlay();
 }
 function renderOverlay(){
   const ov = $('#overlay'); if (!ov) return;
-  if (!SHOW_ARROWS || S.over){ ov.innerHTML = ''; return; }
+  if (!SHOW_ARROWS || S.over || S.busy){ ov.innerHTML = ''; return; }
   const g = $('#grid'), W = g.offsetWidth, H = g.offsetHeight; let s = '';
   const line = (a, b, col, dash, op) => {
     const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 9, Wd = 5, bx = b.x - Math.cos(ang) * L, by = b.y - Math.sin(ang) * L, px = -Math.sin(ang), py = Math.cos(ang);
     return `<g opacity="${op}"><line x1="${a.x}" y1="${a.y}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="3" stroke-linecap="round"${dash ? ' stroke-dasharray="6 5"' : ''}/><polygon points="${b.x},${b.y} ${bx + px * Wd},${by + py * Wd} ${bx - px * Wd},${by - py * Wd}" fill="${col}"/></g>`;
   };
-  for (const u of S.units){
+  const top = CELLS[0][0].offsetTop, bottom = CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight;
+  for (const u of S.units.filter(v => v.where === 'f')){
     const p = plan(u, u.side === 'e'); if (!p) continue;
-    const a = center(u.r, u.c), d = FWD[u.side], op = u.side === 'p' ? .9 : .38, off = (u.side === 'p' ? -1 : 1) * 16;
-    const from = {x:a.x, y:a.y + off};
-    if (p.kind === 'hit'){ const b = center(p.t.r, p.t.c); s += line(from, {x:b.x, y:b.y - off}, '#f472b6', false, op); }
-    else if (p.kind === 'hero') s += line(from, {x:a.x, y:d < 0 ? -6 : H + 6}, '#fbbf24', true, op);
-    else if (p.kind === 'move'){ const b = center(p.r, p.c); s += line(from, {x:b.x, y:b.y}, '#2dd4bf', true, op); }
+    const a = mid(CELLS[u.r][u.c]), op = u.side === 'p' ? .85 : .3, off = (u.side === 'p' ? -1 : 1) * 16, from = {x:a.x, y:a.y + off};
+    if (p.kind === 'hit'){ const b = mid(CELLS[p.t.r][p.t.c]); s += line(from, {x:b.x, y:b.y - off}, '#f472b6', false, op); }
+    else s += line(from, {x:a.x, y:u.side === 'p' ? top - 4 : bottom + 4}, '#fbbf24', true, op);
   }
   ov.setAttribute('viewBox', `0 0 ${W} ${H}`); ov.innerHTML = s;
 }
 new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
 
+/* ---------- targets for the current selection (card or camp unit) ---------- */
+function targetsFor(sel){
+  const out = {cells:[], ups:[]};
+  if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
+  let type, src = null;
+  if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
+  else { src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p' || src.where !== 'c') return out; type = src.type; }
+  ZONE.p.forEach(r => { for (let c = 0; c < COLS; c++) if (!fieldAt(r, c)) out.cells.push(CELLS[r][c]); });
+  if (sel.card != null) for (let i = 0; i < CAMP_N; i++) if (!campAt('p', i)) out.cells.push(CAMP.p[i]);
+  if (type < 6) out.ups = S.units.filter(u => u.side === 'p' && u !== src && u.type === type);
+  return out;
+}
+
 /* ---------- bars, hand, log ---------- */
 function heroHTML(side){
   const hp = S.hero[side];
-  return `<div class="hero" id="hero-${side}" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(F[side].heroIcon)}</div><div><b>${F[side].hero}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><small>${hp}</small></div>`;
+  return `<div class="hero" id="hero-${side}" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(F[side].heroIcon)}</div><div><b>${F[side].hero}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><span class="hv">${hp}</span></div>`;
 }
 function manaHTML(side){
   const cap = Math.min(S.turn, MANA_MAX), m = S.mana[side];
@@ -507,7 +494,7 @@ function renderBars(){
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
   $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? 'Инферно ходит…' : 'Ваши юниты бьют…')
-    : S.sel && S.sel.card != null ? 'Кликните подсвеченную клетку.' : 'Выставьте карты, потом «Конец хода».';
+    : S.sel ? 'Кликните подсвеченную клетку или золотого юнита.' : 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
@@ -515,177 +502,198 @@ function cardFace(t, side = 'p'){
 }
 function cardEl(card){
   const el = document.createElement('div');
-  el.className = 'card'; el.dataset.uid = card.uid; el.tabIndex = 0; el.setAttribute('role', 'button');
+  el.className = 'card'; el.dataset.uid = card.uid; el.tabIndex = 0; el.setAttribute('role', 'button'); el.draggable = false;
   el.setAttribute('aria-label', `${F.p.units[card.type].name}, стоит ${card.type + 1}`);
   el.innerHTML = `<div class="in">${cardFace(card.type)}<div class="backf"></div></div>`;
   return el;
 }
 function layoutHand(){
-  const box = $('#hand'); if (!box || !S) return;
-  const cards = [...box.querySelectorAll('.card')], n = cards.length, W = 100, avail = box.clientWidth - 90;
+  const hb = $('#hand'); if (!hb || !S) return;
+  const cards = [...hb.querySelectorAll('.card')], n = cards.length, W = 104, avail = hb.clientWidth - 90;
   const step = n > 1 ? Math.min(W + 8, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2;
   cards.forEach((el, i) => {
     const k = i - (n - 1) / 2;
-    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${Math.abs(k) * Math.abs(k) * 3}px`); el.style.setProperty('--a', `${k * 4}deg`);
+    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${k * k * 3}px`); el.style.setProperty('--a', `${k * 4}deg`);
     el.style.zIndex = i + 1;
     const c = S.hand.p.find(h => h.uid === +el.dataset.uid);
-    el.classList.toggle('poor', !!c && (c.type + 1 > S.mana.p));
+    el.classList.toggle('poor', !!c && c.type + 1 > S.mana.p);
     el.classList.toggle('sel', !!(S.sel && S.sel.card === +el.dataset.uid));
   });
 }
 function renderLog(){ const l = $('#log'); if (l) l.innerHTML = S.log.map(x => `<li class="${x.side}">${x.text}</li>`).join(''); }
-function highlightDrops(){
-  CELLS.flat().forEach(el => el.classList.remove('drop'));
-  if (!S.sel || S.sel.card == null) return;
-  const c = S.hand.p.find(h => h.uid === S.sel.card); if (!c || c.type + 1 > S.mana.p) return;
-  ZONE.p.forEach(r => { for (let col = 0; col < COLS; col++) if (!unitAt(r, col)) CELLS[r][col].classList.add('drop'); });
-}
-function renderAll(dropId){ renderBars(); syncUnits(dropId); layoutHand(); highlightDrops(); }
+function renderAll(dropId){ renderBars(); syncUnits(dropId); layoutHand(); }
 
 /* ---------- animation helpers ---------- */
-function floatText(x, y, text, cls = ''){
+function floatAt(x, y, text, cls = ''){
   const el = document.createElement('div'); el.className = 'float ' + cls; el.textContent = text; el.style.left = x + 'px'; el.style.top = y + 'px';
   $('#units').appendChild(el);
-  el.animate([{transform:'translateY(0) scale(.8)', opacity:0}, {transform:'translateY(-8px) scale(1.15)', opacity:1, offset:.2}, {transform:'translateY(-34px) scale(1)', opacity:0}], {duration:D(850), easing:'ease-out'}).finished.then(() => el.remove());
+  el.animate([{transform:'translateY(6px) scale(.6)', opacity:0}, {transform:'translateY(-6px) scale(1.2)', opacity:1, offset:.18}, {transform:'translateY(-10px) scale(1)', opacity:1, offset:.6}, {transform:'translateY(-26px) scale(1)', opacity:0}], {duration:D(1100), easing:'ease-out'}).finished.then(() => el.remove());
 }
-function sparks(x, y, color, n = 8){
-  for (let i = 0; i < n; i++){
-    const el = document.createElement('i'); el.className = 'spark'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.background = color;
-    $('#units').appendChild(el);
-    const a = Math.random() * Math.PI * 2, r = 22 + Math.random() * 26;
-    el.animate([{transform:'translate(0,0) scale(1)', opacity:1}, {transform:`translate(${Math.cos(a) * r}px,${Math.sin(a) * r}px) scale(.3) rotate(${Math.random() * 180}deg)`, opacity:0}], {duration:D(520), easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(() => el.remove());
-  }
+function ringAt(el, color){
+  const b = box(el), r = document.createElement('div'); r.className = 'ring';
+  Object.assign(r.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px', boxShadow:`0 0 0 2px ${color}, 0 0 16px ${color}`});
+  $('#units').appendChild(r);
+  r.animate([{transform:'scale(.92)', opacity:1}, {transform:'scale(1.25)', opacity:0}], {duration:D(600), easing:'ease-out'}).finished.then(() => r.remove());
 }
-function ringAt(r, c, color){
-  const b = cellBox(r, c), el = document.createElement('div'); el.className = 'ring';
-  Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px', boxShadow:`0 0 0 2px ${color}`});
-  $('#units').appendChild(el);
-  el.animate([{transform:'scale(.9)', opacity:1}, {transform:'scale(1.35)', opacity:0}], {duration:D(520), easing:'ease-out'}).finished.then(() => el.remove());
+function flashHP(badge){
+  if (!badge) return;
+  badge.animate([{transform:'scale(1)'}, {transform:'scale(1.75)', background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fff, 0 0 20px #ef4444', offset:.2}, {transform:'scale(1.6)', background:'#ef4444', color:'#fff', offset:.55}, {transform:'scale(1)'}], {duration:D(900), easing:'ease-out'});
 }
-function shake(el, px = 5){ if (el) el.animate([{translate:'0 0'}, {translate:`${px}px 0`}, {translate:`${-px}px 0`}, {translate:`${px / 2}px 0`}, {translate:'0 0'}], {duration:D(300)}); }
-/* Card flight from a screen rect to a board cell: arc, turn and shrink into the tile. */
-async function flyToCell(html, from, r, c, flip){
+async function flyTo(html, from, toEl, spin){
   const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
-  const cell = CELLS[r][c].getBoundingClientRect(), s = cell.width / 100;
-  const x0 = from.left + from.width / 2 - 50, y0 = from.top + from.height / 2 - 71;
-  const x1 = cell.left + cell.width / 2 - 50 * s, y1 = cell.top + cell.height / 2 - 71 * s;
+  const to = toEl.getBoundingClientRect(), s = to.width / 104;
+  const x0 = from.left + from.width / 2 - 52, y0 = from.top + from.height / 2 - 74;
+  const x1 = to.left + to.width / 2 - 52 * s, y1 = to.top + to.height / 2 - 74 * s;
   const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 70;
   Sfx.play('fly');
   await fly.animate([
-    {transform:`translate(${x0}px,${y0}px) rotate(${flip ? 0 : -6}deg) scale(${flip ? .5 : 1})`},
-    {transform:`translate(${mx}px,${my}px) rotate(${flip ? 180 : 4}deg) scale(1.12)`, offset:.55},
+    {transform:`translate(${x0}px,${y0}px) rotate(${spin ? 0 : -6}deg) scale(${spin ? .5 : 1})`},
+    {transform:`translate(${mx}px,${my}px) rotate(${spin ? 180 : 3}deg) scale(1.1)`, offset:.55},
     {transform:`translate(${x1}px,${y1}px) rotate(0deg) scale(${s})`},
-  ], {duration:D(520), easing:'cubic-bezier(.35,.1,.25,1)'}).finished;
+  ], {duration:D(560), easing:'cubic-bezier(.35,.1,.25,1)'}).finished;
   fly.remove();
 }
+const handRect = uidv => { const el = $(`#hand .card[data-uid="${uidv}"]`); return el ? el.getBoundingClientRect() : $('#deck').getBoundingClientRect(); };
 
 /* ---------- actions ---------- */
 async function drawCards(side, k, animate){
   for (let i = 0; i < k && S.hand[side].length < HAND_MAX; i++){
     const card = newCard(); S.hand[side].push(card);
-    if (side === 'p' && animate){
-      const box = $('#hand'), el = cardEl(card); el.classList.add('back');
-      const deck = $('#deck'); el.style.setProperty('--x', `${deck.offsetLeft}px`); el.style.setProperty('--y', '10px'); el.style.setProperty('--a', '8deg');
-      box.appendChild(el); void el.offsetWidth;
-      Sfx.play('draw'); layoutHand(); renderBars();
-      requestAnimationFrame(() => setTimeout(() => el.classList.remove('back'), D(120)));
-      await wait(170);
-    } else if (side === 'p'){ $('#hand').appendChild(cardEl(card)); }
+    if (side !== 'p') continue;
+    const el = cardEl(card), deck = $('#deck');
+    if (animate){ el.classList.add('back'); el.style.setProperty('--x', `${deck.offsetLeft}px`); el.style.setProperty('--y', '10px'); el.style.setProperty('--a', '8deg'); }
+    $('#hand').appendChild(el); void el.offsetWidth;
+    if (animate){ Sfx.play('draw'); layoutHand(); renderBars(); setTimeout(() => el.classList.remove('back'), D(140)); await wait(190); }
   }
   if (side === 'p') layoutHand();
   renderBars();
 }
-async function deploy(side, cardUid, r, c, fromRect){
-  const i = S.hand[side].findIndex(h => h.uid === cardUid); if (i < 0) return false;
-  const card = S.hand[side][i], A = F[side].units[card.type];
-  if (!canDeploy(side, r, c) || S.mana[side] < card.type + 1) return false;
-  S.hand[side].splice(i, 1); S.mana[side] -= card.type + 1; S.sel = null;
-  let from = fromRect;
-  if (side === 'p'){ const el = $(`#hand .card[data-uid="${card.uid}"]`); if (el){ from = from || el.getBoundingClientRect(); el.remove(); } layoutHand(); }
-  else from = ($('#ehand') || $('#topbar')).getBoundingClientRect();
-  renderBars(); highlightDrops();
-  const inner = side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`;
-  await flyToCell(inner, from, r, c, side === 'e');
-  const u = {id:uid++, side, type:card.type, hp:A.hp, r, c, sleep:!A.quick};
+function spendCard(side, cardUid){
+  const i = S.hand[side].findIndex(h => h.uid === cardUid); if (i < 0) return null;
+  const card = S.hand[side][i]; if (S.mana[side] < card.type + 1) return null;
+  S.hand[side].splice(i, 1); S.mana[side] -= card.type + 1; return card;
+}
+function sourceRect(side, card, fromRect){
+  if (side === 'p'){ const el = $(`#hand .card[data-uid="${card.uid}"]`); const r = fromRect || (el && el.getBoundingClientRect()); if (el) el.remove(); layoutHand(); return r; }
+  return ($('#ehand') || $('#topbar')).getBoundingClientRect();
+}
+async function deployCard(side, cardUid, dest, fromRect){
+  const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
+  const toEl = dest.camp ? CAMP[side][dest.i] : CELLS[dest.r][dest.c];
+  if (dest.camp ? campAt(side, dest.i) : (fieldAt(dest.r, dest.c) || !ZONE[side].includes(dest.r))) return false;
+  if (!spendCard(side, cardUid)) return false;
+  S.sel = null;
+  const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
+  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
+  const A = F[side].units[card.type];
+  const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick};
   S.units.push(u);
-  Sfx.play('deploy', card.type); syncUnits(u.id);
-  const p = center(r, c); ringAt(r, c, side === 'p' ? '#2dd4bf' : '#f472b6'); sparks(p.x, p.y + 10, TC[card.type], 10);
-  say(side, `${who(side)}: ${A.name} (−${card.type + 1} маны).`);
-  await wait(180);
+  Sfx.play(dest.camp ? 'camp' : 'place'); syncUnits(u.id); ringAt(toEl, side === 'p' ? '#2dd4bf' : '#f472b6');
+  say(side, `${who(side)}: ${A.name}${dest.camp ? ' в лагерь' : ''} (−${card.type + 1} маны).`);
+  await wait(200); return true;
+}
+async function promote(target, fromDesc){
+  const side = target.side, next = F[side].units[target.type + 1];
+  say(side, `${who(side)}: ${U(target).name} + ${fromDesc} → ${next.name}.`);
+  Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
+  Sfx.play('up'); syncUnits();
+  const el = TILES.get(target.id);
+  ringAt(slotEl(target), '#fbbf24');
+  if (el) el.animate([{transform:'scale(1.22)', filter:'brightness(2)'}, {transform:'scale(1)', filter:'none'}], {duration:D(520), easing:'cubic-bezier(.2,1.3,.4,1)'});
+  if (next.summon && target.where === 'f'){
+    const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = target.r + dr, c = target.c + dc; if ((dr || dc) && ZONE[side].includes(r) && c >= 0 && c < COLS && !fieldAt(r, c)) spots.push({r, c}); }
+    if (spots.length){ const s = spots[0], imp = {id:uid++, side, type:0, hp:F[side].units[0].hp, where:'f', r:s.r, c:s.c, sleep:false}; S.units.push(imp); syncUnits(imp.id); say(side, 'Дьявол призывает беса.'); }
+  }
+  await wait(380);
+}
+async function upgradeWithCard(side, cardUid, target, fromRect){
+  const card = S.hand[side].find(h => h.uid === cardUid);
+  if (!card || !alive(target) || target.side !== side || target.type !== card.type || target.type >= 6) return false;
+  if (!spendCard(side, cardUid)) return false;
+  S.sel = null; const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
+  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, TILES.get(target.id) || slotEl(target), side === 'e');
+  await promote(target, 'карта');
   return true;
 }
-async function upgrade(u){
-  const tr = trioFor(u); if (!tr) return false;
-  const side = u.side, next = F[side].units[u.type + 1];
-  const target = TILES.get(u.id), tb = cellBox(u.r, u.c);
-  await Promise.all(tr.slice(1).map(v => { const el = TILES.get(v.id), b = cellBox(v.r, v.c); return el ? el.animate([{transform:'translate(0,0) scale(1)', opacity:1}, {transform:`translate(${tb.x - b.x}px,${tb.y - b.y}px) scale(.5)`, opacity:0}], {duration:D(420), easing:'cubic-bezier(.5,0,.5,1)'}).finished : null; }));
-  S.units = S.units.filter(x => x === u || !tr.includes(x));
-  say(side, `${who(side)}: три юнита «${U(u).name}» рядом → ${next.name}.`);
-  Object.assign(u, {type:u.type + 1, hp:next.hp, sleep:true}); S.sel = null;
-  Sfx.play('up'); syncUnits();
-  const p = center(u.r, u.c); ringAt(u.r, u.c, '#fbbf24'); sparks(p.x, p.y, '#fbbf24', 14);
-  if (target) target.animate([{transform:'scale(1.25)', filter:'brightness(2)'}, {transform:'scale(1)', filter:'none'}], {duration:D(450), easing:'cubic-bezier(.2,1.4,.4,1)'});
-  if (next.summon){
-    const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = u.r + dr, c = u.c + dc; if ((dr || dc) && r >= 0 && r < ROWS && c >= 0 && c < COLS && !unitAt(r, c)) spots.push({r, c}); }
-    if (spots.length){ const s = spots[0], imp = {id:uid++, side, type:0, hp:F[side].units[0].hp, r:s.r, c:s.c, sleep:false}; S.units.push(imp); syncUnits(imp.id); say(side, 'Дьявол призывает беса.'); }
+async function fromCamp(u, dest){
+  if (!alive(u) || u.where !== 'c') return false;
+  if (dest.unit){
+    const t = dest.unit; if (!alive(t) || t === u || t.side !== u.side || t.type !== u.type || t.type >= 6) return false;
+    const el = TILES.get(u.id), a = box(slotEl(u)), b = box(slotEl(t));
+    if (el) await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${b.x - a.x}px,${b.y - a.y}px) scale(.8)`, opacity:.3}], {duration:D(420), easing:'cubic-bezier(.5,0,.5,1)'}).finished;
+    S.units = S.units.filter(x => x !== u); S.sel = null; syncUnits();
+    await promote(t, 'юнит из лагеря'); return true;
   }
-  await wait(250);
-  return true;
+  if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r)) return false;
+  Object.assign(u, {where:'f', r:dest.r, c:dest.c}); delete u.i; S.sel = null;
+  Sfx.play('move'); syncUnits(); say(u.side, `${who(u.side)}: ${U(u).name} выходит из лагеря.`);
+  await wait(420); return true;
 }
 async function kill(v){
-  const el = TILES.get(v.id);
-  Sfx.play('die');
-  if (el) await el.animate([{transform:'scale(1) rotate(0)', opacity:1}, {transform:'scale(.55) rotate(-10deg)', opacity:0}], {duration:D(320), easing:'ease-in'}).finished;
+  const el = TILES.get(v.id); Sfx.play('die');
+  if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.9) translateY(4px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.7) translateY(10px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(520), easing:'ease-in'}).finished;
   S.units = S.units.filter(x => x !== v); syncUnits();
   say(v.side === 'p' ? 'e' : 'p', `${U(v).name} погибает.`);
 }
 async function damage(t, dmg){
-  t.hp -= dmg; const el = TILES.get(t.id), p = center(t.r, t.c);
-  floatText(p.x, p.y - 10, `−${dmg}`); sparks(p.x, p.y, '#f87171', 6);
-  if (el){ el.animate([{filter:'brightness(2.4)'}, {filter:'none'}], {duration:D(260)}); shake(el, 4); el.innerHTML = tileInner(t); }
+  t.hp -= dmg; const el = TILES.get(t.id);
+  Sfx.play('impact');
+  if (el){
+    el.animate([{filter:'brightness(2.2)'}, {filter:'none'}], {duration:D(260)});
+    const hb = el.querySelector('.st.h'); if (hb){ hb.querySelector('b').textContent = Math.max(0, t.hp); hb.classList.add('d'); flashHP(hb); }
+    const b = box(el); floatAt(b.x + b.w * .78, b.y + b.h * .56, `−${dmg}`);
+  }
+  await wait(560);
   if (t.hp <= 0) await kill(t);
 }
-async function hit(u, t){
-  const A = U(u), a = center(u.r, u.c), b = center(t.r, t.c), el = TILES.get(u.id);
+async function strikeFx(u, targetPt){
+  const A = U(u), el = TILES.get(u.id), a = mid(slotEl(u));
+  if (el) el.classList.add('acting');
+  Sfx.play(A.key);
+  await wait(220);
   if (A.ranged){
-    const pr = document.createElement('div'); pr.className = 'proj'; pr.style.setProperty('--pc', TC[u.type]); pr.style.left = a.x + 'px'; pr.style.top = a.y + 'px'; $('#units').appendChild(pr);
-    Sfx.play('shot');
-    await pr.animate([{transform:'translate(0,0) scale(.6)'}, {transform:`translate(${b.x - a.x}px,${b.y - a.y}px) scale(1)`}], {duration:D(260), easing:'ease-in'}).finished; pr.remove();
+    const bo = document.createElement('div'); bo.className = 'bolt ' + (A.bolt || 'arrow'); $('#units').appendChild(bo);
+    const ang = Math.atan2(targetPt.y - a.y, targetPt.x - a.x);
+    await bo.animate([{transform:`translate(${a.x}px,${a.y}px) rotate(${ang}rad)`, opacity:.2}, {transform:`translate(${a.x}px,${a.y}px) rotate(${ang}rad)`, opacity:1, offset:.1}, {transform:`translate(${targetPt.x}px,${targetPt.y}px) rotate(${ang}rad)`, opacity:1}], {duration:D(460), easing:'cubic-bezier(.4,0,.8,1)'}).finished;
+    bo.remove();
   } else if (el){
-    await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(b.x - a.x) * .38}px,${(b.y - a.y) * .38}px) scale(1.06)`, offset:.45}, {transform:'translate(0,0)'}], {duration:D(300), easing:'cubic-bezier(.5,0,.3,1)'}).finished;
+    await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(a.x - targetPt.x) * .08}px,${(a.y - targetPt.y) * .08}px)`, offset:.35}, {transform:`translate(${(targetPt.x - a.x) * .42}px,${(targetPt.y - a.y) * .42}px) scale(1.06)`, offset:.7}, {transform:'translate(0,0)'}], {duration:D(460), easing:'cubic-bezier(.5,0,.3,1)'}).finished;
   }
+}
+async function hit(u, t){
+  const A = U(u);
+  await strikeFx(u, mid(slotEl(t)));
   let dmg = A.atk; if (A.ranged && U(t).shield) dmg = Math.ceil(dmg / 2);
-  Sfx.play('hit');
   say(u.side, `${A.name} → ${U(t).name}: ${dmg} урона.`);
-  const behind = A.pierce ? unitAt(t.r + FWD[u.side], t.c) : null;
-  const sides = A.splash ? [-1, 1].map(dc => unitAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
+  const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
+  const sides = A.splash ? [-1, 1].map(dc => fieldAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
   await damage(t, dmg);
+  TILES.get(u.id)?.classList.remove('acting');
   if (behind && behind.side !== u.side && alive(behind)){ const d2 = Math.max(1, Math.floor(dmg / 2)); say(u.side, `Пронзает: ${U(behind).name} −${d2}.`); await damage(behind, d2); }
   for (const v of sides) if (alive(v)){ say(u.side, `Вторая голова: ${U(v).name} −1.`); await damage(v, 1); }
 }
 async function heroHit(u){
-  const A = U(u), o = other(u.side), el = TILES.get(u.id), dmg = A.atk * (A.heroX2 ? 2 : 1);
-  if (el) await el.animate([{transform:'translate(0,0)'}, {transform:`translate(0,${FWD[u.side] * 30}px) scale(1.08)`, offset:.45}, {transform:'translate(0,0)'}], {duration:D(300)}).finished;
+  const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
+  const edge = u.side === 'p' ? CELLS[0][0].offsetTop - 20 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 20;
+  await strikeFx(u, {x:a.x, y:edge});
   S.hero[o] = Math.max(0, S.hero[o] - dmg);
   Sfx.play('hero'); renderBars();
-  const hEl = $('#hero-' + o); shake(hEl, 7);
-  if (hEl) hEl.animate([{boxShadow:'0 0 0 2px #fbbf24'}, {boxShadow:'0 0 0 0 transparent'}], {duration:D(600)});
-  const p = center(u.r, u.c); floatText(p.x, u.side === 'p' ? 0 : $('#grid').offsetHeight, `−${dmg}`, 'g');
+  const hEl = $('#hero-' + o);
+  if (hEl){ hEl.animate([{translate:'0 0'}, {translate:'6px 0'}, {translate:'-6px 0'}, {translate:'0 0'}], {duration:D(320)}); flashHP(hEl.querySelector('.hv')); }
+  floatAt(a.x, edge + (u.side === 'p' ? 18 : -18), `−${dmg}`, 'g');
+  TILES.get(u.id)?.classList.remove('acting');
   say(u.side, `${A.name} бьёт героя: −${dmg}.`);
+  await wait(420);
 }
-async function move(u, r, c){ u.r = r; u.c = c; Sfx.play('move'); syncUnits(); await wait(300); }
 async function resolve(side){
-  const order = S.units.filter(u => u.side === side).sort((a, b) => ((a.r - b.r) * -FWD[side]) || (a.c - b.c));
+  const order = onField(side).sort((a, b) => ((a.r - b.r) * -FWD[side]) || (a.c - b.c));
   for (const u of order){
     if (!alive(u) || u.sleep) continue;
-    const times = U(u).double ? 2 : 1;
-    for (let k = 0; k < times; k++){
+    for (let k = 0; k < (U(u).double ? 2 : 1); k++){
       const p = plan(u); if (!p) break;
-      if (p.kind === 'hit') await hit(u, p.t);
-      else if (p.kind === 'hero') await heroHit(u);
-      else { await move(u, p.r, p.c); break; }
+      if (p.kind === 'hit') await hit(u, p.t); else await heroHit(u);
       if (!alive(u) || checkOver()) break;
-      await wait(120);
+      await wait(200);
     }
     if (S.over) return;
   }
@@ -705,8 +713,8 @@ function checkOver(){
 async function startTurn(side, first){
   S.units.forEach(u => { if (u.side === side) u.sleep = false; });
   S.mana[side] = Math.min(S.turn, MANA_MAX);
-  for (const u of S.units.filter(v => v.side === side && U(v).heal)){
-    S.units.filter(v => v.side === side && v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; const p = center(v.r, v.c); floatText(p.x, p.y, `+${h}`, 't'); });
+  for (const u of onField(side).filter(v => U(v).heal)){
+    onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); });
   }
   renderAll();
   if (!first) await drawCards(side, 2, side === 'p');
@@ -715,22 +723,30 @@ async function startTurn(side, first){
 /* ---------- Inferno AI ---------- */
 async function aiTurn(){
   const mine = () => S.units.filter(u => u.side === 'e');
-  const upgrades = async () => { for (let go = true; go && !S.over;){ go = false; for (const u of mine()){ if (trioFor(u)){ await upgrade(u); go = true; break; } } } };
-  await upgrades();
-  for (;;){
-    const aff = S.hand.e.filter(c => c.type + 1 <= S.mana.e).sort((a, b) => b.type - a.type);
-    const free = []; ZONE.e.forEach(r => { for (let c = 0; c < COLS; c++) if (!unitAt(r, c)) free.push({r, c}); });
-    if (!aff.length || !free.length) break;
-    const card = aff[0], A = F.e.units[card.type];
-    const score = f => (A.ranged ? (f.r === 0 ? 2 : 0) : (f.r === 1 ? 2 : 0))
-      + (S.units.some(u => u.side === 'p' && u.c === f.c) ? 1.5 : 0)
-      + mine().filter(u => u.type === card.type && Math.max(Math.abs(u.r - f.r), Math.abs(u.c - f.c)) === 1).length * 2
-      + Math.random() * .8;
-    const cell = free.sort((a, b) => score(b) - score(a))[0];
-    await deploy('e', card.uid, cell.r, cell.c);
-    renderBars();
+  const freeField = () => { const f = []; ZONE.e.forEach(r => { for (let c = 0; c < COLS; c++) if (!fieldAt(r, c)) f.push({r, c}); }); return f; };
+  const bestCell = type => { const A = F.e.units[type];
+    const score = f => (A.ranged ? (f.r === 0 ? 2 : 0) : (f.r === 1 ? 2 : 0)) + (S.units.some(u => u.side === 'p' && u.where === 'f' && u.c === f.c) ? 1.5 : 0) + Math.random() * .8;
+    return freeField().sort((a, b) => score(b) - score(a))[0]; };
+  for (const u of mine().filter(u => u.where === 'c')){
+    const pair = mine().find(v => v !== u && v.type === u.type && v.type < 6 && (v.where === 'f' || v.id < u.id));
+    if (pair){ await fromCamp(u, {unit:pair}); continue; }
+    const cell = bestCell(u.type); if (cell) await fromCamp(u, cell);
   }
-  await upgrades();
+  for (let guard = 0; guard < 12; guard++){
+    const aff = S.hand.e.filter(c => c.type + 1 <= S.mana.e).sort((a, b) => b.type - a.type);
+    if (!aff.length) break;
+    let done = false;
+    for (const card of aff){
+      const same = mine().filter(u => u.type === card.type && u.type < 6).sort((a, b) => (a.where === 'c') - (b.where === 'c'));
+      if (same.length){ await upgradeWithCard('e', card.uid, same[0]); done = true; break; }
+      const cell = bestCell(card.type);
+      if (cell){ await deployCard('e', card.uid, {r:cell.r, c:cell.c}); done = true; break; }
+      const i = [0, 1, 2].find(i => !campAt('e', i));
+      if (i != null){ await deployCard('e', card.uid, {camp:true, i}); done = true; break; }
+    }
+    renderBars();
+    if (!done) break;
+  }
 }
 
 /* ---------- turn flow ---------- */
@@ -741,7 +757,7 @@ async function endTurn(){
   if (S.over){ S.busy = false; return; }
   S.side = 'e'; Sfx.play('turn'); say('e', 'Ход Инферно.');
   await startTurn('e', S.turn === 1); await wait(300);
-  await aiTurn(); await wait(250);
+  await aiTurn(); await wait(300);
   await resolve('e');
   if (S.over){ S.busy = false; return; }
   S.turn++; S.side = 'p'; Sfx.play('turn');
@@ -754,83 +770,89 @@ async function newGame(){
   $('#bwrap .over')?.remove();
   S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, log:[]};
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
-  buildBoard(); renderVariant();
+  buildBoard();
   for (let i = 0; i < 6; i++) S.hand.e.push(newCard());
   await startTurn('p', true);
-  say('sys', `Бой начался, вариант «${VARIANTS[VAR].name}». Ход 1: 1 мана.`);
+  say('sys', 'Бой начался. Ход 1: 1 мана.');
   await drawCards('p', 6, true);
   S.busy = false; renderAll();
 }
 
-/* ---------- input ---------- */
+/* ---------- input: drag and click ---------- */
 let drag = null;
-function cellFromPoint(x, y){ const el = document.elementFromPoint(x, y); const c = el && el.closest('.cell'); if (c) return c; const t = el && el.closest('.tile'); return null; }
+function dropAt(x, y){
+  const el = document.elementFromPoint(x, y); if (!el) return null;
+  const t = el.closest('.tile'); if (t) return {unit:S.units.find(u => u.id === +t.dataset.id), el:t};
+  const c = el.closest('.cell'); if (!c) return null;
+  if (c.dataset.camp) return c.dataset.camp === 'p' ? {camp:true, i:+c.dataset.i, el:c} : null;
+  return {r:+c.dataset.r, c:+c.dataset.c, el:c};
+}
+async function perform(sel, dest, fromRect){
+  if (!sel || !dest) return false;
+  const T = targetsFor(sel);
+  if (dest.unit){ if (!T.ups.includes(dest.unit)) return false; }
+  else if (!T.cells.includes(dest.el)) return false;
+  S.busy = true; renderBars(); let ok;
+  if (sel.card != null) ok = dest.unit ? await upgradeWithCard('p', sel.card, dest.unit, fromRect) : await deployCard('p', sel.card, dest, fromRect);
+  else ok = await fromCamp(S.units.find(u => u.id === sel.unit), dest.unit ? {unit:dest.unit} : dest);
+  S.busy = false; S.sel = null; renderAll(); return ok;
+}
 document.addEventListener('pointerdown', e => {
-  const card = e.target.closest('#hand .card');
-  if (!card || !S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
-  drag = {card, uid:+card.dataset.uid, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
+  if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
+  const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
+  const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
+  if (!card && !campUnit) return;
+  e.preventDefault();
+  if (campUnit && S.sel && targetsFor(S.sel).ups.includes(campUnit)) return;
+  drag = {sel:card ? {card:+card.dataset.uid} : {unit:campUnit.id}, src:card || tile, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
 });
 document.addEventListener('pointermove', e => {
   if (!drag) return;
   if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6){
-    drag.on = true; S.sel = {card:drag.uid}; highlightDrops(); layoutHand(); Sfx.play('pick');
-    const c = S.hand.p.find(h => h.uid === drag.uid);
-    const g = document.createElement('div'); g.className = 'fly'; g.innerHTML = cardFace(c.type); document.body.appendChild(g); drag.ghost = g;
-    drag.card.classList.add('ghosted');
+    drag.on = true; S.sel = drag.sel; renderAll(); Sfx.play('pick');
+    const g = document.createElement('div'); g.className = 'fly';
+    if (drag.sel.card != null){ const c = S.hand.p.find(h => h.uid === drag.sel.card); g.innerHTML = cardFace(c.type); }
+    else { const u = S.units.find(v => v.id === drag.sel.unit), b = drag.src.getBoundingClientRect(); g.classList.add('tilefly'); g.innerHTML = `<div class="tile p" style="position:relative;width:${b.width}px;height:${b.height}px;--t:${TC[u.type]}">${tileInner(u)}</div>`; }
+    document.body.appendChild(g); drag.ghost = g; (drag.src.closest('.card') || drag.src).classList.add('ghosted'); drag.src.style.opacity = '.25';
   }
   if (drag.on){
-    drag.ghost.style.transform = `translate(${e.clientX - 50}px,${e.clientY - 71}px) rotate(${Math.max(-12, Math.min(12, (e.movementX || 0) * 1.2))}deg) scale(.95)`;
-    CELLS.flat().forEach(el => el.classList.remove('hov'));
-    const c = cellFromPoint(e.clientX, e.clientY); if (c && c.classList.contains('drop')) c.classList.add('hov');
+    const w = drag.ghost.offsetWidth || 104, h = drag.ghost.offsetHeight || 148;
+    drag.ghost.style.transform = `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
+    document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+    const d = dropAt(e.clientX, e.clientY); if (d && d.el && (d.el.classList.contains('drop') || d.el.classList.contains('mg'))) d.el.classList.add('hov');
     e.preventDefault();
   }
 }, {passive:false});
 document.addEventListener('pointerup', async e => {
   if (!drag) return;
   const d = drag; drag = null;
-  CELLS.flat().forEach(el => el.classList.remove('hov'));
-  if (!d.on){ S.sel = S.sel && S.sel.card === d.uid ? null : {card:d.uid}; Sfx.play('pick'); layoutHand(); highlightDrops(); renderBars(); syncUnits(); return; }
-  const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.card.classList.remove('ghosted');
-  const c = cellFromPoint(e.clientX, e.clientY);
-  if (c && c.classList.contains('drop')){ S.busy = true; await deploy('p', d.uid, +c.dataset.r, +c.dataset.c, rect); S.busy = false; }
-  S.sel = null; renderAll();
+  document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+  if (!d.on){
+    S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); renderAll(); return;
+  }
+  const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
+  const dest = dropAt(e.clientX, e.clientY);
+  if (!(await perform(d.sel, dest, d.sel.card != null ? rect : null))){ S.sel = null; renderAll(); }
 });
-document.addEventListener('pointercancel', () => { if (drag){ drag.ghost?.remove(); drag.card.classList.remove('ghosted'); drag = null; } });
+document.addEventListener('pointercancel', () => { if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
+document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
 $('#hand').addEventListener('keydown', e => { const card = e.target.closest('.card'); if (card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (S.side === 'p' && !S.busy){ S.sel = {card:+card.dataset.uid}; renderAll(); } } });
 $('#bwrap').addEventListener('click', async e => {
-  if (!S || S.side !== 'p' || S.busy || S.over) return;
-  const up = e.target.closest('[data-up]');
-  if (up){ const u = S.units.find(v => v.id === +up.dataset.up); S.busy = true; await upgrade(u); S.busy = false; renderAll(); return; }
-  const cell = e.target.closest('.cell');
-  if (cell && S.sel && S.sel.card != null && cell.classList.contains('drop')){ S.busy = true; await deploy('p', S.sel.card, +cell.dataset.r, +cell.dataset.c); S.busy = false; renderAll(); return; }
-  const tile = e.target.closest('.tile');
-  if (tile){ const u = S.units.find(v => v.id === +tile.dataset.id); S.sel = u && u.side === 'p' && !(S.sel && S.sel.unit === u.id) ? {unit:u.id} : null; renderAll(); return; }
-  S.sel = null; renderAll();
+  if (!S || S.side !== 'p' || S.busy || S.over || !S.sel) return;
+  const dest = dropAt(e.clientX, e.clientY); if (!dest) { S.sel = null; renderAll(); return; }
+  if (dest.unit && S.sel.unit === dest.unit.id) return;
+  if (!(await perform(S.sel, dest))){ if (!dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); } }
 });
 $('#end').onclick = endTurn;
 $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
 $('#snd').onclick = e => { Sfx.on = !Sfx.on; e.currentTarget.setAttribute('aria-pressed', Sfx.on); e.currentTarget.textContent = Sfx.on ? 'Звук' : 'Без звука'; };
 $('#arr').onclick = e => { SHOW_ARROWS = !SHOW_ARROWS; e.currentTarget.setAttribute('aria-pressed', SHOW_ARROWS); renderOverlay(); };
 
-/* ---------- variants and docs ---------- */
-function renderVariant(){
-  $('#variants').innerHTML = Object.entries(VARIANTS).map(([k, v]) => `<button class="vbtn" type="button" data-v="${k}" aria-pressed="${k === VAR}">${v.name}<small>${v.tag}</small></button>`).join('');
-  $('#variants').querySelectorAll('[data-v]').forEach(b => b.onclick = () => { if (S && S.busy && !S.over) return; VAR = b.dataset.v; try { localStorage.setItem('fieldVariant', VAR); } catch (e) {} newGame(); });
-  $('#vdesc').textContent = VARIANTS[VAR].desc;
-}
-$('#vcards').innerHTML = Object.entries(VARIANTS).map(([k, v]) => {
-  let g = '';
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++){
-    const isE = v.mini.e.some(([rr, cc]) => rr === r && cc === c), isP = v.mini.p.some(([rr, cc]) => rr === r && cc === c);
-    g += `<i class="${r < 2 ? 'ze' : 'zp'}${isE || isP ? ' u' : ''}" style="color:${isE ? '#f472b6' : '#2dd4bf'}"></i>`;
-  }
-  return `<article class="panel vcard"><p class="label">${v.tag}</p><h3>${v.name}</h3><p style="font-size:14px">${v.desc}</p><ul>${v.rules.map(x => `<li>${x}</li>`).join('')}</ul><div class="pm"><div><b>Плюс</b>${v.plus}</div><div><b>Риск</b>${v.minus}</div></div></article>`;
-}).join('');
 $('#rosters').innerHTML = ['p', 'e'].map(side => {
-  const us = F[side].units, pw = us.map(u => u.atk * u.hp);
+  const us = F[side].units;
   return `<div class="fac"><i style="background:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"></i><b>${F[side].name}</b><span class="muted" style="font-size:13px">${side === 'p' ? 'замок Haven' : 'замок Inferno'} в «Героях 5»</span></div>`
-    + `<div class="panel tbl"><table><thead><tr><th>Тир</th><th>Юнит</th><th>Цена</th><th>Урон</th><th>ХП</th><th>Сила</th><th>Особенность</th><th>В «Героях 5» (по памяти)</th></tr></thead><tbody>`
-    + us.map((u, i) => `<tr><td class="num" style="color:${TC[i]}">${RO[i]}</td><td><span class="tic" style="background:color-mix(in srgb,${TC[i]} 16%,#1b1f27)"><svg viewBox="0 0 64 64" style="fill:${TC[i]}">${ICONS[u.key].replace(/class="k"/g, 'style="fill:#1b1f27"')}</svg></span>${u.name}</td><td class="num">${i < 2 ? i + 1 : '—'}</td><td class="num">${u.atk}</td><td class="num">${u.hp}</td><td class="num">${pw[i]}</td><td class="w">${u.ab}</td><td class="muted">${u.homm}: <span style="font:500 12px var(--fm)">${u.hs}</span></td></tr>`).join('')
+    + `<div class="panel tbl"><table><thead><tr><th>Тир</th><th>Юнит</th><th>Как получить</th><th>Урон</th><th>ХП</th><th>Особенность</th><th>В «Героях 5» (по памяти)</th></tr></thead><tbody>`
+    + us.map((u, i) => `<tr><td class="num" style="color:${TC[i]}">${RO[i]}</td><td><span class="tic" style="background:color-mix(in srgb,${TC[i]} 16%,#1b1f27)"><svg viewBox="0 0 64 64" style="fill:${TC[i]}">${ICONS[u.key].replace(/class="k"/g, 'style="fill:#1b1f27"')}</svg></span>${u.name}</td><td>${i < 3 ? `карта, ${i + 1} маны (${Math.round(ODDS[i] * 100)}%)` : `наложение: ${us[i - 1].name.toLowerCase()} + ${us[i - 1].name.toLowerCase()}`}</td><td class="num">${u.atk}</td><td class="num">${u.hp}</td><td class="w">${u.ab}</td><td class="muted">${u.homm}: <span style="font:500 12px var(--fm)">${u.hs}</span></td></tr>`).join('')
     + `</tbody></table></div>`;
 }).join('');
 
