@@ -12,7 +12,7 @@
   --line:rgba(13,19,17,.14); --glass:rgba(242,246,243,.78); --glass-border:rgba(13,19,17,.12);
   --fill:rgba(13,19,17,.045); --fill2:rgba(13,19,17,.085); --grid:rgba(13,19,17,.07); --rain:#0C9A6A;
   --shadow:0 24px 60px rgba(10,30,20,.12);
-  --c0:#8a939c; --c1:#0C9A6A; --c2:#D0266E; --c3:#BF7A0C; --c4:#0A86B0; --on-accent:#ffffff;
+  --c0:#8a939c; --c1:#0C9A6A; --c2:#D0266E; --c3:#B08A06; --c4:#D9561C; --on-accent:#ffffff;
   --sel:rgba(13,19,17,.7); --dark:0; --scan:0;
   color-scheme: light dark;
 }
@@ -22,7 +22,7 @@
     --line:rgba(120,255,190,.14); --glass:rgba(4,10,8,.74); --glass-border:rgba(120,255,190,.14);
     --fill:rgba(120,255,190,.035); --fill2:rgba(120,255,190,.075); --grid:rgba(120,255,190,.045); --rain:#3DFFA2;
     --shadow:0 30px 90px rgba(0,0,0,.6);
-    --c0:#56616a; --c1:#3DFFA2; --c2:#FF3D7F; --c3:#FFB23D; --c4:#3DD5FF; --on-accent:#02140c;
+    --c0:#56616a; --c1:#3DFFA2; --c2:#FF3D7F; --c3:#FFD23D; --c4:#FF7A33; --on-accent:#02140c;
     --sel:rgba(214,238,226,.75); --dark:1; --scan:1;
   }
 }
@@ -31,7 +31,7 @@
   --line:rgba(120,255,190,.14); --glass:rgba(4,10,8,.74); --glass-border:rgba(120,255,190,.14);
   --fill:rgba(120,255,190,.035); --fill2:rgba(120,255,190,.075); --grid:rgba(120,255,190,.045); --rain:#3DFFA2;
   --shadow:0 30px 90px rgba(0,0,0,.6);
-  --c0:#56616a; --c1:#3DFFA2; --c2:#FF3D7F; --c3:#FFB23D; --c4:#3DD5FF; --on-accent:#02140c;
+  --c0:#56616a; --c1:#3DFFA2; --c2:#FF3D7F; --c3:#FFD23D; --c4:#FF7A33; --on-accent:#02140c;
   --sel:rgba(214,238,226,.75); --dark:1; --scan:1;
 }
 :root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
@@ -375,7 +375,7 @@ const DIFF = {
 /* A bot plays with human hands: apm orders a minute at most (a group strike counts as one), up to AI_HANDS_MAX saved up,
    and it notices an incoming bundle only after it has been on its way for `react` seconds. */
 const AI_HANDS_MAX = 3;
-const COLOR_NAME = ['', 'зелёные', 'пурпурные', 'янтарные', 'голубые'];
+const COLOR_NAME = ['', 'зелёные', 'пурпурные', 'золотые', 'оранжевые'];
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜ日月火水木金土田电网零壱弐参ΣΔΨΩλ01#$%&@<>/=+*';
 const hash = n => { n = (n ^ 61) ^ (n >>> 16); n = Math.imul(n, 9); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); n ^= n >>> 15; return n >>> 0; };
 const glyph = n => GLYPHS[hash(n) % GLYPHS.length];
@@ -554,18 +554,16 @@ function nodeSprite(tier, owner, hq) {
   const box = (bx, by, bw, bh, r) => { rrPath(x, cx + bx * u, cy + by * u, bw * u, bh * u, r * u); x.fillStyle = fill; x.fill(); x.stroke(); };
   const line = (a, b, c2, e) => { x.beginPath(); x.moveTo(cx + a * u, cy + b * u); x.lineTo(cx + c2 * u, cy + e * u); x.stroke(); };
   if (icon === 'dc') {
-    // the datacenter: a hall of three server bays on a slab, a control tower with a screen and a beacon, cooling on the roof
-    rrPath(x, cx - 1.1 * u, cy + 0.72 * u, 2.2 * u, 0.13 * u, 0.04 * u); x.fillStyle = fill; x.fill(); x.stroke();
-    box(-1.0, -0.45, 2.0, 1.17, 0.06);
-    box(-1.07, -0.53, 2.14, 0.1, 0.03);
-    for (let k = 0; k < 3; k++) {
-      const x0 = -0.87 + k * 0.6; box(x0, -0.32, 0.5, 0.94, 0.03);
-      for (let r = 0; r < 6; r++) { const yy = -0.24 + r * 0.15; line(x0 + 0.17, yy, x0 + 0.43, yy); leds.push([x0 + 0.09, yy]); }
+    // the datacenter: one big server cabinet — a status screen across the top, two columns of blade units, feet
+    box(-1.0, -0.95, 2.0, 1.86, 0.08);
+    rrPath(x, cx - 0.84 * u, cy - 0.8 * u, 1.68 * u, 0.26 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.84, -0.8, 1.68, 0.26]);
+    for (let col = 0; col < 2; col++) for (let r = 0; r < 4; r++) {
+      const x0 = -0.84 + col * 0.9, y0 = -0.43 + r * 0.33;
+      box(x0, y0, 0.78, 0.25, 0.03);
+      leds.push([x0 + 0.1, y0 + 0.125], [x0 + 0.22, y0 + 0.125]);
+      for (let v = 0; v < 4; v++) line(x0 + 0.4 + v * 0.09, y0 + 0.07, x0 + 0.4 + v * 0.09, y0 + 0.18);
     }
-    box(-0.24, -0.97, 0.48, 0.44, 0.04);
-    rrPath(x, cx - 0.16 * u, cy - 0.89 * u, 0.32 * u, 0.2 * u, 0.02 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.16, -0.89, 0.32, 0.2]);
-    line(0, -0.97, 0, -1.13); leds.push([0, -1.13]);
-    for (const bx of [-0.9, 0.52]) { box(bx, -0.7, 0.38, 0.17, 0.03); x.beginPath(); x.arc(cx + (bx + 0.1) * u, cy - 0.615 * u, 0.055 * u, 0, TAU); x.moveTo(cx + (bx + 0.33) * u, cy - 0.615 * u); x.arc(cx + (bx + 0.28) * u, cy - 0.615 * u, 0.055 * u, 0, TAU); x.stroke(); }
+    line(-0.8, 0.91, -0.8, 1.02); line(0.8, 0.91, 0.8, 1.02);
   } else if (icon === 's') {
     box(-0.8, -0.72, 1.6, 1.02, 0.1);
     rrPath(x, cx - 0.66 * u, cy - 0.58 * u, 1.32 * u, 0.74 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.66, -0.58, 1.32, 0.74]);
@@ -673,15 +671,19 @@ function genMap(spec) {
   const R = seeded(spec.seed || Math.floor(Math.random() * 1e9)), W = spec.W, H = spec.H, M = 130;
   const nodes = [];
   const add = (x, y, sz, o, g, reg) => nodes.push({ x, y, sz, o, g, reg: reg == null ? -1 : reg, cr: capRof(sz) });
-  const fits = (x, y, sz, gap = 100) => x > M && x < W - M && y > M && y < H - M && nodes.every(q => Math.hypot(q.x - x, q.y - y) > q.cr + capRof(sz) + gap);
+  // random nodes keep clear of the channels a map starts with, so those can always be laid
+  let segs = [];
+  const segD = (x, y, A, B) => { const dx = B.x - A.x, dy = B.y - A.y, L = dx * dx + dy * dy || 1, u = clamp(((x - A.x) * dx + (y - A.y) * dy) / L, 0, 1); return Math.hypot(A.x + dx * u - x, A.y + dy * u - y); };
+  const fits = (x, y, sz, gap = 100) => x > M && x < W - M && y > M && y < H - M && nodes.every(q => Math.hypot(q.x - x, q.y - y) > q.cr + capRof(sz) + gap) && segs.every(([A, B]) => segD(x, y, A, B) > capRof(sz) + 90);
   const w = spec.weights || { s: 0.36, m: 0.36, l: 0.2, x: 0.08 };
   const pick = () => { let r = R(); for (const k of ['s', 'm', 'l', 'x']) { if (r < w[k]) return k; r -= w[k]; } return 's'; };
   const gar = sz => Math.round({ s: 3 + R() * 4, m: 8 + R() * 6, l: 14 + R() * 10, x: 28 + R() * 17 }[sz]);
   const regions = spec.regions || [];
   const nearestReg = (x, y) => { let b = -1, bd = 1e9; regions.forEach((r, k) => { const d = Math.hypot(r.fx * W - x, r.fy * H - y); if (d < bd) { bd = d; b = k; } }); return b; };
-  (spec.homes || []).forEach((h, k) => { const x = clamp(h[0] * W, M, W - M), y = clamp(h[1] * H, M, H - M); add(x, y, 'h', k + 1, k === 0 && spec.playerV ? spec.playerV : 24, nearestReg(x, y)); nodes[nodes.length - 1].hq = true; });
+  (spec.homes || []).forEach((h, k) => { const x = clamp(h[0] * W, M, W - M), y = clamp(h[1] * H, M, H - M); add(x, y, 'h', k + 1, spec.homeV ? spec.homeV[k] : k === 0 && spec.playerV ? spec.playerV : 24, nearestReg(x, y)); nodes[nodes.length - 1].hq = true; });
   // extra nodes: placed by hand, in map fractions (fx, fy) or in pixels (x, y); o gives a node to a player from the start
-  (spec.extra || []).forEach(e => { const x = e.x != null ? e.x : e.fx * W, y = e.y != null ? e.y : e.fy * H; add(x, y, e.sz, e.o || 0, e.g, e.reg != null ? e.reg : nearestReg(x, y)); });
+  (spec.extra || []).forEach(e => { const x = e.x != null ? e.x : e.fx * W, y = e.y != null ? e.y : e.fy * H; add(x, y, e.sz, e.o || 0, e.g, e.reg != null ? e.reg : nearestReg(x, y)); if (e.kind) nodes[nodes.length - 1].kind = e.kind; });
+  segs = (spec.links || []).map(([a, b]) => nodes[a] && nodes[b] ? [nodes[a], nodes[b]] : null).filter(Boolean);
   if (spec.grid) {
     const { cols, rows } = spec.grid;
     for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
@@ -706,13 +708,27 @@ function genMap(spec) {
   }
   // special nodes: a share of the neutral ones, picked by the map's own seed
   const share = spec.kinds != null ? spec.kinds : 0.12;
-  for (const n of nodes) if (!n.o && R() < share) n.kind = KIND_LIST[Math.floor(R() * KIND_LIST.length)];
+  for (const n of nodes) if (!n.o && !n.kind && R() < share) n.kind = KIND_LIST[Math.floor(R() * KIND_LIST.length)];
   return { W, H, nodes, links: spec.links || [] };
 }
 /* Level-building helpers, in pixels: nodes along a line or around a centre. sz and g may be lists that repeat. */
 const pick = (v, k) => Array.isArray(v) ? v[k % v.length] : v;
 const linePx = (x0, y0, x1, y1, n, sz, g) => Array.from({ length: n }, (_, k) => { const u = n > 1 ? k / (n - 1) : 0.5; return { x: x0 + (x1 - x0) * u, y: y0 + (y1 - y0) * u, sz: pick(sz, k), g: pick(g, k) }; });
 const ringPx = (cx, cy, r, n, a0, sz, g) => Array.from({ length: n }, (_, k) => { const a = a0 + k * TAU / n; return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, sz: pick(sz, k), g: pick(g, k) }; });
+/* A network a player starts with: nodes around home k, each given as [direction in degrees (0 = right, 90 = down),
+   distance, size, packets, via], linked by a finished channel to the home, or to node `via` of the same list. */
+function startNet(spec, k, items) {
+  const M = 130, h = spec.homes[k], hx = clamp(h[0] * spec.W, M, spec.W - M), hy = clamp(h[1] * spec.H, M, spec.H - M);
+  spec.extra = spec.extra || []; spec.links = spec.links || [];
+  const made = [];
+  for (const [deg, d, sz, g, via] of items) {
+    const from = via == null ? { x: hx, y: hy, i: k } : made[via], a = deg * Math.PI / 180;
+    const n = { x: from.x + Math.cos(a) * d, y: from.y + Math.sin(a) * d, i: spec.homes.length + spec.extra.length };
+    spec.extra.push({ x: n.x, y: n.y, sz, g, o: k + 1 }); spec.links.push([from.i, n.i]); made.push(n);
+  }
+  return spec;
+}
+const nets = (spec, list) => { list.forEach(([k, items]) => startNet(spec, k, items)); return spec; };
 /* spawn: how new grey nodes come online on a map — first (s), every [min, max] (s), max (nodes), at (pattern: random,
    center, ring, line, band, front, gaps), r / line / band (its shape), sym (2 = mirrored through the centre, 4 = both
    axes), style (beam, rings, glyph), sz (size weights), kinds (share of special nodes). */
@@ -737,7 +753,7 @@ const LEVELS = [
   { name: 'Магистраль', ai: ['normal', 'easy'], hint: 'длинная магистраль: вдоль неё включаются новые узлы. держите путь от датацентра к фронту коротким и толстым — один перерезанный узел, и вся дальняя часть отключится.',
     spawn: { first: 40, every: [25, 35], max: 8, at: 'line', line: [0.2, 0.62, 0.8, 0.62], style: 'beam' },
     spec: { W: 3600, H: 1300, seed: 66, homes: [[0.04, 0.5], [0.96, 0.5], [0.5, 0.14]], count: 27, maxLen: 480 } },
-  { name: 'Mesh-сеть', ai: ['hard'], hint: 'сетка из десятков узлов: много обходных путей, перерезать трудно. зато в воздухе всего одна пачка — каждый удар на счету.',
+  { name: 'Mesh-сеть', ai: ['hard'], hint: 'сетка из десятков узлов: много обходных путей, перерезать трудно. зато атака в воздухе всего одна — каждый удар на счету.',
     spawn: { first: 60, every: [30, 45], max: 6, at: 'random', sym: 2, style: 'rings' },
     spec: { W: 2800, H: 1700, seed: 77, homes: [[0.05, 0.1], [0.95, 0.9]], grid: { cols: 7, rows: 4 }, maxLen: 470 } },
   { name: 'Острова', ai: ['easy', 'normal'], hint: 'четыре острова и центр. центр растёт: каждые полминуты там включается новый узел.',
@@ -798,6 +814,71 @@ const LEVELS = [
     spawn: { first: 45, every: [28, 38], max: 9, at: 'center', r: 0.16, sym: 4, style: 'glyph', sz: { m: 0.3, l: 0.5, x: 0.2 } },
     spec: { W: 3800, H: 2600, seed: 120, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], playerV: 30,
       extra: [{ x: 1900, y: 1300, sz: 'l', g: 35 }].concat(ringPx(1900, 1300, 420, 3, -Math.PI / 2, 'x', 50)), count: 34 } },
+  // ---- third act: bigger maps, and everyone starts with a network ----
+  { name: 'Филиал', ai: [{ d: 'normal', hunt: 0.3 }], hint: 'третья глава: карты больше, и сети у всех уже есть с самого начала — у вас тоже. один сильный противник. прежде чем бить, посмотрите, на чём держится его сеть.',
+    spawn: { first: 40, every: [25, 35], max: 10, at: 'gaps', style: 'glyph' },
+    spec: nets({ W: 3800, H: 2200, seed: 201, homes: [[0.06, 0.5], [0.94, 0.5]], homeV: [40, 50], count: 34 }, [
+      [0, [[-50, 360, 'm', 12], [0, 360, 's', 6], [50, 360, 'm', 12]]],
+      [1, [[130, 360, 'm', 14], [180, 360, 'l', 22], [230, 360, 'm', 14], [180, 340, 's', 6, 1], [150, 330, 's', 6, 0]]]]) },
+  { name: 'Два фронта', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'вы между двух огней: противники слева и справа. одна атака в воздухе — выбирайте, какой фронт важнее сейчас, и не оставляйте другой пустым.',
+    spawn: { first: 40, every: [25, 35], max: 10, at: 'band', band: [0.08, 0.22], sym: 2, style: 'rings' },
+    spec: nets({ W: 4600, H: 2000, seed: 202, homes: [[0.5, 0.5], [0.05, 0.5], [0.95, 0.5]], homeV: [70, 35, 35], count: 38 }, [
+      [0, [[0, 330, 'l', 16], [90, 330, 'm', 10], [180, 330, 'l', 16], [270, 330, 'm', 10], [0, 330, 'm', 10, 0], [180, 330, 'm', 10, 2]]],
+      [1, [[-45, 360, 'm', 10], [0, 360, 'l', 16], [45, 360, 'm', 10]]],
+      [2, [[135, 360, 'm', 10], [180, 360, 'l', 16], [225, 360, 'm', 10]]]]) },
+  { name: 'Бургер', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'бургер: слева вы, в середине зажат слабый противник, справа — сильный. съешьте середину, пока правый не добрался до неё первым, — потом бейтесь с ним на равных.',
+    spawn: { first: 45, every: [28, 38], max: 10, at: 'band', band: [0.06, 0.18], sym: 'y', style: 'beam' },
+    spec: nets({ W: 5000, H: 2000, seed: 203, homes: [[0.05, 0.5], [0.5, 0.5], [0.95, 0.5]], homeV: [60, 35, 60], count: 40 }, [
+      [0, [[-45, 360, 'm', 12], [0, 360, 'l', 16], [45, 360, 'm', 12], [0, 350, 'm', 10, 1], [-20, 330, 's', 6, 0]]],
+      [1, [[180, 350, 's', 6], [0, 350, 'm', 10], [90, 330, 's', 6], [270, 330, 's', 6]]],
+      [2, [[135, 360, 'l', 22], [180, 360, 'x', 30], [225, 360, 'l', 22], [180, 360, 'm', 12, 1], [110, 330, 'm', 12, 0], [250, 330, 'm', 12, 2]]]]) },
+  { name: 'Вы окружены', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0.1 }], hint: 'вы окружены: сверху и снизу противники уже раскинули сети к вашему датацентру. держите кольцо вокруг него и прорывайтесь туда, где тоньше.',
+    spawn: { first: 30, every: [22, 30], max: 10, at: 'ring', r: 0.26, style: 'rings' },
+    spec: nets({ W: 3600, H: 3000, seed: 204, homes: [[0.5, 0.5], [0.5, 0.07], [0.5, 0.93]], homeV: [90, 35, 40], count: 40 }, [
+      [0, [[0, 330, 'l', 16], [60, 330, 'm', 10], [120, 330, 'm', 10], [180, 330, 'l', 16], [240, 330, 'm', 10], [300, 330, 'm', 10], [0, 330, 'm', 10, 0], [180, 330, 'm', 10, 3]]],
+      [1, [[45, 360, 'm', 10], [90, 360, 'l', 16], [135, 360, 'm', 10], [20, 330, 's', 6, 0], [160, 330, 's', 6, 2]]],
+      [2, [[-45, 360, 'm', 10], [-90, 360, 'l', 16], [-135, 360, 'm', 10], [-20, 330, 's', 6, 0], [-160, 330, 's', 6, 2]]]]) },
+  { name: 'Трасса', ai: [{ d: 'normal', hunt: 0.3 }], hint: 'трасса: вся сеть противника вытянута в одну линию к вам. перережьте её поближе к его датацентру — и всё, что дальше, отключится разом.',
+    spawn: { first: 40, every: [25, 35], max: 8, at: 'band', band: [0.12, 0.3], sym: 'y', style: 'glyph' },
+    spec: nets({ W: 5200, H: 1400, seed: 205, homes: [[0.04, 0.5], [0.96, 0.5]], homeV: [45, 60], count: 30 }, [
+      [0, [[-40, 340, 'm', 12], [40, 340, 'm', 12]]],
+      [1, [[180, 360, 'l', 20], [180, 360, 'm', 12, 0], [180, 360, 'l', 20, 1], [180, 360, 'm', 12, 2], [180, 360, 'l', 18, 3], [240, 320, 's', 6, 1], [120, 320, 's', 6, 3]]]]) },
+  { name: 'Хабы', ai: [{ d: 'easy', hunt: 0 }, { d: 'normal', hunt: 0 }, { d: 'hard', hunt: 0 }], hint: 'в центре — хабы: они держат до пяти каналов. кто возьмёт центр, сможет бить во все стороны сразу — и получит удары со всех сторон.',
+    spawn: { first: 35, every: [24, 32], max: 12, at: 'center', r: 0.22, sym: 4, style: 'rings' },
+    spec: nets({ W: 4000, H: 2800, seed: 206, homes: [[0.05, 0.92], [0.05, 0.08], [0.95, 0.08], [0.95, 0.92]], homeV: [45, 40, 40, 50], count: 44,
+      extra: [{ x: 2000, y: 1400, sz: 'l', g: 30, kind: 'hub' }, { x: 1650, y: 1400, sz: 'm', g: 16, kind: 'hub' }, { x: 2350, y: 1400, sz: 'm', g: 16, kind: 'hub' }] }, [
+      [0, [[-90, 340, 'm', 12], [-45, 340, 's', 6], [0, 340, 'm', 12]]],
+      [1, [[90, 340, 'm', 12], [45, 340, 's', 6], [0, 340, 'm', 12]]],
+      [2, [[90, 340, 'm', 12], [135, 340, 's', 6], [180, 340, 'm', 12]]],
+      [3, [[-90, 340, 'm', 12], [-135, 340, 'l', 18], [180, 340, 'm', 12]]]]) },
+  { name: 'Ферма', ai: [{ d: 'hard', hunt: 0.3 }], hint: 'посередине — ферма мейнфреймов. каждый мейнфрейм даёт wi-fi и бьёт сильнее; но пока вы берёте ферму, противник ищет, где перерезать вашу сеть.',
+    spawn: { first: 50, every: [30, 40], max: 8, at: 'gaps', style: 'beam' },
+    spec: nets({ W: 4200, H: 2400, seed: 207, homes: [[0.05, 0.5], [0.95, 0.5]], homeV: [45, 55], count: 34,
+      extra: linePx(1700, 800, 2500, 800, 3, 'x', [34, 42, 34]).concat(linePx(1700, 1600, 2500, 1600, 3, 'x', [34, 42, 34])) }, [
+      [0, [[-45, 350, 'm', 12], [0, 350, 'l', 18], [45, 350, 'm', 12]]],
+      [1, [[135, 350, 'm', 12], [180, 350, 'l', 18], [225, 350, 'm', 12], [180, 340, 'm', 12, 1], [160, 330, 's', 6, 0]]]]) },
+  { name: 'Разлом', ai: [{ d: 'normal', hunt: 0 }, { d: 'hard', hunt: 0 }], hint: 'разлом посередине карты: по нему не проложить канал. переправы включатся в разломе со временем — первым на них должен быть ваш сервер.',
+    spawn: { first: 30, every: [22, 30], max: 10, at: 'line', line: [0.5, 0.12, 0.5, 0.88], style: 'beam' },
+    spec: nets({ W: 4600, H: 2600, seed: 208, homes: [[0.05, 0.5], [0.95, 0.18], [0.95, 0.82]], homeV: [50, 45, 55],
+      regions: [{ fx: 0.2, fy: 0.5, r: 0.36, n: 13 }, { fx: 0.8, fy: 0.3, r: 0.25, n: 7 }, { fx: 0.8, fy: 0.72, r: 0.25, n: 7 }] }, [
+      [0, [[-60, 350, 'm', 12], [0, 350, 'm', 12], [60, 350, 'm', 12]]],
+      [1, [[180, 350, 'm', 12], [135, 350, 's', 6], [180, 330, 's', 6, 0]]],
+      [2, [[180, 350, 'm', 12], [225, 350, 'l', 18], [180, 330, 'm', 10, 0]]]]) },
+  { name: 'Осада', ai: [{ d: 'normal', hunt: 0 }, { d: 'hard', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'осада: ваша сеть большая, но её обступили трое. вы сильнее каждого по отдельности — не дайте им навалиться разом.',
+    spawn: { first: 40, every: [25, 35], max: 10, at: 'front', style: 'glyph' },
+    spec: nets({ W: 4400, H: 3000, seed: 209, homes: [[0.12, 0.5], [0.72, 0.08], [0.94, 0.5], [0.72, 0.92]], homeV: [80, 45, 55, 45], count: 42 }, [
+      [0, [[-60, 350, 'm', 14], [0, 350, 'l', 22], [60, 350, 'm', 14], [0, 350, 'm', 12, 1], [-90, 330, 's', 8, 0], [90, 330, 's', 8, 2], [-30, 330, 's', 6, 3], [30, 330, 's', 6, 3]]],
+      [1, [[120, 350, 'm', 12], [180, 350, 's', 6], [90, 330, 's', 6]]],
+      [2, [[180, 350, 'l', 18], [135, 350, 'm', 12], [225, 350, 'm', 12]]],
+      [3, [[240, 350, 'm', 12], [180, 350, 's', 6], [270, 330, 's', 6]]]]) },
+  { name: 'Ядро', ai: [{ d: 'hard', hunt: 0.2 }, { d: 'hard', hunt: 0 }, { d: 'normal', hunt: 0 }], hint: 'ядро сети: четыре датацентра по углам, у каждого своя сеть, в центре — три мейнфрейма. последний бой: берите ядро и держите свой датацентр.',
+    spawn: { first: 40, every: [26, 34], max: 12, at: 'center', r: 0.2, sym: 4, style: 'glyph', sz: { m: 0.3, l: 0.5, x: 0.2 } },
+    spec: nets({ W: 4800, H: 3200, seed: 210, homes: [[0.05, 0.93], [0.05, 0.07], [0.95, 0.07], [0.95, 0.93]], homeV: [50, 50, 55, 45], count: 48,
+      extra: [{ x: 2400, y: 1600, sz: 'l', g: 36 }].concat(ringPx(2400, 1600, 440, 3, -Math.PI / 2, 'x', 48)) }, [
+      [0, [[-90, 350, 'm', 12], [-45, 350, 'l', 18], [0, 350, 'm', 12], [-45, 340, 's', 6, 1]]],
+      [1, [[90, 350, 'm', 12], [45, 350, 'l', 18], [0, 350, 'm', 12], [45, 340, 's', 6, 1]]],
+      [2, [[90, 350, 'm', 12], [135, 350, 'l', 18], [180, 350, 'm', 12], [135, 340, 's', 6, 1]]],
+      [3, [[-90, 350, 'm', 12], [-135, 350, 'l', 18], [180, 350, 'm', 12], [-135, 340, 's', 6, 1]]]]) },
 ];
 /* Quick games get a quieter stream of new nodes in the emptiest spots. */
 const QUICK_SPAWN = { first: 45, every: [25, 35], max: 10, at: 'gaps', style: 'glyph' };
@@ -855,15 +936,17 @@ function makeNode(d, i, used) {
   return { i, x: d.x, y: d.y, cap, capR: radiusFor(cap), size: d.sz, hq: !!d.hq, maxT: MAXT[d.sz], kind: d.kind || null, owner: d.o, v, vd: v, tier: Math.min(tierOf(v), MAXT[d.sz]), name, seed: Math.floor(Math.random() * 1e6),
     hurt: 0, fed: 0, glitch: 0, pop: 0, nb: [], base: v, lastHit: -99, infect: 0, vis: false, seen: false, lastOwner: 0, lastV: v, expR: 0 };
 }
+/* A level names a bot by difficulty, or as { d: difficulty, ...overrides } (e.g. hunt: how much it goes for you). */
+const aiOf = d => typeof d === 'string' ? DIFF[d] : Object.assign({}, DIFF[d.d], d);
 function buildGame(map, aiNames, meta) {
   const used = new Set();
   const nodes = map.nodes.map((d, i) => makeNode(d, i, used));
   G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo,
     pct: shiftHeld ? 0.5 : 1,
-    ais: aiNames.map((d, k) => ({ o: k + 2, d: DIFF[d], next: 1.5 + k * 0.6 + DIFF[d].think * 0.5 })),
+    ais: aiNames.map((d, k) => ({ o: k + 2, d: aiOf(d), next: 1.5 + k * 0.6 + aiOf(d).think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0, kills: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0,
     used, shake: 0, chanSel: null, queue: [] };
-  if (G.demo) G.ais = aiNames.map((d, k) => ({ o: k + 1, d: DIFF[d], next: 0.5 + k * 0.4 }));
+  if (G.demo) G.ais = aiNames.map((d, k) => ({ o: k + 1, d: aiOf(d), next: 0.5 + k * 0.4 }));
   // channels a map starts with, finished (indices: homes first, then the extra nodes in order)
   for (const [i, j] of map.links || []) { const r = planRoute(i, j, true); if (!r.err && !edgeBetween(i, j)) makeEdge(i, j, nodes[i].owner || nodes[j].owner, r, 'up'); }
   G.spawn = meta.spawn || null; G.spawnT = G.spawn ? G.spawn.first : 0; G.spawnMade = 0; G.arrivals = [];
@@ -1034,7 +1117,7 @@ function nextHop(i, dest, o) {
 /* A send is one bundle: it leaves at once, carries its count, and flies at the speed of the sender's class. */
 function sendArmy(e, i, o, n, dest) {
   n = Math.floor(n);
-  if (canSend(e, i, o, n) !== true || launchBlock(i)) return false;
+  if (canSend(e, i, o, n) !== true || launchBlock(i, dest != null ? dest : other(e, i))) return false;
   const A = G.nodes[i], tier = tierN(A);
   spend(A, n); A.sentAt = G.time;
   launch(e, dirFrom(e, i), o, dest, 0, SPEED_MUL[tier] * (A.kind === 'boost' ? 1.3 : 1), 0, n);
@@ -1052,22 +1135,26 @@ const chanMul = (e, o) => {
   return (a && a !== o) || (b && b !== o) ? 0.9 : 1;
 };
 
-/* ---------- one bundle in the air ----------
-   A player may have only one bundle in the air at a time: while it flies, every other launch waits. A laptop never
-   launches. A bundle passing on through a relay node or a node's route is the same bundle, not a new launch; a wi-fi
-   jump counts as a bundle in the air. */
+/* ---------- two bundles in the air ----------
+   A player may have two bundles in the air at a time, one of each kind: one inside the own network (on its way to an
+   own node) and one strike (on its way to a foreign or grey node). While one flies, the next launch of the same kind
+   waits. A laptop never launches. A bundle passing on through a relay node or a node's route is the same bundle, not a
+   new launch; a wi-fi jump counts as a bundle in the air. The kind follows the bundle's target, so a strike whose
+   target falls to its owner meanwhile becomes a move inside the network. */
 const MAX_FLYING = 1;
-function flyingOf(o) {
+const slotOf = (o, j) => G.nodes[j] && G.nodes[j].owner === o ? 'own' : 'out';
+const SLOT_BUSY = { own: 'по своей сети уже летит пачка', out: 'атака уже в пути' };
+function flyingOf(o, kind) {
   let c = 0;
-  for (const e of G.edges) for (const a of e.ar) if (!a.dead && a.o === o) c++;
-  for (const J of G.jumps) if (J.o === o) c++;
+  for (const e of G.edges) for (const a of e.ar) if (!a.dead && a.o === o && (!kind || slotOf(o, a.dest != null ? a.dest : dstOf(e, a.dir)) === kind)) c++;
+  for (const J of G.jumps) if (J.o === o && (!kind || slotOf(o, J.to) === kind)) c++;
   return c;
 }
-/* null when node i may launch a bundle right now, otherwise why it has to wait */
-function launchBlock(i) {
-  const A = G.nodes[i];
+/* null when node i may launch a bundle for node j right now, otherwise why it has to wait */
+function launchBlock(i, j) {
+  const A = G.nodes[i], kind = slotOf(A.owner, j);
   if (tierN(A) === 0) return 'ноутбук не отправляет пакеты';
-  return flyingOf(A.owner) >= MAX_FLYING ? 'уже летит пачка' : null;
+  return flyingOf(A.owner, kind) >= MAX_FLYING ? SLOT_BUSY[kind] : null;
 }
 
 /* ---------- orders ----------
@@ -1081,7 +1168,7 @@ function orderState(q) {
   if (T.owner !== q.o && T.owner !== 0 && tierN(A) < 2) return { wait: 'атаковать может только сервер или мейнфрейм' };
   const r = bestRoute(q.i, q.j, q.o);
   if (!r.hops) { const e = edgeBetween(q.i, q.j); return { wait: e && e.state !== 'up' ? 'канал ещё прокладывается' : r.err || 'нет маршрута' }; }
-  const lb = launchBlock(q.i); if (lb) return { wait: lb, hops: r.hops };
+  const lb = launchBlock(q.i, q.j); if (lb) return { wait: lb, hops: r.hops };
   const n = sendCount(q.i, q.pct); if (n < 1) return { wait: 'в узле нет пакетов', hops: r.hops };
   const ok = canSend(r.hops[0].e, q.i, q.o, n); if (ok !== true) return { wait: ok, hops: r.hops };
   return { hops: r.hops, n };
@@ -1349,7 +1436,7 @@ function wifiCheck(i, j) {
   const r = rangeN(A);
   if (Math.hypot(T.x - A.x, T.y - A.y) > r) return `слишком далеко: дальность ${r}`;
   if (sendCount(i, G.pct) < 1) return 'в узле нет пакетов';
-  const lb = launchBlock(i); if (lb) return lb;
+  const lb = launchBlock(i, j); if (lb) return lb;
   return true;
 }
 function sendWifi(i, j) {
@@ -1606,7 +1693,7 @@ function feedRoutes(dt) {
     const free = Math.floor(p.v - (p.held || 0));
     if (free < 1 || p.infect > 0 || (p.assault && p.assault.length)) continue;
     // a route is a standing order: it too needs a free launch slot, and tries again on the next tick
-    if (launchBlock(p.i)) { p.routeT = 1.2; continue; }
+    if (launchBlock(p.i, p.route)) { p.routeT = 1.2; continue; }
     const hops = routePath(p.i, p.route, 1);
     if (!hops) continue;
     const tier = tierN(p);
@@ -1880,7 +1967,7 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const freeOf = A => A.v - (A.held || 0);
   // what it has noticed coming; one order = one bundle it sends, if it has a free hand
   const seen = i => incomingArmies(i, a => a.o !== o).filter(x => x.age >= D.react);
-  const send1 = (e, i, n, dest) => { if (!sendArmy(e, i, o, n, dest)) return false; book(N[i], fly); return true; };
+  const send1 = (e, i, n, dest) => { if (!sendArmy(e, i, o, n, dest)) return false; book(slotOf(o, dest != null ? dest : other(e, i)), fly); return true; };
   const order = (e, i, n, dest) => { if (ai.hands < 1 || !send1(e, i, n, dest)) return false; ai.hands--; return true; };
   // an experienced player keeps a guard on the nodes that hold its network together
   // (the node the network masses on keeps no extra guard: it gathers precisely to strike)
@@ -1888,9 +1975,9 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const avail = new Map(mine.map(A => [A.i, Math.max(0, Math.floor(freeOf(A) - reserveOf(A)))]));
   let actions = D.actions;
   // the same rule as for the player: one bundle in the air at a time, and a laptop never launches
-  const fly = { n: flyingOf(o) };
-  const slotOk = (A, f = fly) => tierN(A) > 0 && f.n < MAX_FLYING;
-  const book = (A, f) => { f.n++; };
+  const fly = { own: flyingOf(o, 'own'), out: flyingOf(o, 'out') };
+  const slotOk = (A, kind, f = fly) => tierN(A) > 0 && f[kind] < MAX_FLYING;
+  const book = (kind, f) => { f[kind]++; };
   // 1. defence: reinforce own nodes that are about to fall
   if (D.defend) for (const A of mine) {
     if (ai.hands < 1) break;
@@ -1901,7 +1988,7 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
       // help from anywhere within reach, nearest first; the first hop is the edge towards A
       const reach = aiReach(o, [A.i], D.depth), eta = Math.min(...seen(A.i).map(a => a.eta), 99);
       // only nodes that may launch now; help runs along own channels, twice as fast
-      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 5 && slotOk(N[k]) && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])] * OWN_CHAN_MUL) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
+      const helpers = [...reach].filter(([k, r]) => k !== A.i && (avail.get(k) || 0) >= 5 && slotOk(N[k], 'own') && r.len / (BASE_SPEED * SPEED_MUL[tierN(N[k])] * OWN_CHAN_MUL) < eta + 1.5).sort((x, y) => x[1].len - y[1].len);
       // all helpers go as one group order, the way a person selects them and clicks the node
       let rest = deficit * 1.2 + 2, sent = 0;
       for (const [k, r] of helpers) {
@@ -1973,7 +2060,7 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     // with one bundle in the air there are no joint strikes: one node has to be able to do it alone.
     // A target too strong for any single node is remembered: the network masses its packets on the node
     // best placed to hit it (packets that arrive are not held back by a node's cap)
-    if (!srcs.some(x => slotOk(x.A) && (avail.get(x.A.i) || 0) >= need)) {
+    if (!srcs.some(x => slotOk(x.A, 'out') && (avail.get(x.A.i) || 0) >= need)) {
       const hub = srcs.filter(x => !x.dest && !(x.A.assault && x.A.assault.length)).sort((a, b) => b.A.v - a.A.v)[0];
       if (hub && (!mass || score > mass.score)) mass = { i: hub.A.i, score };
       continue;
@@ -1985,14 +2072,14 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   for (const t of scored) {
     if (actions <= 0 || ai.hands < 1) break;
     // one strong bundle beats a trickle: the nearest node that can do it alone goes
-    const s = t.srcs.filter(x => slotOk(x.A) && (avail.get(x.A.i) || 0) >= t.need).sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len))[0];
+    const s = t.srcs.filter(x => slotOk(x.A, 'out') && (avail.get(x.A.i) || 0) >= t.need).sort((a, b) => (a.len || a.e.len) - (b.len || b.e.len))[0];
     if (!s) continue;
     const have = avail.get(s.A.i);
     // in this fight an overwhelming bundle loses almost nothing: an experienced player hits with a wide margin so the prize holds
     const k = Math.min(have, D.smart ? Math.max(t.need + 2, Math.floor(have * 0.75)) : t.need + 2);
     // a big bundle on a thin channel crawls: an experienced player widens the channel first
     if (D.smart && !s.dest && k > BW[s.e.lvl || 1] * 1.5 && typeof upgradeCheck(s.e, o) === 'object' && have >= k + BW_COST[(s.e.lvl || 1) + 1] + 2 && ai.hands >= 2 && upgradeChannel(s.e, o)) ai.hands--;
-    if (sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); book(s.A, fly); t.sent = 1; }
+    if (sendArmy(s.e, s.A.i, o, k, s.dest)) { avail.set(s.A.i, have - k); book('out', fly); t.sent = 1; }
     if (!t.sent) continue;                                                           // nothing left: the order was not given
     ai.hands--; actions--;
   }
@@ -2123,9 +2210,9 @@ function doAction(i, j) {
   else { const r = enqueue(i, j, 1, G.pct); if (r === null) queueFullMsg(); else if (r) SFX.queue(); }
 }
 function queueFullMsg(n) { SFX.error(); toast(`очередь полна: не больше ${QUEUE_MAX} приказов${n ? ` — ${n} не принято` : ''}`, 2200); }
-/* How many of these nodes could launch right now: with one bundle in the air, at most one. */
-function launchNow(list) {
-  if (flyingOf(1) >= MAX_FLYING) return 0;
+/* How many of these nodes could launch for node j right now: with one bundle of a kind in the air, at most one. */
+function launchNow(list, j) {
+  if (flyingOf(1, slotOf(1, j)) >= MAX_FLYING) return 0;
   return list.some(i => tierN(G.nodes[i]) > 0 && G.nodes[i].infect <= 0 && sendCount(i, G.pct) >= 1) ? 1 : 0;
 }
 /* Group command: every selected node sends its batch to node j along its own channels.
@@ -2143,7 +2230,7 @@ function groupPlan(j, set) {
     if (!r.hops) { skip++; continue; }
     list.push({ i, n, hops: r.hops }); total += n;
   }
-  const verb = T.owner === 1 ? 'стянуть' : 'атаковать', now = launchNow(list.map(it => it.i)), wait = list.length - now;
+  const verb = T.owner === 1 ? 'стянуть' : 'атаковать', now = launchNow(list.map(it => it.i), j), wait = list.length - now;
   const label = list.length ? `${verb}: ${list.length} узл.${wait ? ` · сразу ${now}, в очередь ${wait}` : ''}${skip ? ` · ${skip} без маршрута` : ''}` : 'к цели нет пути по вашим каналам: сначала проложите к ней канал';
   return { list, total, label };
 }
@@ -2440,7 +2527,7 @@ function render(now) {
       // a channel between two nodes of one player takes a light tint of that player's colour
       const co = shownOwner(A) && shownOwner(A) === shownOwner(B) ? shownOwner(A) : 0, grey = dark ? [214, 238, 226] : [13, 19, 17];
       const lw = [0, 1.4, 2.6, 4][e.lvl || 1];
-      ctx.strokeStyle = rgba(co ? mix(grey, PAL.rgb[co], 0.45) : grey, dark ? 0.32 + 0.06 * ((e.lvl || 1) - 1) : 0.34 + 0.06 * ((e.lvl || 1) - 1)); ctx.lineWidth = Math.max(1, lw * S); ctx.stroke();
+      ctx.strokeStyle = rgba(co ? mix(grey, PAL.rgb[co], 0.55) : grey, dark ? 0.32 + 0.06 * ((e.lvl || 1) - 1) : 0.34 + 0.06 * ((e.lvl || 1) - 1)); ctx.lineWidth = Math.max(1, lw * S); ctx.stroke();
       const ar = e.ar.find(a => !a.dead);
       if (ar) { const c = PAL.rgb[ar.o]; ctx.strokeStyle = rgba(c, dark ? 0.3 : 0.35); ctx.lineWidth = Math.max(1, 1.4 * S); ctx.stroke(); }
     }
@@ -2932,7 +3019,7 @@ const HOW = [
   ['<circle cx="9" cy="15" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="17" r="2" fill="currentColor"/><circle cx="17" cy="15" r="2.4" fill="currentColor"/><path d="M3 15h24" stroke="currentColor" stroke-opacity=".3"/>',
     'Перетаскивание к узлу без канала прокладывает канал. Нажатие на узел на другом конце канала отправляет туда пачку с ваших соседних узлов; перетаскивание по готовому каналу — тоже. Пачка — все пакеты узла, с зажатым Shift — половина. Пачка сохраняет скорость отправителя на всём пути. Пачка летит одним куском со счётчиком и дойдёт по своим каналам в любой конец сети.', 'Проведите курсор с зажатой кнопкой через несколько своих узлов и отпустите на цели — отправят все. Узел, у которого идёт бой, не пропускает транзит: маршрут обходит его, а если обхода нет — пачка остаётся в нём. Скорость зависит от класса отправителя: скорость одинакова на любом канале; мейнфрейм летает вдвое быстрее станции, сервер — в 1,4 раза, ноутбук медленнее всех. Встречные пачки не сталкиваются: они пролетают друг мимо друга. Встречную пачку не обогнать: узел, к которому по каналу летит пачка, не может отправить пачку по этому каналу навстречу.'],
   ['<path d="M4 20h22" stroke="currentColor" stroke-opacity=".3"/><rect x="5" y="17" width="4" height="4" fill="currentColor"/><rect x="13" y="17" width="4" height="4" fill="none" stroke="currentColor"/><rect x="21" y="17" width="4" height="4" fill="none" stroke="currentColor"/><path d="M7 13V9h16v4" fill="none" stroke="currentColor"/>',
-    'У игрока в воздухе может быть только одна пачка: пока она летит, никакой другой узел не отправит новую. Ноутбук пачки не отправляет вовсе. Wi-fi-прыжок тоже считается летящей пачкой.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. В очереди не больше трёх приказов; у узла один приказ, новый заменяет старый. Нажмите значок, чтобы отменить приказ, Delete отменяет приказы выделенных узлов или все. Приказ всей группе исполняется по одному, пачка за пачкой, — не заваливайте сеть приказами. Маршруты тоже ждут своей очереди, а пачка, которую узел пропускает дальше, новой не считается.'],
+    'У игрока в воздухе может быть две пачки: одна атака (к чужому или серому узлу) и одна по своей сети (к своему узлу). Пока летит атака, новая атака ждёт; пока летит своя пачка, ждёт следующая своя. Ноутбук пачки не отправляет вовсе. Wi-fi-прыжок тоже считается летящей пачкой.', 'Если отправить сейчас нельзя, приказ встаёт в очередь (значок с номером у узла) и выполнится, как только появится возможность. В очереди не больше трёх приказов; у узла один приказ, новый заменяет старый. Нажмите значок, чтобы отменить приказ, Delete отменяет приказы выделенных узлов или все. Приказ всей группе исполняется по одному, пачка за пачкой, — не заваливайте сеть приказами. Маршруты тоже ждут своей очереди, а пачка, которую узел пропускает дальше, новой не считается.'],
   ['<circle cx="15" cy="15" r="5" fill="none" stroke="currentColor"/><text x="15" y="5.5" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">ｱ</text><text x="25" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">日</text><text x="5" y="17" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">Σ</text><text x="15" y="28" text-anchor="middle" font-size="6" fill="currentColor" font-family="monospace">λ</text>',
     'У чужого узла пачка вступает в бой с гарнизоном. Бьются все стороны сразу, и каждая наносит урон пропорционально своей численности.', 'Поэтому перевес решает: 100 против 30 — выживут около 95, а не 70. Кольцо вокруг узла во время боя показывает баланс сил, полоса вверху экрана — силы всех игроков. Хозяин узла бьёт чуть сильнее, тем сильнее, чем крупнее узел. Серый отдаёт при захвате весь гарнизон, противник — половину.'],
   ['<circle cx="15" cy="19" r="1.6" fill="currentColor"/><path d="M10.5 14.5a6.4 6.4 0 0 1 9 0M7 11a11.3 11.3 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
@@ -2973,7 +3060,7 @@ const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал. канал стоит пакетов и остаётся навсегда.',
   2: 'канал готов. нажмите на серый узел — с вашего узла по каналу уйдёт пачка: все пакеты, с зажатым Shift — половина. если узел не может отправить её сейчас, приказ встанет в очередь — значок с номером у узла.',
   3: 'у чужого узла пакеты становятся символами и бьются с гарнизоном. чем больше сторона, тем быстрее она побеждает — кольцо вокруг узла показывает баланс.',
-  4: 'узел взломан. ваша сеть живёт от датацентра — большого узла, с которого вы начали: всё, что потеряет с ним связь, станет серым. потеряете датацентр — отключится вся сеть. в воздухе у вас одна пачка, остальные приказы ждут в очереди (до трёх).',
+  4: 'узел взломан. ваша сеть живёт от датацентра — большого узла, с которого вы начали: всё, что потеряет с ним связь, станет серым. потеряете датацентр — отключится вся сеть. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди (до трёх).',
 };
 function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
 
