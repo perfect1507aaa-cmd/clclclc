@@ -105,6 +105,16 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
 @media (max-width:600px){ #mini{ width:120px; height:80px; right:12px; } }
 .pop{ position:absolute; min-width:230px; max-width:min(320px, calc(100vw - 24px)); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:5px; pointer-events:auto; z-index:5; }
 .pop[hidden]{ display:none; }
+.legend{ position:absolute; left:16px; top:calc(env(safe-area-inset-top,0px) + 64px); width:min(300px, calc(100vw - 32px)); max-height:calc(100% - 150px); border-radius:8px; pointer-events:auto; display:flex; flex-direction:column; overflow:hidden; z-index:4; }
+.legend[hidden]{ display:none; }
+.legend-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border:0; background:transparent; font-size:11px; color:var(--fg2); cursor:pointer; text-align:left; }
+.legend-head:hover{ color:var(--c1); }
+.legend-list{ overflow-y:auto; padding:0 8px 8px; display:flex; flex-direction:column; gap:2px; }
+.legend-list[hidden]{ display:none; }
+.legend-item{ display:grid; grid-template-columns:38px 1fr; gap:8px; align-items:center; padding:4px 2px; border-top:1px solid var(--line); }
+.legend-item canvas{ width:38px; height:38px; }
+.legend-item b{ display:block; font-size:12px; font-weight:500; }
+.legend-item span{ display:block; font-size:10.5px; line-height:1.4; color:var(--fg2); }
 .pop .pt{ font-size:11px; color:var(--fg2); padding:2px 4px 4px; line-height:1.4; }
 .pop button{ text-align:left; min-height:32px; border:1px solid var(--line); border-radius:5px; background:transparent; font-size:12px; padding:6px 10px; cursor:pointer; line-height:1.35; }
 .pop button:hover{ border-color:var(--c1); color:var(--c1); }
@@ -239,12 +249,14 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   <div class="hud-bottom">
     <div class="pill panel">
       <button class="grp" id="btnAll" aria-pressed="false"></button>
+      <button class="grp" id="btnFog" aria-pressed="true" hidden></button>
       <span class="pill-label" id="pctLabel">пачка 100% · shift — 50%</span>
     </div>
   </div>
   <canvas id="mini" class="panel" aria-label="Мини-карта"></canvas>
   <div id="toast" class="toast panel" role="status" aria-live="polite"></div>
   <div class="pop panel" id="chanPop" hidden></div>
+  <div class="legend panel" id="legend" hidden><button class="legend-head" id="legendHead" aria-expanded="true"><span>виды узлов</span><span id="legendArrow">свернуть</span></button><div class="legend-list" id="legendList"></div></div>
 </div>
 
 <div class="screen show" id="scrMenu">
@@ -257,6 +269,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
         <button class="btn primary" data-go="scrCampaign"><span class="lbl">кампания</span><span class="hint" id="campHint"></span></button>
         <button class="btn" data-go="scrQuick"><span class="lbl">быстрая игра</span></button>
         <button class="btn" id="btnLive"><span class="lbl">живая сеть</span><span class="hint" id="liveHint"></span></button>
+        <button class="btn" id="btnSandbox"><span class="lbl">песочница</span><span class="hint">10 видов узлов</span></button>
         <button class="btn" data-go="scrHow"><span class="lbl">как играть</span></button>
       </div>
       <div class="settings">
@@ -364,8 +377,8 @@ const costOf = len => Math.max(3, Math.ceil(len / 40));
 const rateOf = t => 5 + t * 2.5;
 const RANGE = [480, 620, 800, 1050];
 /* Fog of war: a node sees exactly as far as it can lay a channel; the rest of the network is dark. */
-const visionN = p => RANGE[tierN(p)];
-const rangeN = p => RANGE[tierN(p)];
+const visionN = p => RANGE[tierN(p)] * (p.kind === 'uplink' ? 2 : 1);
+const rangeN = p => Math.round(RANGE[tierN(p)] * (p.kind === 'relay' ? 1.6 : 1));
 const GROW_SPEED = 230;
 const DIFF = {
   easy:   { apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
@@ -542,18 +555,80 @@ function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10
 
 /* ---------- node icons ---------- */
 function rrPath(x, c, y, w, h, r) { x.beginPath(); x.moveTo(c + r, y); x.arcTo(c + w, y, c + w, y + h, r); x.arcTo(c + w, y + h, c, y + h, r); x.arcTo(c, y + h, c, y, r); x.arcTo(c, y, c + w, y, r); x.closePath(); }
-function nodeSprite(tier, owner, hq) {
-  const d = V.dpr, u0 = Math.max(4, (hq ? HQ_R : REF_R[tier]) * V.s * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${hq ? 'dc' : tier}|${owner}|${Math.round(u)}`;
+function nodeSprite(tier, owner, hq, kind, scale) {
+  const d = V.dpr, u0 = Math.max(4, (hq ? HQ_R : REF_R[kind ? 2 : tier]) * (scale || V.s) * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${hq ? 'dc' : kind ? 'k' + kind : tier}|${owner}|${Math.round(u)}`;
   let spr = nCache.get(key); if (spr) return spr;
   const S = Math.ceil(u * 2.3), cx = S / 2, cy = S / 2, cv = document.createElement('canvas'); cv.width = cv.height = S;
   const x = cv.getContext('2d'), col = PAL.rgb[owner], dark = PAL.dark;
   const stroke = rgba(dark ? mix(col, [255, 255, 255], owner ? 0.1 : 0.2) : mix(col, [0, 0, 0], 0.15), owner ? 1 : 0.9);
   const fill = rgba(col, dark ? (owner ? 0.1 : 0.06) : (owner ? 0.09 : 0.06)), screenFill = rgba(col, dark ? 0.16 : 0.12);
   x.lineWidth = Math.max(1, u * 0.05); x.strokeStyle = stroke; x.lineJoin = 'round'; x.lineCap = 'round';
-  const leds = [], screens = [], icon = hq ? 'dc' : TIERS[tier].icon;
+  const leds = [], screens = [], icon = hq ? 'dc' : kind ? 'k:' + kind : TIERS[tier].icon;
+  const circle = (cx0, cy0, r, fillIt) => { x.beginPath(); x.arc(cx + cx0 * u, cy + cy0 * u, r * u, 0, TAU); if (fillIt) { x.fillStyle = fill; x.fill(); } x.stroke(); };
+  const arc = (cx0, cy0, r, a0, a1) => { x.beginPath(); x.arc(cx + cx0 * u, cy + cy0 * u, r * u, a0, a1); x.stroke(); };
   const box = (bx, by, bw, bh, r) => { rrPath(x, cx + bx * u, cy + by * u, bw * u, bh * u, r * u); x.fillStyle = fill; x.fill(); x.stroke(); };
   const line = (a, b, c2, e) => { x.beginPath(); x.moveTo(cx + a * u, cy + b * u); x.lineTo(cx + c2 * u, cy + e * u); x.stroke(); };
-  if (icon === 'dc') {
+  if (icon === 'k:switch') {
+    // a switch: a flat body, four port jacks along the front with a LED over each, and crossing arrows on top
+    box(-0.95, -0.55, 1.9, 1.1, 0.1);
+    for (let k = 0; k < 4; k++) { const px = -0.72 + k * 0.4; box(px, 0.02, 0.28, 0.3, 0.03); leds.push([px + 0.14, -0.1]); }
+    line(-0.55, -0.34, 0.5, -0.34); line(0.5, -0.34, 0.38, -0.44); line(0.55, -0.26, -0.5, -0.26); line(-0.5, -0.26, -0.38, -0.16);
+  } else if (icon === 'k:hub') {
+    // a hub: a round puck with five ports around its rim
+    circle(0, 0, 0.72, true); circle(0, 0, 0.3, false);
+    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * TAU / 5; line(Math.cos(a) * 0.72, Math.sin(a) * 0.72, Math.cos(a) * 1.02, Math.sin(a) * 1.02); leds.push([Math.cos(a) * 0.5, Math.sin(a) * 0.5]); }
+    leds.push([0, 0]);
+  } else if (icon === 'k:storage') {
+    // storage: a stack of three disks
+    for (let k = 2; k >= 0; k--) {
+      const y0 = -0.55 + k * 0.45;
+      x.beginPath(); x.ellipse(cx, cy + (y0 + 0.36) * u, 0.8 * u, 0.2 * u, 0, 0, Math.PI); x.lineTo(cx - 0.8 * u, cy + y0 * u); x.ellipse(cx, cy + y0 * u, 0.8 * u, 0.2 * u, 0, Math.PI, 0, true); x.closePath(); x.fillStyle = fill; x.fill(); x.stroke();
+      x.beginPath(); x.ellipse(cx, cy + y0 * u, 0.8 * u, 0.2 * u, 0, 0, TAU); x.stroke();
+      leds.push([0.55, y0 + 0.28]);
+    }
+  } else if (icon === 'k:miner') {
+    // a mining rig: a graphics card with two fans and its connector teeth
+    box(-1.0, -0.45, 2.0, 0.85, 0.08);
+    for (const fx of [-0.46, 0.46]) { circle(fx, -0.03, 0.32, false); for (let b = 0; b < 3; b++) { const a = b * TAU / 3; line(fx, -0.03, fx + Math.cos(a) * 0.28, -0.03 + Math.sin(a) * 0.28); } }
+    for (let k = 0; k < 7; k++) line(-0.7 + k * 0.2, 0.4, -0.7 + k * 0.2, 0.55);
+    leds.push([0.88, -0.33]);
+  } else if (icon === 'k:firewall') {
+    // a firewall: a brick wall
+    box(-0.9, -0.7, 1.8, 1.4, 0.05);
+    for (let r = 1; r < 4; r++) line(-0.9, -0.7 + r * 0.35, 0.9, -0.7 + r * 0.35);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const bx = -0.9 + (c + (r % 2 ? 0.5 : 0.25)) * 0.6; if (bx > -0.85 && bx < 0.85) line(bx, -0.7 + r * 0.35, bx, -0.35 + r * 0.35); }
+    leds.push([0.7, -0.52]);
+  } else if (icon === 'k:boost' || icon === 'k:amp') {
+    // an accelerator (a double chevron) or an amplifier (a battery with a plus)
+    box(-0.9, -0.55, 1.8, 1.1, 0.12);
+    if (icon === 'k:boost') { x.lineWidth = Math.max(1.5, u * 0.09); for (const ox of [-0.35, 0.15]) { x.beginPath(); x.moveTo(cx + ox * u, cy - 0.32 * u); x.lineTo(cx + (ox + 0.3) * u, cy); x.lineTo(cx + ox * u, cy + 0.32 * u); x.stroke(); } x.lineWidth = Math.max(1, u * 0.05); }
+    else { box(0.9, -0.2, 0.14, 0.4, 0.03); line(-0.2, 0, 0.2, 0); line(0, -0.2, 0, 0.2); }
+    leds.push([-0.68, -0.34]);
+  } else if (icon === 'k:relay') {
+    // a relay tower: a lattice mast with radio waves either side
+    line(0, -0.62, -0.42, 0.85); line(0, -0.62, 0.42, 0.85); line(-0.28, 0.4, 0.28, 0.4); line(-0.16, -0.05, 0.16, -0.05); line(-0.28, 0.4, 0.16, -0.05); line(0.28, 0.4, -0.16, -0.05);
+    for (const r of [0.38, 0.62]) { arc(0, -0.62, r, -Math.PI * 0.2, Math.PI * 0.2); arc(0, -0.62, r, Math.PI * 0.8, Math.PI * 1.2); }
+    leds.push([0, -0.66]);
+  } else if (icon === 'k:uplink') {
+    // a satellite dish on a stand, its feed arm pointing up
+    x.beginPath(); x.ellipse(cx - 0.05 * u, cy - 0.15 * u, 0.78 * u, 0.42 * u, -0.6, 0, Math.PI); x.closePath(); x.fillStyle = fill; x.fill(); x.stroke();
+    line(-0.05, -0.15, 0.45, -0.75); circle(0.45, -0.75, 0.07, false);
+    line(-0.05, 0.1, -0.05, 0.62); line(-0.45, 0.78, 0.35, 0.78); line(-0.05, 0.62, -0.45, 0.78); line(-0.05, 0.62, 0.35, 0.78);
+    leds.push([0.45, -0.75]);
+  } else if (icon === 'k:jammer') {
+    // a jammer: a box with two aerials and a struck-through signal wave
+    box(-0.8, -0.15, 1.6, 0.85, 0.08);
+    line(-0.5, -0.15, -0.65, -0.85); line(0.5, -0.15, 0.65, -0.85);
+    x.beginPath(); for (let k = 0; k <= 8; k++) { const px = -0.55 + k * 0.1375, py = 0.28 + (k % 2 ? -0.14 : 0.14); if (k) x.lineTo(cx + px * u, cy + py * u); else x.moveTo(cx + px * u, cy + py * u); } x.stroke();
+    line(-0.55, 0.58, 0.55, 0.02);
+    leds.push([-0.65, -0.85], [0.65, -0.85]);
+  } else if (icon === 'k:honeypot') {
+    // a honeypot: a jar with a lid and a drip down its side
+    box(-0.5, -0.78, 1.0, 0.18, 0.04);
+    x.beginPath(); x.moveTo(cx - 0.42 * u, cy - 0.6 * u); x.quadraticCurveTo(cx - 0.95 * u, cy + 0.1 * u, cx - 0.6 * u, cy + 0.7 * u); x.lineTo(cx + 0.6 * u, cy + 0.7 * u); x.quadraticCurveTo(cx + 0.95 * u, cy + 0.1 * u, cx + 0.42 * u, cy - 0.6 * u); x.closePath(); x.fillStyle = fill; x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(cx + 0.2 * u, cy - 0.6 * u); x.quadraticCurveTo(cx + 0.28 * u, cy - 0.1 * u, cx + 0.14 * u, cy + 0.05 * u); x.stroke(); circle(0.12, 0.16, 0.09, false);
+    leds.push([-0.3, 0.3]);
+  } else if (icon === 'dc') {
     // the datacenter: one big server cabinet — a status screen across the top, two columns of blade units, feet
     box(-1.0, -0.95, 2.0, 1.86, 0.08);
     rrPath(x, cx - 0.84 * u, cy - 0.8 * u, 1.68 * u, 0.26 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.84, -0.8, 1.68, 0.26]);
@@ -913,8 +988,22 @@ const KINDS = {
   amp: { tag: 'усилитель', hint: 'восстанавливается вдвое быстрее' },
   boost: { tag: 'ускоритель', hint: 'пачки из него и через него летят на 30% быстрее' },
   hub: { tag: 'хаб', hint: 'держит до 5 каналов' },
+  switch: { tag: 'коммутатор', hint: 'пакетов не производит; к нему сразу идут 3–4 канала, и каждые 6 с он закрывает следующий из них по кругу' },
+  storage: { tag: 'хранилище', hint: 'вмещает 400 пакетов, но восстанавливается втрое медленнее' },
+  miner: { tag: 'майнинг-ферма', hint: 'восстанавливается в 2,5 раза быстрее, но держит только 50 и защищается слабо' },
+  relay: { tag: 'ретранслятор', hint: 'прокладывает каналы в 1,6 раза дальше, сам растёт вдвое медленнее' },
+  uplink: { tag: 'спутник', hint: 'видит вдвое дальше' },
+  jammer: { tag: 'глушилка', hint: 'чужие пачки на его каналах летят вдвое медленнее' },
+  honeypot: { tag: 'ханипот', hint: 'ловушка: кто отнимет его у владельца, теряет весь отряд, а узел сереет' },
 };
-const KIND_LIST = Object.keys(KINDS);
+/* The special nodes that turn up on campaign maps; the sandbox has all ten node types. */
+const KIND_LIST = ['firewall', 'amp', 'boost', 'hub'];
+const TYPE_LIST = ['switch', 'hub', 'storage', 'miner', 'firewall', 'boost', 'relay', 'uplink', 'jammer', 'honeypot'];
+/* What a kind changes: cap (overrides the size), regen and defence multipliers. */
+const KIND_CAP = { storage: 400, miner: 50, switch: 60 };
+const KIND_REGEN = { amp: 2, miner: 2.5, storage: 1 / 3, switch: 0, relay: 0.5 };
+const KIND_DEF = { firewall: 1.8, miner: 0.6 };
+const SWITCH_T = 6;
 /* Cutting your own channel gives back half of what it cost; bundles on it are lost. */
 const CUT_REFUND = 0.5;
 /* Bandwidth: a channel lets a bundle up to its width pass at full speed; bigger bundles squeeze through slower. */
@@ -929,7 +1018,7 @@ const HOME = [0.06, 0.12, 0.2, 0.32];
    keeps more: 100 against 30 leaves about 95, not 70. */
 const FIGHT = { k: 0.12, base: 0.35 };
 function makeNode(d, i, used) {
-  const cap = CAP[d.sz], v = Math.min(cap, d.g);
+  const cap = KIND_CAP[d.kind] || CAP[d.sz], v = Math.min(cap, d.g);
   let name; const pre = { s: 'lt', m: 'ws', l: 'srv', x: 'core', h: 'dc' }[d.sz];
   do { name = `${pre}-${String(1 + Math.floor(Math.random() * 998)).padStart(2, '0')}`; } while (used.has(name));
   used.add(name);
@@ -1045,6 +1134,7 @@ function canSend(e, i, o, n, dest) {
   const A = G.nodes[i];
   if (A.owner !== o) return 'это не ваш узел';
   if (e.state !== 'up') return 'канал ещё прокладывается';
+  if (e.shut) return 'порт коммутатора закрыт';
   if (A.infect > 0) return 'узел заражён демоном';
   if (n < 1 || A.v - (A.held || 0) < n) return 'в узле нет пакетов';
   // a node cannot launch into a channel along which a bundle is flying at it
@@ -1064,7 +1154,7 @@ function packetRoute(i, j, o, maxHops, throughFights) {
   while (q.length) {
     const cur = q.shift();
     for (const e of N[cur].nb) {
-      if (e.state !== 'up') continue;
+      if (e.state !== 'up' || e.shut) continue;
       const k = other(e, cur);
       if (dist.has(k) || N[k].owner !== o) continue;
       if (k !== j && (N[k].infect > 0 || (!throughFights && N[k].assault && N[k].assault.length))) continue;
@@ -1087,7 +1177,7 @@ function attackRoute(i, j, o, maxHops, throughFights) {
   const prev = new Map([[i, null]]), q = [i];
   while (q.length) {
     const cur = q.shift();
-    const last = N[cur].nb.find(e => e.state === 'up' && other(e, cur) === j);
+    const last = N[cur].nb.find(e => e.state === 'up' && !e.shut && other(e, cur) === j);
     if (last) {
       const hops = [{ e: last, from: cur, to: j }];
       let c = cur;
@@ -1096,7 +1186,7 @@ function attackRoute(i, j, o, maxHops, throughFights) {
       return { hops };
     }
     for (const e of N[cur].nb) {
-      if (e.state !== 'up') continue;
+      if (e.state !== 'up' || e.shut) continue;
       const k = other(e, cur);
       if (prev.has(k) || N[k].owner !== o || N[k].infect > 0 || (!throughFights && N[k].assault && N[k].assault.length)) continue;
       prev.set(k, { i: cur, e });
@@ -1131,10 +1221,12 @@ function sendArmy(e, i, o, n, dest) {
    and 10% slower on channels that touch another player's node. */
 const OWN_CHAN_MUL = 2;
 const chanOwner = e => { const a = G.nodes[e.a].owner; return a && a === G.nodes[e.b].owner ? a : 0; };
+const jammed = (e, o) => [G.nodes[e.a], G.nodes[e.b]].some(p => p.kind === 'jammer' && p.owner && p.owner !== o);
 const chanMul = (e, o) => {
+  const j = jammed(e, o) ? 0.5 : 1;
   const a = G.nodes[e.a].owner, b = G.nodes[e.b].owner;
-  if (a === o && b === o) return OWN_CHAN_MUL;
-  return (a && a !== o) || (b && b !== o) ? 0.9 : 1;
+  if (a === o && b === o) return OWN_CHAN_MUL * j;
+  return (a && a !== o) || (b && b !== o) ? 0.9 * j : j;
 };
 
 /* ---------- two bundles in the air ----------
@@ -1424,6 +1516,26 @@ function drawArrivals(t) {
   }
 }
 
+/* ---------- switches ----------
+   A switch has its ports round it (its finished channels, in order of direction); every SWITCH_T seconds the closed
+   one moves on to the next. Nothing enters or leaves along a closed port, and routes go round it; bundles already
+   on that channel fly on. The network still counts as linked through it, so a turn never greys anything out. */
+function switchPorts(p) {
+  return p.nb.filter(e => e.state === 'up').sort((a, b) => {
+    const qa = G.nodes[other(a, p.i)], qb = G.nodes[other(b, p.i)];
+    return Math.atan2(qa.y - p.y, qa.x - p.x) - Math.atan2(qb.y - p.y, qb.x - p.x);
+  });
+}
+function stepSwitches() {
+  for (const e of G.edges) e.shut = false;
+  for (const p of G.nodes) {
+    if (p.kind !== 'switch') continue;
+    const ports = switchPorts(p); if (ports.length < 2) continue;
+    const k = Math.floor(G.time / SWITCH_T + (p.seed % 7) / 7) % ports.length;
+    ports[k].shut = true; p.shutPort = ports[k];
+  }
+}
+
 /* ---------- wi-fi ----------
    Player only: a mainframe can throw a batch straight to any node in its range, over the air, ignoring channels
    and the three-channel limit. Drag from the badge beside the mainframe; then it recharges. */
@@ -1599,7 +1711,7 @@ function fall(p, n, o) {
   if (o === 1 || p.owner === 1 || p.assault.some(a => a.o === 1)) SFX.hit();
 }
 /* How hard a node's own packets hit: class bonus and a firewall. */
-const defMult = p => (1 + HOME[tierN(p)]) * (p.kind === 'firewall' ? 1.8 : 1) * (p.hq ? HQ.def : 1);
+const defMult = p => (1 + HOME[tierN(p)]) * (KIND_DEF[p.kind] || 1) * (p.hq ? HQ.def : 1);
 const linkCap = p => p.kind === 'hub' ? 5 : 3;
 function resolveNodes(dt) {
   const up = n => Math.ceil(n - 1e-6);
@@ -1713,6 +1825,17 @@ function setRoute(i, j) {
   A.route = j; SFX.flowOn();
 }
 function captureNode(B, o, leftover) {
+  // a honeypot taken from its owner is a trap: the whole attacking swarm is lost and the node goes grey
+  if (B.kind === 'honeypot' && B.owner && B.owner !== o) {
+    const old = B.owner;
+    G.waves.push({ x: B.x, y: B.y, r: nr(B, 60), life: 1.6, max: 1.6, o }); G.waves.push({ x: B.x, y: B.y, r: nr(B, 20), life: 1.2, max: 1.2, o: old });
+    G.floats.push({ x: B.x, y: B.y, txt: `ловушка −${Math.round(leftover || 0)}`, o, life: 2, max: 2 });
+    for (let q = 0; q < 10; q++) spark(B.x + (Math.random() - 0.5) * 50, B.y + (Math.random() - 0.5) * 50, o);
+    goGrey(B); B.v = 0; B.base = 0;
+    if (!G.demo && (o === 1 || old === 1)) { SFX.infect(); toast(o === 1 ? 'это был ханипот: ваш отряд попал в ловушку и погиб' : 'ханипот сработал: вражеский отряд погиб в ловушке', 3500); }
+    prune(old);
+    return;
+  }
   releaseFlows(B);
   const old = B.owner;
   let bounty = Math.max(0, Math.round(B.base || 0));
@@ -1852,13 +1975,14 @@ function step(dt) {
   for (const p of N) {
     if (p.infect > 0) { p.infect = Math.max(0, p.infect - dt); p.v = Math.max(0, p.v - DAEMON.drain * dt); p.hurt = Math.max(p.hurt, 0.3); continue; }
     if (p.owner && p.v < p.cap) {
-      const k = (p.kind === 'amp' ? 2 : 1) * (p.hq ? HQ.regen : 1);
+      const k = (KIND_REGEN[p.kind] ?? 1) * (p.hq ? HQ.regen : 1);
       const add = Math.min(p.cap - p.v, TIERS[tierN(p)].regen * k * dt); p.v += add; p.base += add;
     }
   }
   stepDaemon(dt);
   if (!G.demo) stepJumps(dt);
   stepSpawns(dt);
+  stepSwitches();
   if (!G.demo) {
     if (G.meta.endless) stepLive(dt);
     G.warnT = (G.warnT || 0) + dt;
@@ -1972,7 +2096,7 @@ function aiReach(o, gates, depth) {
     const i = q.shift(), r = reach.get(i);
     if (r.hops >= depth || (N[i].assault && N[i].assault.length && r.hops > 0)) continue;
     for (const e of N[i].nb) {
-      if (e.state !== 'up') continue;
+      if (e.state !== 'up' || e.shut) continue;
       const k = other(e, i);
       if (reach.has(k) || N[k].owner !== o || N[k].infect > 0) continue;
       reach.set(k, { hops: r.hops + 1, len: r.len + e.len, e });
@@ -2553,6 +2677,13 @@ function render(now) {
       if (ar) { const c = PAL.rgb[ar.o]; ctx.strokeStyle = rgba(c, dark ? 0.3 : 0.35); ctx.lineWidth = Math.max(1, 1.4 * S); ctx.stroke(); }
     }
     for (const q of [[e.a, 0], [e.b, 1]]) { const [x, y] = ptAt(e, q[1] ? e0 : s0); ts(x, y); ctx.fillStyle = dark ? 'rgba(214,238,226,0.45)' : 'rgba(13,19,17,0.4)'; ctx.fillRect(TX - 1.5, TY - 1.5, 3, 3); }
+    if (e.shut && e.state === 'up') {
+      // a closed switch port: the channel turns dashed and a gate bar stands across it at the switch
+      const swA = N[e.a].kind === 'switch', d0 = swA ? s0 + 10 : e0 - 10, bg = dark ? 'rgba(2,4,3,0.85)' : 'rgba(238,241,239,0.9)';
+      if (pathRange(e, s0, e0)) { ctx.setLineDash([5, 6]); ctx.strokeStyle = bg; ctx.lineWidth = Math.max(2, 3 * S); ctx.stroke(); ctx.setLineDash([]); }
+      const [gx, gy] = ptAt(e, d0), [hx2, hy2] = ptAt(e, swA ? d0 + 4 : d0 - 4), gl = Math.hypot(hx2 - gx, hy2 - gy) || 1, nx = -(hy2 - gy) / gl, ny = (hx2 - gx) / gl, w = 9;
+      ctx.strokeStyle = rgba(PAL.rgb[2], 0.9); ctx.lineWidth = Math.max(2, 2.5 * S); ctx.beginPath(); ts(gx + nx * w, gy + ny * w); ctx.moveTo(TX, TY); ts(gx - nx * w, gy - ny * w); ctx.lineTo(TX, TY); ctx.stroke();
+    }
   }
   if (G.chanSel && G.edges.includes(G.chanSel)) {
     const e = G.chanSel;
@@ -2599,7 +2730,7 @@ function render(now) {
         a0 += span;
       }
     }
-    const tier = Math.min(tierOf(vv), p.maxT), spr = p.hq ? nodeSprite(3, ow, true) : nodeSprite(tier, ow), scale = rd * S / spr.u, size = spr.cv.width / d * scale;
+    const tier = Math.min(tierOf(vv), p.maxT), spr = p.hq ? nodeSprite(3, ow, true) : p.kind ? nodeSprite(tier, ow, false, p.kind) : nodeSprite(tier, ow), scale = rd * S / spr.u, size = spr.cv.width / d * scale;
     const gl = p.vis ? p.glitch : 0;
     if (gl > 0.02) {
       const sl = 6, sh = spr.cv.height / sl;
@@ -2794,6 +2925,9 @@ function render(now) {
       const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && !G.overQ && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
       const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
       if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
+    }
+    if (!ptr && !G.overQ && hover >= 0 && N[hover].kind && G.sel < 0 && !G.group.size && N[hover].seen) {
+      const p = N[hover]; ts(p.x, p.y); label(`${KINDS[p.kind].tag}: ${KINDS[p.kind].hint}`, TX, TY + (nr(p, p.vd) * 1.2 + 30) * S + 40, true, [140, 150, 150]);
     }
     if (!ptr && G.overQ && G.queue.includes(G.overQ)) {
       const q = G.overQ, st = orderState(q), b = qPos(N[q.i]); ts(b.x, b.y);
@@ -3060,6 +3194,9 @@ $('#howList').innerHTML = HOW.map(([svg, a, b]) => `<div><svg viewBox="0 0 30 30
 $('#btnHowPlay').addEventListener('click', () => { SFX.ui(); startLevel(0); });
 $('#btnQuickStart').addEventListener('click', () => { SFX.ui(); startQuick(); });
 $('#btnLive').addEventListener('click', () => { audioInit(); SFX.ui(); startLive(); });
+$('#btnSandbox').addEventListener('click', () => { audioInit(); SFX.ui(); startSandbox(); });
+$('#btnFog').addEventListener('click', () => { SFX.ui(); if (G) setSandboxFog(!G.fog); });
+$('#legendHead').addEventListener('click', () => { SFX.ui(); const l = $('#legendList'), open = l.hidden; l.hidden = !open; store.legendOpen = open; save(); $('#legendHead').setAttribute('aria-expanded', open ? 'true' : 'false'); $('#legendArrow').textContent = open ? 'свернуть' : 'развернуть'; });
 $('#btnPause').addEventListener('click', () => { SFX.ui(); pauseGame(); });
 $('#btnResume').addEventListener('click', () => { SFX.ui(); resumeGame(); });
 $('#btnRestart').addEventListener('click', () => { SFX.ui(); restart(); });
@@ -3129,7 +3266,57 @@ function homeFocus(instant) {
   const z = clamp(Math.min(V.w / 1500, V.h / 950), 0.55, 1.0);
   if (instant) { cam.x = mine.x; cam.y = mine.y; cam.z = z; cam.tx = null; clampCam(); } else focusOn(mine.x, mine.y, z);
 }
-function enterGame() { hideToast(); closePop(); decode($('#hudTitle'), G.meta.title, 600); setupHud(); show(null); resize(); homeFocus(true); }
+/* ---------- sandbox ----------
+   A calm map to try the ten node types: a switch in the middle with four channels already laid to it, the other nine
+   in two rows around it, your datacenter on the left and an easy bot on the right to spring the trap and feel the
+   jammer. Fog of war can be switched on and off (button below, or T). */
+function sandboxSpec() {
+  const spec = { W: 3600, H: 2200, seed: 314, homes: [[0.07, 0.5], [0.93, 0.5]], homeV: [60, 40], kinds: 0,
+    regions: [{ fx: 0.16, fy: 0.5, r: 0.18, n: 4 }, { fx: 0.84, fy: 0.5, r: 0.18, n: 4 }] };
+  const row = (y, kinds) => kinds.map((kind, k) => ({ x: 900 + k * 450, y, sz: kind === 'storage' ? 'l' : 'm', g: kind === 'storage' ? 30 : 10, kind }));
+  spec.extra = [{ x: 1800, y: 1100, sz: 'l', g: 20, kind: 'switch' },
+    { x: 1800, y: 760, sz: 's', g: 6 }, { x: 2140, y: 1100, sz: 's', g: 6 }, { x: 1800, y: 1440, sz: 's', g: 6 }, { x: 1460, y: 1100, sz: 'm', g: 8 }]
+    .concat(row(420, ['hub', 'storage', 'miner', 'firewall', 'boost']), row(1780, ['relay', 'uplink', 'jammer', 'honeypot']));
+  spec.links = [[2, 3], [2, 4], [2, 5], [2, 6]];
+  return nets(spec, [[0, [[-40, 330, 'm', 10], [40, 330, 'm', 10]]], [1, [[140, 330, 'm', 8], [220, 330, 'm', 8]]]]);
+}
+function startSandbox() {
+  const fog = store.sandboxFog !== false;
+  buildGame(genMap(sandboxSpec()), [{ d: 'easy', hunt: 0 }], { level: -1, title: 'песочница', sandbox: true, fog });
+  enterGame();
+  setTimeout(() => { if (G && G.meta.sandbox && !G.ended) toast('песочница: здесь все десять видов узлов. наведите курсор на узел — появится подсказка. туман войны — кнопка внизу или T.', 8000); }, 900);
+}
+function setSandboxFog(on) {
+  if (!G || !G.meta.sandbox) return;
+  G.fog = on; store.sandboxFog = on; save();
+  if (on) { G.visPts = []; for (const p of G.nodes) { p.expR = 0; } }
+  updateVision(); updateFogBtn();
+}
+function updateFogBtn() {
+  const b = $('#btnFog'), on = G && G.meta.sandbox;
+  b.hidden = !on; if (!on) return;
+  b.setAttribute('aria-pressed', G.fog ? 'true' : 'false');
+  b.innerHTML = `туман: ${G.fog ? 'вкл' : 'выкл'}<span class="k">T</span>`;
+}
+function buildLegend() {
+  const list = $('#legendList'); list.innerHTML = '';
+  for (const kind of TYPE_LIST) {
+    const it = document.createElement('div'); it.className = 'legend-item';
+    const c = document.createElement('canvas'), d = V.dpr; c.width = c.height = Math.round(38 * d);
+    const spr = nodeSprite(2, 0, false, kind, 0.36), x = c.getContext('2d'), k = c.width / spr.cv.width * 0.95;
+    x.drawImage(spr.cv, (c.width - spr.cv.width * k) / 2, (c.height - spr.cv.height * k) / 2, spr.cv.width * k, spr.cv.height * k);
+    const t = document.createElement('div'); t.innerHTML = `<b>${KINDS[kind].tag}</b><span>${KINDS[kind].hint}</span>`;
+    it.append(c, t); list.appendChild(it);
+  }
+}
+function updateLegend() {
+  const el = $('#legend'), on = !!(G && G.meta.sandbox);
+  el.hidden = !on; if (!on) return;
+  buildLegend();
+  const open = innerWidth > 700 && store.legendOpen !== false;
+  $('#legendList').hidden = !open; $('#legendHead').setAttribute('aria-expanded', open ? 'true' : 'false'); $('#legendArrow').textContent = open ? 'свернуть' : 'развернуть';
+}
+function enterGame() { hideToast(); closePop(); decode($('#hudTitle'), G.meta.title, 600); setupHud(); show(null); resize(); homeFocus(true); updateFogBtn(); updateLegend(); }
 function startDemo() {
   const opp = 2 + Math.floor(Math.random() * 2);
   buildGame(genMap(quickSpec(opp, 1)), Array.from({ length: opp + 1 }, (_, k) => k % 2 ? 'normal' : 'hard'), { demo: true, level: -1 });
@@ -3137,7 +3324,7 @@ function startDemo() {
 }
 function pauseGame() { if (!G || G.demo || G.ended || G.paused) return; G.paused = true; ptr = null; show('scrPause'); }
 function resumeGame() { if (!G) return; G.paused = false; show(null); }
-function restart() { if (!G) return; const m = G.meta; if (m.endless) startLive(); else if (m.quick) startQuick(); else startLevel(m.level); }
+function restart() { if (!G) return; const m = G.meta; if (m.endless) startLive(); else if (m.sandbox) startSandbox(); else if (m.quick) startQuick(); else startLevel(m.level); }
 function toMenu() { hideToast(); startDemo(); show('scrMenu'); }
 let endAction = null;
 function finish(win) {
@@ -3160,6 +3347,7 @@ function finish(win) {
     let lbl;
     if (win && m.level >= 0 && !lastLevel) { lbl = 'следующий уровень'; endAction = () => startLevel(m.level + 1); }
     else if (win && m.quick) { lbl = 'новая сеть'; endAction = () => startQuick(); }
+    else if (m.sandbox) { lbl = 'песочница заново'; endAction = () => startSandbox(); }
     else if (win) { lbl = 'к уровням'; endAction = () => { startDemo(); show('scrCampaign'); }; }
     else { lbl = 'ещё раз'; endAction = () => restart(); }
     const ml = $('#endMainLbl'); ml.textContent = lbl; ml.dataset.text = lbl;
@@ -3180,6 +3368,7 @@ addEventListener('keydown', e => {
   }
   if (G.paused) return;
   if ((k === 'q' || k === 'й') && !e.repeat && !G.ended) selectAll();
+  if ((k === 't' || k === 'е') && !e.repeat && !G.ended && G.meta.sandbox) setSandboxFog(!G.fog);
   // Delete / Backspace: drop the waiting orders of the selected nodes, or all of them
   if ((k === 'delete' || k === 'backspace') && !G.ended) {
     const sel = G.group.size ? G.group : G.sel >= 0 ? new Set([G.sel]) : null;
