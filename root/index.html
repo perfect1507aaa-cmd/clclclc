@@ -546,7 +546,7 @@ function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10
 
 /* ---------- node icons ---------- */
 function rrPath(x, c, y, w, h, r) { x.beginPath(); x.moveTo(c + r, y); x.arcTo(c + w, y, c + w, y + h, r); x.arcTo(c + w, y + h, c, y + h, r); x.arcTo(c, y + h, c, y, r); x.arcTo(c, y, c + w, y, r); x.closePath(); }
-/* The datacenter's look: five candidates while one is being chosen. */
+/* The datacenter's look: ten candidates while one is being chosen. */
 let DC_STYLE = 1;
 function nodeSprite(tier, owner, style) {
   const dcs = tier === 4 ? style || DC_STYLE : 0;
@@ -569,53 +569,61 @@ function nodeSprite(tier, owner, style) {
     const st = (h - 0.12) / n;
     for (let k = 0; k < n; k++) { const yy = y0 + 0.06 + k * st; line(x0 + 0.07, yy + st * 0.75, x0 + w - 0.07, yy + st * 0.75); leds.push([x0 + 0.12, yy + st * 0.4]); leds.push([x0 + 0.22, yy + st * 0.4]); }
   };
-  if (icon === 'dc' && dcs === 1) {
-    // 1. the machine hall seen down its aisle: two rows of racks running away to a lit far wall
-    rrPath(x, cx - 0.26 * u, cy - 0.44 * u, 0.52 * u, 0.74 * u, 0.02 * u); x.fillStyle = screenFill; x.fill(); x.stroke(); screens.push([-0.26, -0.44, 0.52, 0.74]);
-    const T = [0, 0.38, 0.68, 1], X = t => 1.05 - t * 0.79, Yt = t => -0.95 + t * 0.51, Yb = t => 0.95 - t * 0.65;
-    for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) {
-      const a0 = T[k], a1 = T[k + 1];
-      poly([[sd * X(a0), Yt(a0)], [sd * X(a1), Yt(a1)], [sd * X(a1), Yb(a1)], [sd * X(a0), Yb(a0)]]);
-      for (let f = 1; f < 5; f++) { const q = f / 5; line(sd * X(a0), Yt(a0) + (Yb(a0) - Yt(a0)) * q, sd * X(a1), Yt(a1) + (Yb(a1) - Yt(a1)) * q); }
-      const m = (a0 + a1) / 2, h = Yb(m) - Yt(m);
-      for (let f = 0; f < 4; f++) leds.push([sd * (X(m) + (X(a0) - X(a1)) * 0.25), Yt(m) + h * (0.1 + f * 0.2)]);
-    }
-    line(-0.26, 0.3, -0.5, 0.95); line(0.26, 0.3, 0.5, 0.95); line(0, 0.3, 0, 0.95);
-  } else if (icon === 'dc' && dcs === 2) {
-    // 2. a row of four racks on a raised floor, fed from a cable tray overhead
-    box(-1.02, -0.96, 2.04, 0.14, 0.03);
-    for (let k = 0; k < 4; k++) {
-      const x0 = -0.98 + k * 0.5; line(x0 + 0.22, -0.82, x0 + 0.22, -0.68);
-      rack(x0, -0.68, 0.46, 1.4, 6);
-    }
-    box(-1.02, 0.78, 2.04, 0.18, 0.02);
-    for (let k = 1; k < 8; k++) line(-1.02 + k * 0.255, 0.78, -1.02 + k * 0.255, 0.96);
-  } else if (icon === 'dc' && dcs === 3) {
-    // 3. three racks in isometric view, standing side by side
-    const w = 0.42, dx = 0.28, dy = -0.16, h = 1.36, yb = 0.9;
-    for (let k = 2; k >= 0; k--) {
-      const x0 = -0.98 + k * 0.5, y0 = yb - h + k * 0.0;
+  // isometric pieces: a rack seen from the front-left with its right side and roof, a slab to stand on, a cloud
+  const isoRack = (x0, yb, w, h, n, dx = 0.26, dy = -0.15) => {
+    const y0 = yb - h;
+    poly([[x0 + w, y0], [x0 + w + dx, y0 + dy], [x0 + w + dx, yb + dy], [x0 + w, yb]], fill, true);
+    poly([[x0, y0], [x0 + w, y0], [x0 + w + dx, y0 + dy], [x0 + dx, y0 + dy]], screenFill, true);
+    rack(x0, y0, w, h, n, true);
+  };
+  const slab = (x0, x1, y, dx, dy, t = 0.1) => {
+    poly([[x1, y], [x1 + dx, y + dy], [x1 + dx, y + dy + t], [x1, y + t]], fill, true);
+    poly([[x0, y], [x1, y], [x1 + dx, y + dy], [x0 + dx, y + dy]], fill, true);
+    poly([[x0, y], [x1, y], [x1, y + t], [x0, y + t]], fill, true);
+  };
+  const cloud = (ox, oy, sc, f = screenFill) => {
+    const P = (a, b) => [cx + (ox + a * sc) * u, cy + (oy + b * sc) * u], arc = (a, b, r, s0, s1) => { const [px, py] = P(a, b); x.arc(px, py, r * sc * u, s0, s1); };
+    x.beginPath(); x.moveTo(...P(-0.7, 0.2));
+    arc(-0.62, 0, 0.2, Math.PI * 0.6, Math.PI * 1.5); arc(-0.22, -0.14, 0.3, Math.PI * 1.1, Math.PI * 1.85);
+    arc(0.3, -0.06, 0.26, Math.PI * 1.25, Math.PI * 0.05); arc(0.62, 0.06, 0.15, Math.PI * 1.5, Math.PI * 0.5);
+    x.closePath(); x.fillStyle = PAL.bg0; x.fill(); x.fillStyle = f; x.fill(); x.stroke();
+  };
+  const arrow = (ax, y1, y2) => { line(ax, y1, ax, y2); const d = y2 > y1 ? -1 : 1; line(ax, y2, ax - 0.07, y2 + d * 0.09); line(ax, y2, ax + 0.07, y2 + d * 0.09); };
+  const dots = (a, b, c2, e) => { x.setLineDash([u * 0.05, u * 0.08]); line(a, b, c2, e); x.setLineDash([]); };
+  if (icon === 'dc' && (dcs === 1 || dcs === 6)) {
+    // three racks side by side; with a cloud: the cloud above, a cable down to each rack
+    const h = dcs === 1 ? 1.36 : 1.1;
+    if (dcs === 6) { for (let k = 0; k < 3; k++) line(-0.5 + k * 0.5, -0.62, -0.5 + k * 0.5, 0.9 - h - 0.07); cloud(0, -0.78, 0.78); }
+    for (let k = 2; k >= 0; k--) isoRack(-0.84 + k * 0.5, 0.9, 0.42, h, dcs === 1 ? 7 : 6);
+  } else if (icon === 'dc' && (dcs === 2 || dcs === 7)) {
+    // a row of four racks on a slab; with a cloud: the cloud rising behind the row
+    if (dcs === 7) cloud(0.3, -0.62, 1.05);
+    slab(-1.0, 0.78, 0.8, 0.26, -0.15);
+    for (let k = 3; k >= 0; k--) isoRack(-0.92 + k * 0.42, 0.76, 0.34, dcs === 2 ? 1.34 : 1.12, 6, 0.2, -0.11);
+  } else if (icon === 'dc' && (dcs === 3 || dcs === 8)) {
+    // two rows of two racks on a floor; with a cloud: the cloud floating over them, data going up and down
+    const h = dcs === 3 ? 1.08 : 0.86;
+    poly([[-0.94, 0.92], [0.3, 0.92], [0.96, 0.54], [-0.28, 0.54]]);
+    for (let k = 1; k >= 0; k--) isoRack(-0.46 + k * 0.52, 0.64, 0.42, h, 5, 0.24, -0.14);
+    for (let k = 1; k >= 0; k--) isoRack(-0.8 + k * 0.52, 0.86, 0.42, h, 5, 0.24, -0.14);
+    if (dcs === 8) { cloud(0.05, -0.78, 0.72); arrow(-0.14, -0.28, -0.52); arrow(0.22, -0.52, -0.28); }
+  } else if (icon === 'dc' && (dcs === 4 || dcs === 9)) {
+    // one big cabinet; with a cloud: the cloud as its emblem on the door, the blades below
+    const x0 = -0.62, yb = 0.92, w = 1.0, h = 1.7, dx = 0.36, dy = -0.2, y0 = yb - h;
+    if (dcs === 4) isoRack(x0, yb, w, h, 8, dx, dy);
+    else {
       poly([[x0 + w, y0], [x0 + w + dx, y0 + dy], [x0 + w + dx, yb + dy], [x0 + w, yb]], fill, true);
       poly([[x0, y0], [x0 + w, y0], [x0 + w + dx, y0 + dy], [x0 + dx, y0 + dy]], screenFill, true);
-      rack(x0, y0, w, h, 7, true);
+      rrPath(x, cx + x0 * u, cy + y0 * u, w * u, h * u, 0.03 * u); solid();
+      cloud(x0 + w / 2, y0 + 0.42, 0.52);
+      rack(x0 + 0.08, y0 + 0.78, w - 0.16, h - 0.88, 4, true);
     }
-  } else if (icon === 'dc' && dcs === 4) {
-    // 4. racks under a cloud: the network's storage and compute in one place
-    x.beginPath();
-    x.moveTo(cx - 0.7 * u, cy - 0.42 * u);
-    x.arc(cx - 0.62 * u, cy - 0.62 * u, 0.2 * u, Math.PI * 0.6, Math.PI * 1.5);
-    x.arc(cx - 0.22 * u, cy - 0.76 * u, 0.3 * u, Math.PI * 1.1, Math.PI * 1.85);
-    x.arc(cx + 0.3 * u, cy - 0.68 * u, 0.26 * u, Math.PI * 1.25, Math.PI * 0.05);
-    x.arc(cx + 0.62 * u, cy - 0.56 * u, 0.15 * u, Math.PI * 1.5, Math.PI * 0.5);
-    x.closePath(); x.fillStyle = screenFill; x.fill(); x.stroke();
-    for (let k = 0; k < 3; k++) { const x0 = -0.82 + k * 0.58; line(x0 + 0.24, -0.42, x0 + 0.24, -0.26); rack(x0, -0.26, 0.48, 1.18, 5); }
-    line(-1.0, 0.94, 1.0, 0.94);
+    line(x0 + w + dx * 0.5, y0 + dy * 0.5 + 0.2, x0 + w + dx * 0.5, yb + dy * 0.5 - 0.2);
   } else if (icon === 'dc') {
-    // 5. racks before a globe: the node the whole network runs on
-    circ(0, -0.36, 0.62);
-    x.beginPath(); x.ellipse(cx, cy - 0.36 * u, 0.26 * u, 0.62 * u, 0, 0, TAU); x.stroke();
-    line(-0.62, -0.36, 0.62, -0.36); line(-0.5, -0.72, 0.5, -0.72);
-    for (let k = 0; k < 3; k++) rack(-0.86 + k * 0.58, 0.0, 0.5, 0.92, 4, true);
+    // racks rising in steps; with a cloud: the cloud over the tallest, dotted links to the others
+    const H = dcs === 5 ? [0.9, 1.25, 1.6] : [0.66, 0.98, 1.3];
+    if (dcs === 10) { dots(-0.63, 0.9 - H[0] - 0.08, 0.02, -0.7); dots(-0.13, 0.9 - H[1] - 0.08, 0.1, -0.66); cloud(0.3, -0.84, 0.66); }
+    for (let k = 2; k >= 0; k--) isoRack(-0.84 + k * 0.5, 0.9, 0.42, H[k], [4, 5, 7][k]);
   } else if (icon === 's') {
     box(-0.8, -0.72, 1.6, 1.02, 0.1);
     rrPath(x, cx - 0.66 * u, cy - 0.58 * u, 1.32 * u, 0.74 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.66, -0.58, 1.32, 0.74]);
