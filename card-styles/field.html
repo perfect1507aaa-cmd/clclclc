@@ -12,16 +12,15 @@
 }
 html,body{background:var(--bg);}
 body{color:var(--ink); font:15px/1.55 var(--fb);}
-.wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:28px 64px; display:grid; gap:20px;}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:24px 64px; display:grid; gap:18px;}
 .eyebrow,.label{margin:0; font:500 11.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
-h1{margin:6px 0 8px; font:700 clamp(26px,4vw,40px)/1.1 var(--fd); letter-spacing:-.01em; text-wrap:balance;}
-h2{margin:30px 0 0; font:700 22px/1.2 var(--fd); text-wrap:balance;}
+h1{margin:4px 0 6px; font:700 clamp(24px,3.6vw,36px)/1.1 var(--fd); letter-spacing:-.01em; text-wrap:balance;}
+h2{margin:26px 0 0; font:700 22px/1.2 var(--fd); text-wrap:balance;}
 h3{margin:0 0 6px; font:700 15px/1.3 var(--fd);}
 p{margin:0 0 10px; max-width:70ch;}
-.lede{color:var(--mut); max-width:74ch;}
+.lede{color:var(--mut); max-width:74ch; margin:0;}
 .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px;}
 .muted{color:var(--mut);}
-.fix{border-left:3px solid var(--gold); padding:10px 14px; background:#1a1710; border-radius:0 10px 10px 0; color:#f3e4bf; max-width:none; margin:0;}
 
 /* ---------- mode tabs ---------- */
 .modes{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
@@ -30,12 +29,11 @@ p{margin:0 0 10px; max-width:70ch;}
 .mbtn[aria-pressed="true"]{background:var(--ink); color:#0b0d10; border-color:var(--ink);}
 .mbtn[aria-pressed="true"] small{color:#3a3f4a;}
 .mbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
-.mdesc{margin:0; font-size:14px; color:var(--mut); max-width:84ch;}
+.mdesc{margin:0; font-size:14px; color:var(--mut); max-width:90ch;}
 
-/* ---------- game layout ---------- */
-.game{display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:18px; align-items:start;}
-.arena{display:grid; gap:10px; min-width:0; justify-items:center; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
-.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:min(100%,680px);}
+/* ---------- game: full width stage ---------- */
+.arena{display:grid; gap:10px; justify-items:center; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:min(100%,var(--bw,860px));}
 .hero{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:12px; background:var(--panel); border:1px solid var(--line); min-width:210px;}
 .hero .ava{width:38px; height:38px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb,var(--team) 18%,#1b1f27);}
 .hero .ava svg{width:25px; height:25px;} .hero .ava svg *{fill:var(--team);} .hero .ava svg .k{fill:color-mix(in srgb,var(--team) 18%,#1b1f27);}
@@ -47,6 +45,7 @@ p{margin:0 0 10px; max-width:70ch;}
 .chip b{color:var(--ink);}
 .chip.turn{margin-left:auto;}
 .chip.turn.me{background:var(--tp); color:#0b0d10; border-color:var(--tp);} .chip.turn.me b{color:#0b0d10;}
+.chip.unl b{color:var(--gold);}
 .mana{display:flex; align-items:center; gap:8px; padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line);}
 .mana b{font:700 12px/1 var(--fd); color:var(--mana); white-space:nowrap;}
 .gems{display:flex; gap:3px;}
@@ -57,8 +56,7 @@ p{margin:0 0 10px; max-width:70ch;}
 .ehand i{width:18px; height:26px; margin-left:-6px; border-radius:4px; background:linear-gradient(135deg,#3a1f33,#241521); box-shadow:inset 0 0 0 1px #5a2e4d, 0 2px 4px rgba(0,0,0,.4);}
 .ehand i:first-child{margin-left:0;}
 
-/* ---------- board: quiet cells ---------- */
-.board-wrap{position:relative; width:min(100%,var(--bw,680px)); padding:10px; border-radius:20px; box-sizing:border-box; background:#0f1115; box-shadow:inset 0 0 0 1px #20242c;}
+.board-wrap{position:relative; width:min(100%,var(--bw,860px)); padding:10px; border-radius:20px; box-sizing:border-box; background:#0f1115; box-shadow:inset 0 0 0 1px #20242c;}
 .grid{position:relative; display:grid; gap:6px;}
 .cell{position:relative; aspect-ratio:1; border-radius:10px; background:#15181d; box-shadow:inset 0 0 0 1px #1e2229;}
 .cell.zp{background:#141a1c; box-shadow:inset 0 0 0 1px #1b2528;}
@@ -66,6 +64,7 @@ p{margin:0 0 10px; max-width:70ch;}
 .cell.camp{background:#121418; box-shadow:inset 0 0 0 1px #20242c; outline:1px dashed #2a303b; outline-offset:-5px;}
 .camplabel{align-self:center; justify-self:center; text-align:center; font:700 9px/1.3 var(--fd); letter-spacing:.05em; text-transform:uppercase; opacity:.8;}
 .cell.drop{cursor:pointer; box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--tp) 60%,transparent);}
+.cell.drop.upc{box-shadow:inset 0 0 0 2px var(--gold), 0 0 14px color-mix(in srgb,var(--gold) 35%,transparent);}
 .cell.hov{box-shadow:inset 0 0 0 2px var(--ink);}
 .frontline{align-self:center; height:1px; pointer-events:none; background:linear-gradient(90deg, transparent, #4b3a48 20%, #5d6470 50%, #2f4b49 80%, transparent);}
 .units{position:absolute; inset:0; pointer-events:none;}
@@ -76,69 +75,60 @@ p{margin:0 0 10px; max-width:70ch;}
   box-shadow:inset 0 0 0 2px var(--team), inset 0 1px 0 rgba(255,255,255,.1), 0 6px 14px rgba(0,0,0,.45);
   transition:left .3s cubic-bezier(.3,.8,.3,1), top .3s cubic-bezier(.3,.8,.3,1);}
 .tile.p{--team:color-mix(in srgb,var(--tp) 80%,transparent);} .tile.e{--team:color-mix(in srgb,var(--te) 80%,transparent); cursor:default;}
-.tile .ic{position:absolute; left:50%; top:43%; width:51cqmin; height:51cqmin; translate:-50% -50%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
-.tile .ic svg{width:100%; height:100%;}
+.tile .ic{position:absolute; left:50%; top:43%; width:52cqmin; height:52cqmin; translate:-50% -50%; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+.tile .ic svg{width:100%; height:100%; overflow:visible;}
 .tile svg *{fill:var(--t);} .tile svg .k{fill:color-mix(in srgb,var(--t) 18%,#1b1f27);}
-.tile .tr{position:absolute; left:9%; top:8%; font:700 max(8px,11cqmin)/1 var(--fd); color:var(--t);}
-.tile .zz{position:absolute; right:8%; top:7%; width:max(16px,22cqmin); height:max(11px,15cqmin);}
+.tile .tr{position:absolute; left:9%; top:8%; font:700 max(8px,10cqmin)/1 var(--fd); color:var(--t);}
+.tile .zz{position:absolute; right:8%; top:7%; width:max(16px,20cqmin); height:max(11px,14cqmin);}
 .tile .zz svg *{fill:#c7d2fe;}
-.tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,14cqmin)/1.2 var(--fd);}
-.tile .st svg{width:max(9px,11cqmin); height:max(9px,11cqmin);}
+.tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,13cqmin)/1.2 var(--fd);}
+.tile .st svg{width:max(9px,10cqmin); height:max(9px,10cqmin);}
 .tile .st.a{left:6%; background:var(--ink); color:#0b0d10;} .tile .st.a svg *{fill:#0b0d10;}
 .tile .st.h{right:6%; background:#0b0d10; color:#fca5a5; box-shadow:inset 0 0 0 1.5px #5b2a2a;} .tile .st.h svg *{fill:var(--hpc);}
 .tile .st.h.d{color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
 .tile.sleep .ic{opacity:.62;}
 .tile.sel{box-shadow:inset 0 0 0 2px var(--team), 0 0 0 3px var(--tp), 0 6px 14px rgba(0,0,0,.45);}
-.tile.mg,.tile.trio{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 50%,transparent), 0 0 14px color-mix(in srgb,var(--gold) 40%,transparent);}
+.tile.mg,.tile.pair{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 50%,transparent), 0 0 14px color-mix(in srgb,var(--gold) 40%,transparent);}
 .tile.mg.hov{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 20px var(--gold);}
 .tile.acting{z-index:3; box-shadow:inset 0 0 0 2px #fff, 0 0 18px color-mix(in srgb,var(--t) 70%,transparent);}
-.tile .mgl,.tile .upb{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap;}
-.tile .mgl{pointer-events:none;}
-.tile .upb{all:unset; position:absolute; left:50%; top:-12px; translate:-50% 0; z-index:3; padding:3px 9px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10.5px/1.25 var(--fd); white-space:nowrap; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.5);}
-.tile .upb:focus-visible{outline:2px solid var(--ink);}
+.tile .mgl{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
 .tile.drop-in{animation:dropin .34s cubic-bezier(.2,1.3,.4,1);}
 @keyframes dropin{0%{transform:scale(1.3) translateY(-12px); opacity:0;} 60%{opacity:1;} 100%{transform:none;}}
 @container (max-width:60px){ .tile .tr{display:none;} .tile .st{padding:1px 3px;} .tile .st svg{display:none;} }
-.float{position:absolute; z-index:20; pointer-events:none; font:700 24px/1 var(--fd); color:#fff; -webkit-text-stroke:5px #7f1d1d; paint-order:stroke fill; translate:-50% -50%;}
+.float{position:absolute; z-index:20; pointer-events:none; font:700 26px/1 var(--fd); color:#fff; -webkit-text-stroke:5px #7f1d1d; paint-order:stroke fill; translate:-50% -50%;}
 .float.g{-webkit-text-stroke-color:#78350f;} .float.t{-webkit-text-stroke-color:#134e4a;}
 .bolt{position:absolute; z-index:15; left:0; top:0; pointer-events:none;}
 .bolt.arrow{width:30px; height:3px; margin:-1.5px 0 0 -15px; border-radius:2px; background:linear-gradient(90deg, transparent, #e7eaf0 60%, #fff); box-shadow:0 0 6px rgba(255,255,255,.6);}
 .bolt.orb{width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:radial-gradient(circle, #fff, #fde68a 45%, rgba(251,191,36,0) 72%); box-shadow:0 0 16px 4px rgba(251,191,36,.55);}
 .bolt.fire{width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:radial-gradient(circle, #fff7ed, #fb923c 45%, rgba(239,68,68,0) 72%); box-shadow:0 0 18px 5px rgba(239,68,68,.5);}
-.bolt.spill{width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:var(--gold); box-shadow:0 0 12px 3px rgba(251,191,36,.6);}
+.bolt.spill{width:13px; height:13px; margin:-6.5px 0 0 -6.5px; border-radius:50%; background:#fca5a5; box-shadow:0 0 12px 3px rgba(248,113,113,.7);}
 .ring{position:absolute; z-index:4; pointer-events:none; border-radius:12px;}
 .over{position:absolute; inset:0; z-index:30; display:grid; place-items:center; align-content:center; gap:14px; border-radius:20px; background:rgba(11,13,16,.82); text-align:center;}
 .over b{font:700 28px var(--fd);}
 
-/* ---------- icon styles ---------- */
-.ico.line *{fill:none !important; stroke:var(--t); stroke-width:2.6; stroke-linejoin:round;}
-.ico.line .k{stroke-width:1.6;}
-.ico.crest .bg,.ico.medal .bg{fill:var(--t) !important;}
-.ico.crest .inv *,.ico.medal .inv *{fill:#14171d !important;}
-.ico.crest .inv .k,.ico.medal .inv .k{fill:var(--t) !important;}
-.ico.medal .rim{fill:none !important; stroke:#14171d; stroke-width:2.5;}
-
 /* ---------- hand ---------- */
-.handwrap{position:relative; width:min(100%,680px); height:196px;}
-.card{position:absolute; left:0; top:34px; width:104px; height:148px; z-index:1; perspective:700px; cursor:grab; touch-action:none; -webkit-user-drag:none;
+.handwrap{position:relative; width:min(100%,var(--bw,860px)); height:200px;}
+.card{position:absolute; left:0; top:36px; width:108px; height:154px; z-index:1; perspective:700px; cursor:grab; touch-action:none; -webkit-user-drag:none;
   transform:translate(var(--x),var(--y)) rotate(var(--a)); transition:transform .3s cubic-bezier(.2,.8,.2,1), opacity .2s;}
 .card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 30px)) rotate(0deg) scale(1.1); z-index:40;}
 .card:focus-visible{outline:2px solid var(--tp); outline-offset:3px; border-radius:12px;}
 .card.ghosted{opacity:.2;}
+.card.canup .face{box-shadow:inset 0 0 0 2px var(--gold), 0 0 18px color-mix(in srgb,var(--gold) 45%,transparent), 0 10px 22px rgba(0,0,0,.5);}
+.card.canup::after{content:"↑"; position:absolute; right:-7px; top:-7px; z-index:3; width:22px; height:22px; border-radius:50%; background:var(--gold); color:#0b0d10; font:700 13px/22px var(--fd); text-align:center;}
 .card .in{position:absolute; inset:0; transform-style:preserve-3d; transition:transform .4s cubic-bezier(.3,.7,.3,1);}
 .card.back .in{transform:rotateY(180deg);}
 .face,.backf{position:absolute; inset:0; border-radius:12px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; overflow:hidden;}
 .face{background:linear-gradient(180deg,#20252f,#171a21); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 55%,#2a303b), 0 10px 22px rgba(0,0,0,.5);}
-.face .art{position:absolute; left:7px; right:7px; top:7px; height:66px; border-radius:8px; display:grid; place-items:center;
+.face .art{position:absolute; left:7px; right:7px; top:7px; height:70px; border-radius:8px; display:grid; place-items:center;
   background:radial-gradient(80% 90% at 50% 20%, color-mix(in srgb,var(--t) 38%,#1b1f27), color-mix(in srgb,var(--t) 12%,#15181e));}
-.face .art svg{width:46px; height:46px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));}
+.face .art svg{width:50px; height:50px; overflow:visible; filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));}
 .face svg *{fill:var(--t);} .face svg .k{fill:color-mix(in srgb,var(--t) 22%,#1b1f27);}
 .face .cost{position:absolute; left:4px; top:4px; z-index:2; width:24px; height:24px; border-radius:50%; background:var(--mana); color:#0b0d10; font:700 12px/24px var(--fd); text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.5);}
 .card.poor .face .cost{background:var(--off); color:var(--mut);}
 .card.poor .face{filter:saturate(.45) brightness(.72);}
 .face .tr{position:absolute; right:10px; top:10px; font:700 10px var(--fd); color:var(--t); text-shadow:0 1px 3px #000;}
-.face .nm{position:absolute; left:6px; right:6px; top:78px; text-align:center; font:800 11px/1.15 var(--fb);}
-.face .ab{position:absolute; left:7px; right:7px; top:94px; text-align:center; font:500 9px/1.25 var(--fb); color:var(--mut);}
+.face .nm{position:absolute; left:6px; right:6px; top:82px; text-align:center; font:800 11px/1.15 var(--fb);}
+.face .ab{position:absolute; left:7px; right:7px; top:98px; text-align:center; font:500 9px/1.25 var(--fb); color:var(--mut);}
 .face .sts{position:absolute; left:7px; right:7px; bottom:7px; display:flex; justify-content:space-between;}
 .face .sts span{display:flex; align-items:center; gap:3px; padding:2px 6px; border-radius:6px; font:700 11px/1.2 var(--fd);}
 .face .sts svg{width:10px; height:10px;}
@@ -148,47 +138,50 @@ p{margin:0 0 10px; max-width:70ch;}
 .backf::after{content:""; position:absolute; left:50%; top:50%; width:34px; height:34px; translate:-50% -50%; rotate:45deg; border-radius:6px; border:2px solid var(--tp); background:#10201f;}
 .backf.e{background:repeating-linear-gradient(45deg,#2b1b28 0 6px,#231621 6px 12px); box-shadow:inset 0 0 0 1.5px #5a2e4d;}
 .backf.e::after{border-color:var(--te); background:#20111c;}
-.deck{position:absolute; right:0; top:44px; width:74px; height:104px;}
+.deck{position:absolute; right:0; top:46px; width:74px; height:104px;}
 .deck i{position:absolute; inset:0; border-radius:10px; background:repeating-linear-gradient(45deg,#1b2b30 0 6px,#16232a 6px 12px); box-shadow:inset 0 0 0 1.5px #2f5a5a, 0 4px 10px rgba(0,0,0,.4);}
 .deck i:nth-child(2){translate:-3px -3px;} .deck i:nth-child(3){translate:-6px -6px;}
 .deck b{position:absolute; left:50%; bottom:-22px; translate:-50% 0; font:700 11px var(--fd); color:var(--mut); white-space:nowrap;}
-.fly{position:fixed; z-index:200; pointer-events:none; width:104px; height:148px; left:0; top:0; transform-origin:0 0;}
+.fly{position:fixed; z-index:200; pointer-events:none; width:108px; height:154px; left:0; top:0; transform-origin:0 0;}
 .fly .face,.fly .backf{transform:none;}
 .fly.tilefly{width:auto; height:auto;}
-.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,680px);}
+.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,var(--bw,860px));}
 .btn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:999px; background:var(--ink); color:#0b0d10; font:700 13px/1 var(--fd);}
 .btn.ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--off);}
 .btn.ghost[aria-pressed="false"]{color:var(--mut);}
 .btn[disabled]{opacity:.4; cursor:default;}
 .btn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
 .hint{font-size:13px; color:var(--mut);}
-.side{display:grid; gap:12px;}
-.side .panel{padding:14px 16px;}
-.legend{display:grid; gap:7px; margin-top:8px; font-size:12.5px; color:var(--mut);}
-.legend span{display:flex; gap:8px; align-items:center;}
-.legend i{width:22px; height:3px; border-radius:2px; flex:none;}
-.log{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:5px; max-height:330px; overflow:auto; font-size:12.5px; line-height:1.4;}
-.log li{padding-left:9px; border-left:2px solid var(--off); color:var(--mut);}
-.log li.p{border-color:var(--tp); color:var(--ink);} .log li.e{border-color:var(--te);} .log li.sys{border-color:var(--gold); color:#f3e4bf;}
 
-/* ---------- docs, sound lab, icon gallery ---------- */
-.rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px;}
+/* ---------- collapsible rules ---------- */
+details.panel > summary{cursor:pointer; font:700 15px/1.3 var(--fd); list-style:none; display:flex; align-items:center; gap:10px;}
+details.panel > summary::-webkit-details-marker{display:none;}
+details.panel > summary::before{content:""; width:0; height:0; border-left:7px solid var(--mut); border-top:5px solid transparent; border-bottom:5px solid transparent; transition:rotate .2s;}
+details[open].panel > summary::before{rotate:90deg;}
+details.panel > summary:focus-visible{outline:2px solid var(--tp); outline-offset:4px;}
+.rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:14px; margin-top:14px;}
 .rules ul,.rules ol{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
-.sgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr)); gap:8px; margin-top:10px;}
-.sbtn{all:unset; box-sizing:border-box; cursor:pointer; display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px; background:#1b1f27; border:1px solid var(--off); font:600 13px/1.25 var(--fb);}
-.sbtn::before{content:""; flex:none; width:0; height:0; border-left:9px solid var(--ink); border-top:6px solid transparent; border-bottom:6px solid transparent;}
+
+/* ---------- sound lab, icons, roster ---------- */
+.srow{display:grid; grid-template-columns:170px 1fr; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
+.srow:last-child{border-bottom:none;}
+.srow > b{font:700 12.5px/1.3 var(--fb);}
+.srow > b small{display:block; font:500 11px var(--fm); color:var(--mut);}
+.svars{display:flex; flex-wrap:wrap; gap:6px;}
+.sbtn{all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:8px; background:#1b1f27; border:1px solid var(--off); font:600 12px/1.2 var(--fb);}
+.sbtn::before{content:""; flex:none; width:0; height:0; border-left:7px solid var(--ink); border-top:5px solid transparent; border-bottom:5px solid transparent;}
 .sbtn:hover{border-color:#3a4150;}
 .sbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
 .sbtn[aria-pressed="true"]{border-color:var(--gold); background:#221d10;}
 .sbtn[aria-pressed="true"]::before{border-left-color:var(--gold);}
-.sbtn small{display:block; font:500 11px/1.2 var(--fb); color:var(--mut);}
 .sbtn.playing{background:#16302e;}
+@media (max-width:640px){ .srow{grid-template-columns:1fr;} }
 .igal{overflow-x:auto;}
-.igal table{min-width:620px;}
+.igal table{min-width:680px;}
 .igal td{text-align:center;}
 .igal td:first-child{text-align:left;}
-.ibox{display:inline-grid; place-items:center; width:54px; height:54px; border-radius:12px; background:linear-gradient(180deg, color-mix(in srgb,var(--t) 24%,#1d222b), color-mix(in srgb,var(--t) 10%,#15191f)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 50%,transparent);}
-.ibox svg{width:34px; height:34px;} .ibox svg *{fill:var(--t);} .ibox svg .k{fill:color-mix(in srgb,var(--t) 18%,#1b1f27);}
+.ibox{display:inline-grid; place-items:center; width:64px; height:64px; border-radius:12px; background:linear-gradient(180deg, color-mix(in srgb,var(--t) 24%,#1d222b), color-mix(in srgb,var(--t) 10%,#15191f)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 50%,transparent);}
+.ibox svg{width:44px; height:44px; overflow:visible;} .ibox svg *{fill:var(--t);} .ibox svg .k{fill:color-mix(in srgb,var(--t) 18%,#1b1f27);}
 .ihead{all:unset; cursor:pointer; padding:5px 10px; border-radius:8px; font:700 11px/1.2 var(--fd); color:var(--mut); border:1px solid var(--off);}
 .ihead[aria-pressed="true"]{background:var(--ink); color:#0b0d10; border-color:var(--ink);}
 .ihead:focus-visible{outline:2px solid var(--tp);}
@@ -198,87 +191,74 @@ th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); wh
 th{font:500 10.5px/1.3 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
 td.num{font:500 13px var(--fm); font-variant-numeric:tabular-nums;}
 td.w{white-space:normal; min-width:220px;}
-.tic{display:inline-grid; place-items:center; width:30px; height:30px; border-radius:8px; vertical-align:middle; margin-right:8px;}
-.tic svg{width:20px; height:20px;} .tic svg *{fill:var(--t);} .tic svg .k{fill:#1b1f27;}
+.tic{display:inline-grid; place-items:center; width:32px; height:32px; border-radius:8px; vertical-align:middle; margin-right:8px;}
+.tic svg{width:22px; height:22px; overflow:visible;} .tic svg *{fill:var(--t);} .tic svg .k{fill:#1b1f27;}
 .fac{display:flex; align-items:center; gap:10px; margin:18px 0 8px;}
 .fac i{width:12px; height:12px; border-radius:50%;}
 .fac b{font:700 16px var(--fd);}
-@media (max-width:980px){ .game{grid-template-columns:1fr;} }
 @media (prefers-reduced-motion: reduce){ .card,.card .in,.tile,.hero .hb i{transition:none;} .tile.drop-in{animation:none;} }
 </style>
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Два режима · Альянс против Инферно</p>
+    <p class="eyebrow">Три режима · Альянс против Инферно</p>
     <h1>Поле Альянса</h1>
-    <p class="lede">Карточная дуэль без передвижений: юниты стоят там, где их выставили, и бьют по своей колонке. Лишний урон, которому не хватило цели, уходит в героя. Режимы отличаются полем и тем, как растёт тир.</p>
+    <p class="lede">Юниты стоят там, где их выставили, и бьют по своей колонке. Лишний урон проходит дальше: в юнита за убитым, а потом в героя.</p>
   </header>
 
-  <h2>Поле</h2>
   <div class="modes" id="modes" role="group" aria-label="Режим"></div>
   <p class="mdesc" id="mdesc"></p>
 
-  <section class="game" aria-label="Песочница боя">
-    <div class="arena">
-      <div class="bar" id="topbar"></div>
-      <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
-      <div class="bar" id="botbar"></div>
-      <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
-      <div class="actions">
-        <button class="btn" id="end" type="button">Конец хода</button>
-        <button class="btn ghost" id="reset" type="button">Заново</button>
-        <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук</button>
-        <button class="btn ghost" id="arr" type="button" aria-pressed="true">Цели</button>
-        <span class="hint" id="hint"></span>
-      </div>
+  <section class="arena" aria-label="Поле боя">
+    <div class="bar" id="topbar"></div>
+    <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
+    <div class="bar" id="botbar"></div>
+    <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
+    <div class="actions">
+      <button class="btn" id="end" type="button">Конец хода</button>
+      <button class="btn ghost" id="reset" type="button">Заново</button>
+      <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук</button>
+      <button class="btn ghost" id="arr" type="button" aria-pressed="true">Цели</button>
+      <span class="hint" id="hint"></span>
     </div>
-    <aside class="side">
-      <div class="panel">
-        <h3>Как играть</h3>
-        <p style="font-size:13.5px;margin:0" id="howto"></p>
-        <div class="legend">
-          <span><i style="background:var(--te)"></i>удар по юниту</span>
-          <span><i style="background:var(--gold)"></i>удар по герою</span>
-        </div>
-      </div>
-      <div class="panel"><h3>Журнал боя</h3><ul class="log" id="log"></ul></div>
-    </aside>
   </section>
 
-  <h2>Правила</h2>
-  <div class="rules">
-    <div class="panel"><h3>Общее для обоих режимов</h3><ul>
-      <li>Мана = номер хода, не больше 10. Карта стоит столько маны, какого она тира.</li>
-      <li>На старте 6 карт, дальше +2 за ход, в руке до 9. Колода бесконечная.</li>
-      <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
-      <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт за своим, стрелки бьют через своих. Врагов в колонке нет — удар по герою (20 ХП).</li>
-      <li><b>Лишний урон уходит в героя:</b> грифон с 4 уроном убивает ополченца с 1 ХП, оставшиеся 3 получает герой.</li>
-      <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят.</li>
-    </ul></div>
-    <div class="panel"><h3>«Колонны»</h3><ul>
-      <li>Поле 5×4: две ваши линии, две вражеские.</li>
-      <li>В руке только I и II тир (65% и 35%).</li>
-      <li>Три одинаковых юнита, стоящих рядом (по диагонали тоже), становятся одним юнитом следующего тира: выберите юнита и нажмите золотую кнопку.</li>
-    </ul></div>
-    <div class="panel"><h3>«Лагерь»</h3><ul>
-      <li>Поле 4×4 и лагерь на три места сбоку. В лагере юниты не бьют и неуязвимы.</li>
-      <li>В руке I–III тир (55%, 30%, 15%).</li>
-      <li>Такой же юнит поверх другого (картой или из лагеря) → тир выше.</li>
-      <li>Из лагеря на поле бесплатно, обратно нельзя.</li>
-    </ul></div>
-  </div>
+  <details class="panel">
+    <summary>Как играть и правила</summary>
+    <p style="margin-top:12px" id="howto"></p>
+    <div class="rules">
+      <div><h3>Общее</h3><ul>
+        <li>Мана = номер хода, не больше 10. Карта стоит столько маны, какого она тира.</li>
+        <li>На старте 6 карт, дальше +2 за ход, в руке до 9.</li>
+        <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
+        <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт за своим, стрелки бьют через своих.</li>
+        <li>Лишний урон уходит в следующего врага за убитым, потом в героя (20 ХП).</li>
+        <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят.</li>
+      </ul></div>
+      <div><h3>Тройка («Колонны», «Открытие»)</h3><ul>
+        <li>Поставьте карту рядом с двумя такими же юнитами, стоящими вместе, — они втянутся в неё, и получится юнит тиром выше.</li>
+        <li>Или положите карту прямо на одного из пары — второй втянется туда же.</li>
+        <li>Если новый юнит тоже оказался третьим рядом с парой, улучшение идёт дальше.</li>
+        <li>Золотом подсвечены пары на поле и карты в руке, которые их улучшат.</li>
+      </ul></div>
+      <div><h3>Режимы</h3><ul>
+        <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
+        <li><b>Открытие:</b> поле 5×4, сначала в руку приходит только I тир. Сделали юнита II тира — в колоде появляется II, сделали III — появляется III.</li>
+        <li><b>Лагерь:</b> поле 4×4 и лагерь на три места. Такой же юнит поверх другого (картой или из лагеря) — тир выше. Из лагеря на поле бесплатно, обратно нельзя.</li>
+      </ul></div>
+    </div>
+  </details>
 
   <h2>Звуки</h2>
-  <p class="lede">Звон убран отовсюду. Нажмите на кнопку, чтобы услышать звук. Для улучшения юнита есть 10 вариантов: выбранный (золотая рамка) сразу играет в бою.</p>
-  <div class="panel"><h3>10 вариантов звука улучшения</h3><div class="sgrid" id="upvars"></div></div>
-  <div class="panel"><h3>Все звуки игры</h3><div class="sgrid" id="allsnd"></div></div>
+  <p class="lede">По 5 вариантов на каждый тип звука и на атаку каждого юнита, для улучшения 10. Нажатие проигрывает звук и выбирает его: выбранный (золотая рамка) сразу звучит в бою.</p>
+  <div class="panel" id="sndcats"></div>
+  <div class="panel" id="sndatk"></div>
 
-  <h2>Иконки: 5 вариантов на юнита</h2>
-  <p class="lede">Нажмите на название столбца, и этот вариант сразу появится на поле и в картах.</p>
+  <h2>Иконки: 5 уровней детализации</h2>
+  <p class="lede">От простого силуэта (уровень 1, текущий) до иллюстрации с материалами, объёмом и подсветкой. Нажмите на заголовок столбца, чтобы включить этот уровень в игре.</p>
   <div class="panel igal" id="icons"></div>
 
   <h2>Отряды</h2>
-  <p class="lede">Одиночные юниты, числа наши. Сила тира (урон × ХП) растёт примерно втрое. Для сверки характеристики из «Героев 5» по памяти.</p>
   <div id="rosters"></div>
 </div>
 
@@ -301,45 +281,63 @@ const ICONS = {
   lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
   demonlord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M14 18C6 14 4 6 6 0c2 6 6 10 12 12zM50 18c8-4 10-12 8-18-2 6-6 10-12 12z"/>`,
 };
-/* One simple emblem per unit, used by the "Знак" and "Герб" icon styles. */
-const GLYPHS = {
-  peasant:`<rect x="30" y="22" width="4" height="40"/><path d="M16 4h4v14c0 3 2 5 5 5h14c3 0 5-2 5-5V4h4v14c0 6-4 9-9 9H25c-5 0-9-3-9-9z"/><rect x="30" y="4" width="4" height="20"/>`,
-  archer:`<path d="M12 56l-4-4L44 16l4 4z"/><path d="M42 10l18-6-6 18z"/><path d="M4 48l8-2 6 6-2 8-4-4-2 2-2-2 2-2z"/>`,
-  footman:`<path d="M12 8h40v20c0 16-10 26-20 30C22 54 12 44 12 28z"/><path class="k" d="M29 14h6v36h-6zM18 24h28v6H18z"/>`,
-  griffin:`<path d="M6 46C10 24 28 8 58 6c-4 6-10 10-16 12 6 0 10 1 14 3-6 4-12 6-18 6 4 2 7 4 9 7-8 3-16 3-22 1-6 4-12 7-19 11z"/>`,
-  priest:`<rect x="30" y="26" width="4" height="36"/><circle cx="32" cy="15" r="9"/><path d="M31 0h2v3h-2zM44 4l1.5 1.5-2.5 2.5-1.5-1.5zM20 4l2.5 2.5L21 8l-2.5-2.5zM47 14h3v2h-3zM14 14h3v2h-3z"/><path d="M22 34h20v4H22z"/>`,
-  cavalier:`<path d="M14 8h9v22c0 5 4 9 9 9s9-4 9-9V8h9v22c0 10-8 18-18 18S14 40 14 30z"/><circle class="k" cx="18.5" cy="14" r="1.8"/><circle class="k" cx="18.5" cy="24" r="1.8"/><circle class="k" cx="45.5" cy="14" r="1.8"/><circle class="k" cx="45.5" cy="24" r="1.8"/><path d="M30 44h4v18h-4z"/>`,
-  angel:`<ellipse cx="32" cy="10" rx="14" ry="5"/><ellipse class="k" cx="32" cy="10" rx="10" ry="2.5"/><path d="M30 24C20 16 8 18 4 30c6 0 8 4 6 8 6-2 10 0 12 4 2-8 6-12 8-18z"/><path d="M34 24c10-8 22-6 26 6-6 0-8 4-6 8-6-2-10 0-12 4-2-8-6-12-8-18z"/><path d="M30 26h4v30h-4z"/>`,
-  imp:`<path d="M32 4c6 12 18 18 16 34-2 12-10 20-16 20S16 50 16 38c0-8 6-12 8-20 4 6 6 10 8 12 2-8-2-16 0-26z"/><path class="k" d="M32 36c4 6 6 10 3 15-2 3-6 2-7-1-1-5 2-8 4-14z"/>`,
-  demon:`<path d="M6 6c0 16 8 26 20 28l-4-10C14 20 10 14 6 6zM58 6c0 16-8 26-20 28l4-10c8-4 12-10 16-18z"/><ellipse cx="32" cy="44" rx="15" ry="14"/><circle class="k" cx="26" cy="42" r="3"/><circle class="k" cx="38" cy="42" r="3"/>`,
-  hound:`<ellipse cx="32" cy="44" rx="14" ry="12"/><circle cx="14" cy="26" r="6.5"/><circle cx="25" cy="15" r="6.5"/><circle cx="39" cy="15" r="6.5"/><circle cx="50" cy="26" r="6.5"/>`,
-  succubus:`<path d="M32 58S6 42 6 24a12 12 0 0 1 26-6 12 12 0 0 1 26 6c0 18-26 34-26 34z"/><path d="M14 16L8 2l12 10zM50 16l6-14-12 10z"/>`,
-  charger:`<path d="M14 18h9v14c0 5 4 9 9 9s9-4 9-9V18h9v14c0 10-8 18-18 18S14 42 14 32z"/><path d="M20 14c-2-6 2-10 4-14 1 5 4 7 4 12zM32 12c-2-6 2-10 4-12 1 5 3 6 2 12zM44 14c-2-6 1-10 3-14 2 5 4 8 2 14z"/>`,
-  fiend:`<path d="M10 6h6l18 52h-6zM24 4h6l18 52h-6zM38 6h6l14 42h-6z"/>`,
-  devil:`<rect x="30" y="20" width="4" height="42"/><path d="M14 2l4 4v10c0 4 3 6 6 6h16c3 0 6-2 6-6V6l4-4v14c0 7-5 12-12 12H26c-7 0-12-5-12-12z"/><path d="M32 0l5 9h-10z"/>`,
+/* Material parts and detail strokes layered on the silhouette for detail levels 2–5. */
+const MAT = {metal:'#cbd5e1', gold:'#fbbf24', wood:'#9a6a3a', straw:'#d9b865', skin:'#e8c39e', leather:'#7c4a2d', white:'#eef2f7', red:'#dc2626', fire:'#fb923c', ember:'#fde68a', glow:'#fde047', dark:'#101318', hair:'#2b2230', horn:'#e7e0d4', wine:'#7f1d1d', amber:'#f59e0b'};
+const DETAIL = {
+  peasant:{parts:[[`<rect x="10" y="16" width="30" height="4" rx="2"/><path d="M17 16l3-9h10l3 9z"/>`,'straw'],[`<circle cx="25" cy="26" r="6.3"/>`,'skin'],[`<rect x="45" y="15" width="3.5" height="47"/>`,'wood'],[`<path d="M39 3v11h16V3h-3v8h-3.5V3h-3v8H42V3z"/>`,'metal'],[`<circle cx="22.8" cy="26" r="1"/><circle cx="27.4" cy="26" r="1"/>`,'dark']],
+    lines:['M14 47h22','M18 13.6h14','M23.5 29.6h3','M25 40v20']},
+  archer:{parts:[[`<path d="M18 4c24 10 24 46 0 56l3 2c28-12 28-48 0-60z"/>`,'wood'],[`<rect x="17" y="5" width="2" height="54"/>`,'white'],[`<rect x="8" y="31" width="44" height="3"/>`,'wood'],[`<path d="M61 32.5L48 26v13z"/>`,'metal'],[`<path d="M3 26l9 6.5L3 39l3-6.5z"/>`,'red'],[`<rect x="33" y="26" width="5" height="13" rx="1.5"/>`,'leather']],
+    lines:['M22 10c9 8 9 36 0 44','M5 29l6 3.5','M5 36l6-3.5']},
+  footman:{parts:[[`<path d="M19 16h4v38h-4zM11 26h20v4H11z"/>`,'gold'],[`<path d="M46 6l3.5-5 3.5 5v34h-7z"/>`,'metal'],[`<rect x="40" y="40" width="19" height="4" rx="2"/>`,'gold'],[`<rect x="47.5" y="44" width="4" height="12"/>`,'leather'],[`<circle cx="49.5" cy="59" r="3.5"/>`,'gold']],
+    lines:['M49.5 8v28','M9.5 13h23v21c0 13-6 19-11.5 22.5C16 53 9.5 47 9.5 34z']},
+  griffin:{parts:[[`<path d="M28 22l4 10 4-10z"/><path d="M32 30l-4 6h8z"/>`,'gold'],[`<circle cx="28" cy="20" r="2.2"/><circle cx="36" cy="20" r="2.2"/>`,'amber'],[`<circle cx="28" cy="20" r="1"/><circle cx="36" cy="20" r="1"/>`,'dark']],
+    lines:['M8 18l10 7','M6 25l11 5','M9 31l8 3','M56 18l-10 7','M58 25l-11 5','M55 31l-8 3','M28 46q4 3 8 0','M28 52q4 3 8 0']},
+  priest:{parts:[[`<ellipse cx="26" cy="22" rx="7.5" ry="8.5"/>`,'skin'],[`<path d="M23 34h6v22h-6zM18 40h16v5H18z"/>`,'gold'],[`<rect x="51" y="16" width="3.5" height="46"/>`,'wood'],[`<circle cx="52.7" cy="10" r="7"/>`,'ember'],[`<circle cx="52.7" cy="10" r="3"/>`,'white'],[`<circle cx="23" cy="22" r="1"/><circle cx="29" cy="22" r="1"/>`,'dark']],
+    lines:['M15 27c0-9 5-15 11-15s11 6 11 15','M14 50l-2 11','M38 50l2 11']},
+  cavalier:{parts:[[`<path d="M3 34L60 6l1.5 3L5 37z"/>`,'metal'],[`<path d="M17 27.5l7-3.4 1.4 3-7 3.4z"/>`,'leather'],[`<path d="M31 13l4-9 4 9c-3 1-5 1-8 0z"/>`,'gold'],[`<circle cx="36" cy="19" r="2.8"/>`,'dark'],[`<circle cx="37" cy="18" r=".9"/>`,'white']],
+    lines:['M26 33l16-2','M38 22l4 8','M47 30c1.4 1 1.4 2.4 0 3.4']},
+  angel:{parts:[[`<ellipse cx="32" cy="7" rx="11" ry="4"/>`,'gold'],[`<ellipse cx="32" cy="7" rx="7.5" ry="2"/>`,'dark'],[`<circle cx="32" cy="19" r="6.3"/>`,'skin'],[`<path d="M25 28h14l8 34H17z"/>`,'white'],[`<rect x="31" y="34" width="2" height="22"/>`,'metal'],[`<rect x="28" y="33" width="8" height="2"/>`,'gold']],
+    lines:['M8 30l10 3','M6 36l9 1','M56 30l-10 3','M58 36l-9 1','M28 38l-3 22','M36 38l3 22']},
+  imp:{parts:[[`<path d="M18 38L2 28l4 14 6-2 2 8z"/><path d="M46 38l16-10-4 14-6-2-2 8z"/>`,'wine'],[`<circle cx="27" cy="25" r="2.6"/><circle cx="37" cy="25" r="2.6"/>`,'glow'],[`<path d="M54 46l5 2-3 3z"/>`,'red']],
+    lines:['M17 39L5 30','M17 41l-9 3','M47 39l12-9','M47 41l9 3','M28 30q4 3 8 0']},
+  demon:{parts:[[`<circle cx="26" cy="22" r="3.2"/><circle cx="38" cy="22" r="3.2"/>`,'glow'],[`<path d="M26 30h12l-3 4h-6z"/>`,'wine'],[`<path d="M8 2c1 4 2 6 4 8l-3 1.5zM56 2c-1 4-2 6-4 8l3 1.5z"/>`,'horn'],[`<path d="M20 44h24l-3 8H23z"/>`,'leather']],
+    lines:['M26 38q6 4 12 0','M32 40v4']},
+  hound:{parts:[[`<circle cx="12" cy="21" r="2.2"/><circle cx="29" cy="14" r="2.2"/><circle cx="35" cy="14" r="2.2"/><circle cx="52" cy="21" r="2.2"/>`,'fire'],[`<path d="M12 30h40v4H12z"/>`,'metal'],[`<path d="M16 30l2-3 2 3zM26 30l2-3 2 3zM36 30l2-3 2 3zM46 30l2-3 2 3z"/>`,'metal']],
+    lines:['M9 26q5 3 10 0','M27 20q5 3 10 0','M45 26q5 3 10 0']},
+  succubus:{parts:[[`<path d="M21 14c0-12 18-12 18 0l2 11H19z"/>`,'hair'],[`<ellipse cx="30" cy="15" rx="5" ry="6"/>`,'skin'],[`<path d="M24 8l-4-7 7 4zM36 8l4-7-7 4z"/>`,'horn'],[`<circle cx="54" cy="12" r="7"/>`,'fire'],[`<circle cx="54" cy="12" r="3"/>`,'ember'],[`<path d="M22 38h16v3H22z"/>`,'gold']],
+    lines:['M20 30L8 26','M20 33l-9 3','M40 30l10-2','M26 44l-3 16','M34 44l3 16']},
+  charger:{parts:[[`<path d="M22 34l-12-4 9-3-10-8 11 2-6-10 10 6 1-10 5 12z"/>`,'fire'],[`<path d="M21 32l-7-3 6-1-6-5 7 1-3-6 6 4 1-6 3 9z"/>`,'ember'],[`<circle cx="38" cy="19" r="2.8"/>`,'glow']],
+    lines:['M40 34c3 2 6 2 8 0','M47 30c1.4 1 1.4 2.4 0 3.4']},
+  fiend:{parts:[[`<circle cx="27" cy="23" r="3.2"/><circle cx="37" cy="23" r="3.2"/>`,'glow'],[`<path d="M26 30h12l-6 5z"/>`,'wine'],[`<path d="M14 2c0 5 1 8 3 11l3-2c-3-2-5-5-6-9zM50 2c0 5-1 8-3 11l-3-2c3-2 5-5 6-9z"/>`,'horn'],[`<path d="M20 50h24l-3 8H23z"/>`,'leather']],
+    lines:['M26 38q6 4 12 0','M13 43l7-3','M51 43l-7-3']},
+  devil:{parts:[[`<circle cx="28" cy="22" r="2.6"/><circle cx="36" cy="22" r="2.6"/>`,'glow'],[`<rect x="54" y="18" width="3" height="44"/><path d="M50 4v11h11V4h-2.5v7H57V4h-2v7h-2.5V4z"/>`,'gold'],[`<path d="M18 32C9 22 1 24 1 36c6-2 9 2 11 8 2-6 4-9 6-12z"/>`,'wine']],
+    lines:['M17 32L6 28','M16 34l-8 4','M28 36q4 3 8 0']},
 };
 const SWORD = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1.5L15 1l-.5 1.5L7 10l-1-1zM4 9l3 3-1 1-1-1-2 2-1-1 2-2-1-1z"/></svg>`;
 const HEART = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.5S1 10 1 5.5A3.5 3.5 0 0 1 8 4a3.5 3.5 0 0 1 7 1.5C15 10 8 14.5 8 14.5z"/></svg>`;
 const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
-const SHIELD_PATH = 'M8 4h48v24c0 18-12 28-24 32C20 56 8 46 8 28z';
-const ICON_STYLES = [
-  {id:'solid', name:'Силуэт'},
-  {id:'line', name:'Контур'},
-  {id:'glyph', name:'Знак'},
-  {id:'crest', name:'Герб'},
-  {id:'medal', name:'Медальон'},
-];
-let ICON_STYLE = 'solid';
-try { const s = localStorage.getItem('fieldIconStyle'); if (ICON_STYLES.some(x => x.id === s)) ICON_STYLE = s; } catch (e) {}
-function ico(key, style = ICON_STYLE){
-  const base = ICONS[key], g = GLYPHS[key] || base;
-  switch (style){
-    case 'line': return `<svg class="ico line" viewBox="-2 -2 68 68" aria-hidden="true">${base}</svg>`;
-    case 'glyph': return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${g}</svg>`;
-    case 'crest': return `<svg class="ico crest" viewBox="0 0 64 64" aria-hidden="true"><path class="bg" d="${SHIELD_PATH}"/><g class="inv" transform="translate(17 12) scale(.47)">${g}</g></svg>`;
-    case 'medal': return `<svg class="ico medal" viewBox="0 0 64 64" aria-hidden="true"><circle class="bg" cx="32" cy="32" r="30"/><circle class="rim" cx="32" cy="32" r="25"/><g class="inv" transform="translate(15 14) scale(.53)">${base}</g></svg>`;
-    default: return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${base}</svg>`;
-  }
+
+/* ---------- icons: 5 detail levels ---------- */
+const LEVELS = ['1 · Силуэт', '2 · Контур и детали', '3 · Объём', '4 · Материалы', '5 · Иллюстрация'];
+let ICON_LEVEL = 0, icoN = 0;
+try { const v = +localStorage.getItem('fieldIconLevel'); if (v >= 0 && v < 5) ICON_LEVEL = v; } catch (e) {}
+const EL = /<(path|rect|circle|ellipse|polygon)\b([^>]*?)\/>/g;
+const paint = (els, style) => els.replace(EL, (m, t, a) => `<${t}${a.replace(/class="k"/, '')} style="${style}"/>`);
+const paintBase = (base, fill, kfill, extra = '') => base.replace(EL, (m, t, a) => { const k = /class="k"/.test(a); return `<${t}${a.replace(/class="k"/, '')} style="fill:${k ? kfill : fill};${k ? '' : extra}"/>`; });
+const lines = (key, op = .55) => (DETAIL[key]?.lines || []).map(d => `<path d="${d}" style="fill:none;stroke:rgba(8,10,14,${op});stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"/>`).join('');
+const parts = (key, outline) => (DETAIL[key]?.parts || []).map(([els, m]) => paint(els, `fill:${MAT[m]};${outline ? 'stroke:rgba(8,10,14,.55);stroke-width:1;paint-order:stroke' : ''}`)).join('');
+function ico(key, level = ICON_LEVEL){
+  const base = ICONS[key];
+  if (level === 0 || !DETAIL[key]) return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${base}</svg>`;
+  const id = 'ig' + (++icoN), OUT = 'stroke:#0b0d11;stroke-width:2.4;paint-order:stroke;stroke-linejoin:round';
+  const grad = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--t) 55%,#fff)"/><stop offset=".5" style="stop-color:var(--t)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--t) 55%,#000)"/></linearGradient>`
+    + `<radialGradient id="${id}b"><stop offset="0" style="stop-color:color-mix(in srgb,var(--t) 45%,transparent)"/><stop offset="1" style="stop-color:transparent"/></radialGradient></defs>`;
+  if (level === 1) return `<svg class="ico" viewBox="-2 -2 68 68" aria-hidden="true">${paintBase(base, 'var(--t)', '#12151b', OUT)}${lines(key)}</svg>`;
+  const body = paintBase(base, `url(#${id})`, '#12151b', OUT);
+  if (level === 2) return `<svg class="ico" viewBox="-2 -2 68 68" aria-hidden="true">${grad}${body}${lines(key)}</svg>`;
+  if (level === 3) return `<svg class="ico" viewBox="-2 -2 68 68" aria-hidden="true">${grad}${body}${parts(key, true)}${lines(key)}</svg>`;
+  const rim = paintBase(base, 'none', 'none', 'stroke:rgba(255,255,255,.45);stroke-width:.9').replace(/<(path|rect|circle|ellipse|polygon)\b/g, '<$1 transform="translate(-.7 -.7)"');
+  return `<svg class="ico" viewBox="-6 -6 76 76" aria-hidden="true">${grad}<circle cx="32" cy="32" r="36" style="fill:url(#${id}b)"/><ellipse cx="32" cy="64" rx="22" ry="4" style="fill:rgba(0,0,0,.45)"/>${body}${parts(key, true)}${lines(key, .65)}${rim}</svg>`;
 }
 
 const F = {
@@ -363,16 +361,19 @@ const F = {
   ]},
 };
 const MODES = {
-  col:{name:'Колонны', tag:'поле 5×4 · тройка рядом', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'600px',
-    desc:'Поле 5×4. В руке I и II тир. Три одинаковых юнита, стоящих рядом, превращаются в одного юнита следующего тира.',
-    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Когда три одинаковых юнита стоят рядом, они светятся золотом: кликните одного и нажмите кнопку улучшения.'},
-  camp:{name:'Лагерь', tag:'поле 4×4 · лагерь · наложение', cols:4, camp:true, upgrade:'stack', odds:[.55, .30, .15], bw:'680px',
+  col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'860px',
+    desc:'Поле 5×4, в руке I и II тир. Поставьте карту к паре таких же юнитов или прямо на одного из них, и получится юнит тиром выше.',
+    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Золотые клетки и золотые юниты означают улучшение: туда карта сольётся с парой.'},
+  unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.6, .28, .12], unlock:true, bw:'860px',
+    desc:'Как «Колонны», но сначала в руку приходит только I тир. Собрали юнита II тира — в колоде появляются карты II тира. Собрали III — появляется III.',
+    howto:'Собирайте тройки, чтобы открыть карты старших тиров. Открытые тиры показаны рядом с вашей маной.'},
+  camp:{name:'Лагерь', tag:'4×4 · лагерь · наложение', cols:4, camp:true, upgrade:'stack', odds:[.55, .30, .15], bw:'900px',
     desc:'Поле 4×4 и лагерь на три места сбоку. В руке I–III тир. Такой же юнит, положенный поверх другого (картой или из лагеря), даёт юнита тиром выше.',
-    howto:'Перетащите карту на пустую клетку, в лагерь справа или на такого же юнита (он подсвечен золотом). Юнита из лагеря перетащите на поле или на такого же юнита. Можно и кликами: сначала карта или юнит, потом цель.'},
+    howto:'Перетащите карту на пустую клетку, в лагерь справа или на такого же юнита (он подсвечен золотом). Юнита из лагеря перетащите на поле или на такого же юнита.'},
 };
 const TC = ['#94a3b8','#84cc16','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#f8fafc'];
 const RO = ['I','II','III','IV','V','VI','VII'];
-const ROWS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1};
+const ROWS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1}, BACK = {p:3, e:0}, FRONT = {p:2, e:1};
 const HERO_HP = 20, HAND_MAX = 9, MANA_MAX = 10;
 let MODE_ID = 'col';
 try { const m = localStorage.getItem('fieldMode'); if (MODES[m]) MODE_ID = m; } catch (e) {}
@@ -384,10 +385,20 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const D = ms => RM ? Math.round(ms * 0.2) : ms;
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
-/* ---------- sound: low, percussive, no bells ---------- */
-const UP_VARIANTS = ['Удар в щит', 'Барабаны', 'Низкий рог', 'Прилив силы', 'Кожа и сталь', 'Боевой клич', 'Гул магии', 'Шаг отряда', 'Вспышка пламени', 'Тяжёлая тетива'];
-let UP_VAR = 0;
-try { const v = +localStorage.getItem('fieldUpSound'); if (v >= 0 && v < 10) UP_VAR = v; } catch (e) {}
+/* ---------- sound: categories with variants ---------- */
+const ACLASS = {peasant:'light', imp:'light', archer:'bow', footman:'blade', griffin:'beast', hound:'beast', priest:'magic', succubus:'magic', angel:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy'};
+const AVAR = {light:['Фирменный','Тычок','Взмах','Размах','Щелчок'], blade:['Фирменный','Рубящий','Взмах','Тяжёлый','Резкий'], beast:['Фирменный','Укус','Бросок','Рык','Когти'], bow:['Фирменный','Тетива','Свист','Арбалет','Щелчок'], magic:['Фирменный','Волна','Всплеск','Гул','Импульс'], heavy:['Фирменный','Удар','Замах','Сокрушение','Топот']};
+const CATS = {
+  draw:{name:'Вытягивание карты', vars:['Бумага','Щелчок','Шорох','Двойной','Мягкий']},
+  place:{name:'Выставление', vars:['Глухой стук','Ладонь','Тяжёлая фишка','Дерево','С отзвуком']},
+  hurt:{name:'Получение урона', vars:['Толчок','Удар','Рассечение','Тупой','Хлопок']},
+  die:{name:'Гибель', vars:['Падение','Выдох','Рассыпается','Глухой','Тает']},
+  hero:{name:'Удар по герою', vars:['Гром','Ворота','Земля дрожит','Взрыв','Барабан']},
+  up:{name:'Улучшение', vars:['Удар в щит','Барабаны','Низкий рог','Прилив силы','Кожа и сталь','Боевой клич','Гул магии','Шаг отряда','Вспышка пламени','Тяжёлая тетива']},
+};
+let SEL_SND = {draw:0, place:0, hurt:0, die:0, hero:0, up:0, atk:{}};
+try { const s = JSON.parse(localStorage.getItem('fieldSounds') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
+const saveSnd = () => { try { localStorage.setItem('fieldSounds', JSON.stringify(SEL_SND)); } catch (e) {} };
 const Sfx = {
   ctx:null, on:true, out:null, verb:null,
   ensure(){
@@ -423,52 +434,72 @@ const Sfx = {
   },
   thud(f = 90, {vol = .35, dur = .22, delay = 0} = {}){ this.tone(f, dur, {vol, a:.004, to:f * .6, delay}); this.noise(dur * .5, {vol:vol * .25, lp:500, delay}); },
   horn(f, dur, {vol = .08, delay = 0, to = null} = {}){ this.tone(f, dur, {type:'sawtooth', vol, a:.05, delay, lp:650, to, wet:true}); this.tone(f * 1.5, dur, {type:'sawtooth', vol:vol * .45, a:.06, delay, lp:600, to:to && to * 1.5, wet:true}); },
-  up(i){
-    switch (i){
-      case 0: this.thud(88, {vol:.45, dur:.3}); this.noise(.12, {vol:.08, lp:700}); break;
-      case 1: [0, .1, .2].forEach((d, k) => this.thud(115, {vol:.2 + k * .08, dur:.14, delay:d})); break;
-      case 2: this.horn(110, .6); break;
-      case 3: this.noise(.35, {vol:.07, lp:300, sweep:2200, a:.25}); this.thud(70, {vol:.4, dur:.3, delay:.32}); break;
-      case 4: this.noise(.04, {vol:.06, lp:3000, hp:900}); this.thud(210, {vol:.14, dur:.08, delay:.02}); this.noise(.14, {vol:.07, lp:500, delay:.06}); break;
-      case 5: this.horn(147, .32); this.horn(196, .45, {delay:.18}); break;
-      case 6: this.tone(55, .8, {vol:.14, a:.3, wet:true}); this.tone(82, .8, {vol:.08, a:.3, wet:true}); this.noise(.7, {vol:.04, lp:400, a:.3}); break;
-      case 7: [0, .14, .28].forEach(d => this.thud(140, {vol:.2, dur:.1, delay:d})); break;
-      case 8: this.noise(.4, {vol:.08, lp:400, sweep:2500, a:.05}); this.tone(90, .3, {vol:.12}); break;
-      case 9: this.tone(70, .3, {type:'triangle', vol:.2, a:.002}); this.noise(.05, {vol:.04, lp:1500, hp:400}); this.thud(90, {vol:.3, dur:.2, delay:.15}); break;
+  cat(name, i){
+    const R = {
+      draw:[() => this.noise(.16, {vol:.05, lp:1800, hp:500, a:.03}), () => { this.noise(.02, {vol:.05, lp:5000, hp:2000}); this.thud(300, {vol:.06, dur:.05}); }, () => this.noise(.26, {vol:.05, lp:1000, hp:300, a:.08}),
+        () => { this.noise(.07, {vol:.045, lp:1600, hp:500}); this.noise(.07, {vol:.045, lp:1600, hp:500, delay:.08}); }, () => { this.noise(.1, {vol:.05, lp:900, hp:200}); this.thud(200, {vol:.06, dur:.06}); }],
+      place:[() => { this.thud(78, {vol:.4, dur:.24}); this.noise(.08, {vol:.05, lp:2200, hp:900}); }, () => { this.noise(.06, {vol:.15, lp:1200, hp:300}); this.thud(140, {vol:.2, dur:.08}); }, () => { this.thud(60, {vol:.5, dur:.35}); this.noise(.15, {vol:.1, lp:400}); },
+        () => { this.thud(220, {vol:.2, dur:.07}); this.noise(.04, {vol:.06, lp:3000, hp:1200}); }, () => { this.thud(90, {vol:.35, dur:.25}); this.noise(.4, {vol:.05, lp:500, wet:true}); }],
+      hurt:[() => this.thud(110, {vol:.28, dur:.13}), () => { this.thud(140, {vol:.3, dur:.1}); this.noise(.06, {vol:.1, lp:1500, hp:300}); }, () => { this.noise(.18, {vol:.08, lp:600, sweep:3000, a:.01}); this.thud(120, {vol:.15, dur:.08}); },
+        () => this.thud(70, {vol:.35, dur:.2}), () => { this.noise(.05, {vol:.12, lp:2000, hp:600}); this.thud(160, {vol:.15, dur:.06}); }],
+      die:[() => { this.noise(.45, {vol:.07, lp:900, sweep:120, a:.02, wet:true}); this.tone(110, .4, {vol:.08, to:55}); }, () => this.noise(.6, {vol:.06, lp:1500, sweep:200, a:.05}),
+        () => { [0, .05, .11, .18, .26].forEach(d => this.noise(.03, {vol:.05, lp:2500, hp:800, delay:d})); this.thud(90, {vol:.2, dur:.2}); }, () => this.thud(55, {vol:.45, dur:.35}),
+        () => { this.noise(.9, {vol:.05, lp:800, sweep:100, a:.1, wet:true}); this.tone(90, .8, {vol:.06, to:45}); }],
+      hero:[() => { this.thud(52, {vol:.55, dur:.5}); this.noise(.4, {vol:.06, lp:300, wet:true}); }, () => { this.thud(70, {vol:.45, dur:.2}); this.thud(65, {vol:.45, dur:.25, delay:.16}); },
+        () => { this.noise(1, {vol:.12, lp:200, a:.1}); this.thud(45, {vol:.5, dur:.8}); }, () => { this.noise(.5, {vol:.15, lp:900, sweep:150, a:.005}); this.thud(50, {vol:.5, dur:.5}); },
+        () => { [0, .09, .18].forEach(d => this.thud(100, {vol:.3, dur:.12, delay:d})); this.thud(60, {vol:.5, dur:.3, delay:.3}); }],
+      up:[() => { this.thud(88, {vol:.45, dur:.3}); this.noise(.12, {vol:.08, lp:700}); }, () => [0, .1, .2].forEach((d, k) => this.thud(115, {vol:.2 + k * .08, dur:.14, delay:d})), () => this.horn(110, .6),
+        () => { this.noise(.35, {vol:.07, lp:300, sweep:2200, a:.25}); this.thud(70, {vol:.4, dur:.3, delay:.32}); }, () => { this.noise(.04, {vol:.06, lp:3000, hp:900}); this.thud(210, {vol:.14, dur:.08, delay:.02}); this.noise(.14, {vol:.07, lp:500, delay:.06}); },
+        () => { this.horn(147, .32); this.horn(196, .45, {delay:.18}); }, () => { this.tone(55, .8, {vol:.14, a:.3, wet:true}); this.tone(82, .8, {vol:.08, a:.3, wet:true}); this.noise(.7, {vol:.04, lp:400, a:.3}); },
+        () => [0, .14, .28].forEach(d => this.thud(140, {vol:.2, dur:.1, delay:d})), () => { this.noise(.4, {vol:.08, lp:400, sweep:2500, a:.05}); this.tone(90, .3, {vol:.12}); },
+        () => { this.tone(70, .3, {type:'triangle', vol:.2, a:.002}); this.noise(.05, {vol:.04, lp:1500, hp:400}); this.thud(90, {vol:.3, dur:.2, delay:.15}); }],
+    };
+    (R[name][i] || R[name][0])();
+  },
+  signature(key){
+    switch (key){
+      case 'peasant': this.noise(.09, {vol:.12, lp:700, hp:150}); this.thud(160, {vol:.14, dur:.08}); break;
+      case 'archer': this.tone(98, .16, {type:'triangle', vol:.14, a:.002}); this.tone(196, .1, {type:'triangle', vol:.05, a:.002}); this.noise(.05, {vol:.03, lp:1600, hp:500}); break;
+      case 'footman': this.noise(.12, {vol:.06, lp:1000, hp:200, a:.05}); this.thud(150, {vol:.22, dur:.1, delay:.1}); this.noise(.05, {vol:.05, lp:1400, hp:600, delay:.1}); break;
+      case 'griffin': this.noise(.28, {vol:.08, lp:600, hp:80, a:.12}); this.thud(130, {vol:.2, dur:.1, delay:.22}); break;
+      case 'priest': this.noise(.34, {vol:.05, lp:1100, hp:300, a:.15}); this.tone(220, .4, {vol:.05, a:.12, lp:600}); break;
+      case 'cavalier': this.thud(95, {vol:.18, dur:.09}); this.thud(95, {vol:.18, dur:.09, delay:.1}); this.thud(70, {vol:.4, dur:.25, delay:.2}); break;
+      case 'angel': this.noise(.42, {vol:.09, lp:700, hp:80, a:.18}); this.tone(110, .5, {vol:.08, a:.2, lp:500}); break;
+      case 'imp': this.noise(.07, {vol:.06, lp:1600, hp:600}); this.tone(420, .06, {type:'triangle', vol:.03}); break;
+      case 'demon': this.thud(80, {vol:.3, dur:.15}); this.tone(65, .2, {type:'sawtooth', vol:.03, a:.02, lp:400}); break;
+      case 'hound': this.noise(.05, {vol:.1, lp:1300, hp:400}); this.tone(72, .26, {type:'sawtooth', vol:.04, a:.03, lp:500}); break;
+      case 'succubus': this.noise(.32, {vol:.08, lp:700, hp:120, a:.1, sweep:1500}); this.tone(150, .28, {vol:.05, a:.08}); break;
+      case 'charger': this.thud(90, {vol:.2, dur:.09}); this.thud(85, {vol:.2, dur:.09, delay:.09}); this.noise(.18, {vol:.05, lp:500, delay:.05}); break;
+      case 'fiend': this.thud(48, {vol:.5, dur:.45}); this.noise(.3, {vol:.08, lp:400, delay:.02, wet:true}); break;
+      case 'devil': [55, 82].forEach(f => this.tone(f, .7, {type:'sawtooth', vol:.03, a:.06, lp:300, wet:true})); this.thud(50, {vol:.4, dur:.4, delay:.08}); break;
     }
+  },
+  attack(key, i){
+    if (!i) return this.signature(key);
+    const cls = ACLASS[key], tier = Math.max(0, ['p', 'e'].map(s => F[s].units.findIndex(u => u.key === key)).find(x => x >= 0)), f = 200 - tier * 20;
+    const V = {
+      light:[, () => { this.thud(f, {vol:.25, dur:.1}); this.noise(.05, {vol:.08, lp:1200, hp:300}); }, () => { this.noise(.14, {vol:.07, lp:900, hp:200, a:.07}); this.thud(f, {vol:.22, dur:.1, delay:.12}); }, () => { this.thud(f * .6, {vol:.45, dur:.3}); this.noise(.3, {vol:.08, lp:300}); }, () => { this.noise(.03, {vol:.06, lp:5000, hp:1500}); this.thud(f * 1.4, {vol:.15, dur:.06}); }],
+      beast:[, () => { this.noise(.05, {vol:.1, lp:1300, hp:400}); this.thud(f * 1.2, {vol:.15, dur:.06}); }, () => { this.noise(.22, {vol:.07, lp:700, a:.1}); this.thud(f, {vol:.2, dur:.1, delay:.18}); }, () => { this.tone(f * .4, .35, {type:'sawtooth', vol:.05, a:.04, lp:400}); this.thud(f * .7, {vol:.2, dur:.15}); }, () => [0, .05, .1].forEach(d => this.noise(.04, {vol:.06, lp:2500, hp:900, delay:d}))],
+      bow:[, () => { this.tone(f * .55, .18, {type:'triangle', vol:.15, a:.002}); this.noise(.04, {vol:.03, lp:1600, hp:500}); }, () => this.noise(.25, {vol:.05, lp:2200, hp:700, a:.02, sweep:800}), () => { this.tone(f * .35, .22, {type:'triangle', vol:.2, a:.002}); this.thud(f * .8, {vol:.2, dur:.1, delay:.05}); }, () => { this.noise(.02, {vol:.07, lp:5000, hp:1800}); this.tone(f * .7, .08, {type:'triangle', vol:.08}); }],
+      magic:[, () => { this.noise(.35, {vol:.05, lp:1100, hp:300, a:.15}); this.tone(f, .4, {vol:.05, a:.12, lp:600}); }, () => this.noise(.3, {vol:.07, lp:300, sweep:2500, a:.05}), () => { this.tone(f * .5, .6, {vol:.1, a:.2, lp:400, wet:true}); this.tone(f * .75, .6, {vol:.05, a:.2, lp:400, wet:true}); }, () => { this.noise(.08, {vol:.08, lp:1800, hp:400}); this.tone(f * 1.2, .12, {vol:.06, a:.005, to:f * .6}); }],
+    };
+    V.blade = V.light; V.heavy = V.light;
+    (V[cls][i] || (() => this.signature(key)))();
   },
   play(name){
     if (!this.on || !this.ctx) return;
     try {
+      if (CATS[name]) return this.cat(name, SEL_SND[name] || 0);
+      if (ACLASS[name]) return this.attack(name, SEL_SND.atk[name] || 0);
       switch (name){
-        case 'draw': this.noise(.16, {vol:.05, lp:1800, hp:500, a:.03}); break;
         case 'pick': this.noise(.07, {vol:.035, lp:1500, hp:400, a:.01}); break;
         case 'fly': this.noise(.28, {vol:.035, lp:900, hp:200, a:.12}); break;
-        case 'place': this.thud(78, {vol:.4, dur:.24}); this.noise(.08, {vol:.05, lp:2200, hp:900, delay:.01}); break;
         case 'camp': this.thud(120, {vol:.22, dur:.16}); break;
-        case 'up': this.up(UP_VAR); break;
         case 'move': this.thud(140, {vol:.12, dur:.1}); this.thud(130, {vol:.1, dur:.1, delay:.1}); break;
-        case 'impact': this.thud(110, {vol:.28, dur:.13}); break;
-        case 'die': this.noise(.45, {vol:.07, lp:900, sweep:120, a:.02, wet:true}); this.tone(110, .4, {vol:.08, to:55}); break;
-        case 'hero': this.thud(52, {vol:.55, dur:.5}); this.noise(.4, {vol:.06, lp:300, wet:true}); break;
         case 'spill': this.thud(64, {vol:.35, dur:.3}); break;
         case 'turn': this.thud(180, {vol:.12, dur:.1}); this.thud(125, {vol:.12, dur:.14, delay:.09}); break;
-        case 'win': [0, .08, .16, .24].forEach((d, k) => this.thud(110 + k * 8, {vol:.2, dur:.12, delay:d})); this.horn(147, .7, {delay:.34}); this.horn(196, .8, {delay:.34, vol:.05}); break;
+        case 'win': [0, .08, .16, .24].forEach((d, k) => this.thud(110 + k * 8, {vol:.2, dur:.12, delay:d})); this.horn(147, .7, {delay:.34}); break;
         case 'lose': this.horn(147, .9, {to:98}); this.thud(55, {vol:.4, dur:.6, delay:.4}); break;
-        case 'peasant': this.noise(.09, {vol:.12, lp:700, hp:150}); this.thud(160, {vol:.14, dur:.08}); break;
-        case 'archer': this.tone(98, .16, {type:'triangle', vol:.14, a:.002}); this.tone(196, .1, {type:'triangle', vol:.05, a:.002}); this.noise(.05, {vol:.03, lp:1600, hp:500}); break;
-        case 'footman': this.noise(.12, {vol:.06, lp:1000, hp:200, a:.05}); this.thud(150, {vol:.22, dur:.1, delay:.1}); this.noise(.05, {vol:.05, lp:1400, hp:600, delay:.1}); break;
-        case 'griffin': this.noise(.28, {vol:.08, lp:600, hp:80, a:.12}); this.thud(130, {vol:.2, dur:.1, delay:.22}); break;
-        case 'priest': this.noise(.34, {vol:.05, lp:1100, hp:300, a:.15}); this.tone(220, .4, {vol:.05, a:.12, lp:600}); break;
-        case 'cavalier': this.thud(95, {vol:.18, dur:.09}); this.thud(95, {vol:.18, dur:.09, delay:.1}); this.thud(70, {vol:.4, dur:.25, delay:.2}); break;
-        case 'angel': this.noise(.42, {vol:.09, lp:700, hp:80, a:.18}); this.tone(110, .5, {vol:.08, a:.2, lp:500}); break;
-        case 'imp': this.noise(.07, {vol:.06, lp:1600, hp:600}); this.tone(420, .06, {type:'triangle', vol:.03}); break;
-        case 'demon': this.thud(80, {vol:.3, dur:.15}); this.tone(65, .2, {type:'sawtooth', vol:.03, a:.02, lp:400}); break;
-        case 'hound': this.noise(.05, {vol:.1, lp:1300, hp:400}); this.tone(72, .26, {type:'sawtooth', vol:.04, a:.03, lp:500}); break;
-        case 'succubus': this.noise(.32, {vol:.08, lp:700, hp:120, a:.1, sweep:1500}); this.tone(150, .28, {vol:.05, a:.08}); break;
-        case 'charger': this.thud(90, {vol:.2, dur:.09}); this.thud(85, {vol:.2, dur:.09, delay:.09}); this.noise(.18, {vol:.05, lp:500, delay:.05}); break;
-        case 'fiend': this.thud(48, {vol:.5, dur:.45}); this.noise(.3, {vol:.08, lp:400, delay:.02, wet:true}); break;
-        case 'devil': [55, 82].forEach(f => this.tone(f, .7, {type:'sawtooth', vol:.03, a:.06, lp:300, wet:true})); this.thud(50, {vol:.4, dur:.4, delay:.08}); break;
       }
     } catch (e) {}
   },
@@ -484,11 +515,16 @@ const fieldAt = (r, c) => S.units.find(u => u.where === 'f' && u.r === r && u.c 
 const campAt = (side, i) => S.units.find(u => u.where === 'c' && u.side === side && u.i === i);
 const alive = u => S.units.includes(u);
 const onField = side => S.units.filter(u => u.side === side && u.where === 'f');
-const near = (a, b) => a.where === 'f' && b.where === 'f' && Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c)) === 1;
-const rollType = () => { const o = M().odds, x = Math.random(); return x < o[0] ? 0 : x < o[0] + o[1] ? 1 : 2; };
-const newCard = () => ({uid:uid++, type:rollType()});
+const adj = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c)) === 1;
+function rollType(side){
+  const o = M().odds.slice(), max = M().unlock ? S.unlocked[side] : 2;
+  for (let i = max + 1; i < 3; i++) o[i] = 0;
+  const sum = o.reduce((a, b) => a + b, 0); let x = Math.random() * sum;
+  for (let i = 0; i < 3; i++){ if ((x -= o[i]) < 0) return i; } return 0;
+}
+const newCard = side => ({uid:uid++, type:rollType(side)});
 const who = side => side === 'p' ? 'Вы' : 'Инферно';
-function say(side, text){ S.log.unshift({side, text}); S.log.length = Math.min(S.log.length, 90); renderLog(); }
+function note(){}
 
 function plan(u, ignoreSleep){
   if (!u || u.where !== 'f' || (u.sleep && !ignoreSleep)) return null;
@@ -502,20 +538,29 @@ function plan(u, ignoreSleep){
   if (!enemyInCol && A.diag) for (const dc of [-1, 1]) for (let r = u.r + d; r >= 0 && r < ROWS; r += d){ const v = fieldAt(r, u.c + dc); if (v && v.side !== u.side) return {kind:'hit', t:v}; }
   return enemyInCol ? null : {kind:'hero'};
 }
-function trioFor(u){
-  if (!u || u.where !== 'f' || u.type >= 6 || M().upgrade !== 'trio') return null;
-  const fr = S.units.filter(v => v !== u && v.side === u.side && v.type === u.type && v.where === 'f');
+/* Trio by placement: a card completes a trio if the target cell touches a pair (or joins a chain of two). */
+function completionAt(side, type, cell, excl){
+  if (type >= 6) return null;
+  const fr = onField(side).filter(u => u.type === type && !(u.r === cell.r && u.c === cell.c) && !(excl && excl.has(u)));
   for (const v of fr) for (const w of fr){
     if (v.id >= w.id) continue;
-    if ((near(u, v) && (near(u, w) || near(v, w))) || (near(u, w) && near(v, w))) return [u, v, w];
+    if ((adj(cell, v) && (adj(cell, w) || adj(v, w))) || (adj(cell, w) && adj(v, w))) return [v, w];
   }
   return null;
+}
+const partnerOf = u => u.type < 6 ? onField(u.side).find(w => w !== u && w.type === u.type && adj(u, w)) : null;
+function cardUpgradeInfo(side, type){
+  const cells = [], units = [];
+  if (M().upgrade !== 'trio' || type >= 6) return {cells, units};
+  ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c) && completionAt(side, type, {r, c})) cells.push({r, c}); });
+  onField(side).filter(u => u.type === type && partnerOf(u)).forEach(u => units.push(u));
+  return {cells, units};
 }
 
 /* ---------- board DOM ---------- */
 function buildBoard(){
   const g = $('#grid'), m = M(); g.innerHTML = ''; CELLS.length = 0; CAMP.p = []; CAMP.e = []; TILES.clear();
-  $('#bwrap').style.setProperty('--bw', m.bw);
+  document.documentElement.style.setProperty('--bw', m.bw);
   g.style.gridTemplateColumns = m.camp ? '1fr 4px repeat(4,1fr) 4px 1fr' : `repeat(${m.cols},1fr)`;
   const off = m.camp ? 3 : 1;
   const add = (cls, col, row, data) => { const el = document.createElement('div'); el.className = 'cell ' + cls; el.style.gridColumn = col; el.style.gridRow = row; Object.assign(el.dataset, data); g.appendChild(el); return el; };
@@ -535,24 +580,29 @@ function tileInner(u, extra = ''){
     + `<span class="st a">${SWORD}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
 }
 function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
+/* Pairs that some affordable card in hand would upgrade. */
+function hintPairs(){
+  const set = new Set(); if (S.side !== 'p' || S.busy || M().upgrade !== 'trio') return set;
+  const types = new Set(S.hand.p.filter(c => c.type + 1 <= S.mana.p).map(c => c.type));
+  onField('p').forEach(u => { if (types.has(u.type)){ const w = partnerOf(u); if (w){ set.add(u.id); set.add(w.id); } } });
+  return set;
+}
 function syncUnits(dropId){
-  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel);
-  const trio = new Set(); if (S.side === 'p' && !S.busy) onField('p').forEach(u => { const t = trioFor(u); if (t) t.forEach(x => trio.add(x.id)); });
+  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), pairs = hintPairs();
   for (const u of S.units){
     let el = TILES.get(u.id);
     if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
       if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
     const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id;
-    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${trio.has(u.id) && !sel ? ' trio' : ''}${keep}`;
+    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${!mg && pairs.has(u.id) ? ' pair' : ''}${keep}`;
     el.style.setProperty('--t', TC[u.type]);
     el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}. ${U(u).ab}`;
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
-    const extra = mg ? `<span class="mgl">↑ ${next}</span>` : (sel && trio.has(u.id) ? `<button class="upb" type="button" data-up="${u.id}">↑ ${next}</button>` : '');
-    el.innerHTML = tileInner(u, extra);
+    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : '');
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
-  CELLS.flat().concat(CAMP.p).forEach(el => el.classList.toggle('drop', T.cells.includes(el)));
+  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); });
   renderOverlay();
 }
 function renderOverlay(){
@@ -575,18 +625,19 @@ function renderOverlay(){
 new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
 
 function targetsFor(sel){
-  const out = {cells:[], ups:[]};
-  if (!S || !sel || S.side !== 'p' || S.busy || S.over || sel.unit && M().upgrade === 'trio') return out;
+  const out = {cells:[], ups:[], upCells:[]};
+  if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
   let type, src = null;
   if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
   else { src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p' || src.where !== 'c') return out; type = src.type; }
   ZONE.p.forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) out.cells.push(CELLS[r][c]); });
   if (sel.card != null && M().camp) for (let i = 0; i < CAMP_N; i++) if (!campAt('p', i)) out.cells.push(CAMP.p[i]);
   if (M().upgrade === 'stack' && type < 6) out.ups = S.units.filter(u => u.side === 'p' && u !== src && u.type === type);
+  if (M().upgrade === 'trio' && sel.card != null){ const info = cardUpgradeInfo('p', type); out.ups = info.units; out.upCells = info.cells.map(x => CELLS[x.r][x.c]); }
   return out;
 }
 
-/* ---------- bars, hand, log ---------- */
+/* ---------- bars, hand ---------- */
 function heroHTML(side){
   const hp = S.hero[side];
   return `<div class="hero" id="hero-${side}" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(F[side].heroIcon)}</div><div><b>${F[side].hero}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><span class="hv">${hp}</span></div>`;
@@ -597,11 +648,12 @@ function manaHTML(side){
 }
 function renderBars(){
   const me = S.side === 'p' && !S.busy && !S.over;
-  $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
+  const unl = side => M().unlock ? `<span class="chip unl">Карты до <b>${RO[S.unlocked[side]]}</b> тира</span>` : '';
+  $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + unl('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит Инферно'}</span>`;
-  $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
+  $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? 'Инферно ходит…' : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель.' : 'Выставьте карты, потом «Конец хода».';
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? 'Инферно ходит…' : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель: золото — улучшение.' : 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
@@ -616,22 +668,23 @@ function cardEl(card){
 }
 function layoutHand(){
   const hb = $('#hand'); if (!hb || !S) return;
-  const cards = [...hb.querySelectorAll('.card')], n = cards.length, W = 104, avail = hb.clientWidth - 90;
-  const step = n > 1 ? Math.min(W + 8, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2;
+  const cards = [...hb.querySelectorAll('.card')], n = cards.length, W = 108, avail = hb.clientWidth - 90;
+  const step = n > 1 ? Math.min(W + 10, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2;
   cards.forEach((el, i) => {
     const k = i - (n - 1) / 2;
-    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${k * k * 3}px`); el.style.setProperty('--a', `${k * 4}deg`);
+    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${k * k * 3}px`); el.style.setProperty('--a', `${k * 3.5}deg`);
     el.style.zIndex = i + 1;
-    const c = S.hand.p.find(h => h.uid === +el.dataset.uid);
-    el.classList.toggle('poor', !!c && c.type + 1 > S.mana.p);
+    const c = S.hand.p.find(h => h.uid === +el.dataset.uid), poor = !!c && c.type + 1 > S.mana.p;
+    el.classList.toggle('poor', poor);
     el.classList.toggle('sel', !!(S.sel && S.sel.card === +el.dataset.uid));
+    const info = c && !poor && S.side === 'p' && !S.busy ? cardUpgradeInfo('p', c.type) : {cells:[], units:[]};
+    el.classList.toggle('canup', info.cells.length + info.units.length > 0);
   });
 }
 function rerenderHandFaces(){ document.querySelectorAll('#hand .card').forEach(el => { const c = S.hand.p.find(h => h.uid === +el.dataset.uid); if (c) el.querySelector('.in').innerHTML = `${cardFace(c.type)}<div class="backf"></div>`; }); }
-function renderLog(){ const l = $('#log'); if (l) l.innerHTML = S.log.map(x => `<li class="${x.side}">${x.text}</li>`).join(''); }
 function renderAll(dropId){ renderBars(); syncUnits(dropId); layoutHand(); }
 
-/* ---------- animation helpers (short and calm) ---------- */
+/* ---------- animation helpers ---------- */
 function floatAt(x, y, text, cls = ''){
   const el = document.createElement('div'); el.className = 'float ' + cls; el.textContent = text; el.style.left = x + 'px'; el.style.top = y + 'px';
   $('#units').appendChild(el);
@@ -643,16 +696,15 @@ function ringAt(el, color){
   $('#units').appendChild(r);
   r.animate([{transform:'scale(.94)', opacity:1}, {transform:'scale(1.18)', opacity:0}], {duration:D(420), easing:'ease-out'}).finished.then(() => r.remove());
 }
-/* HP badge only flashes: no scaling. */
 function flashHP(badge){
   if (!badge) return;
   badge.animate([{background:'#0b0d10'}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fff, 0 0 16px #ef4444', offset:.15}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fca5a5, 0 0 10px #ef4444', offset:.5}, {background:'#0b0d10'}], {duration:D(650), easing:'ease-out'});
 }
 async function flyTo(html, from, toEl, spin){
   const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
-  const to = toEl.getBoundingClientRect(), s = to.width / 104;
-  const x0 = from.left + from.width / 2 - 52, y0 = from.top + from.height / 2 - 74;
-  const x1 = to.left + to.width / 2 - 52 * s, y1 = to.top + to.height / 2 - 74 * s;
+  const to = toEl.getBoundingClientRect(), s = to.width / 108;
+  const x0 = from.left + from.width / 2 - 54, y0 = from.top + from.height / 2 - 77;
+  const x1 = to.left + to.width / 2 - 54 * s, y1 = to.top + to.height / 2 - 77 * s;
   const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 60;
   Sfx.play('fly');
   await fly.animate([
@@ -666,7 +718,7 @@ async function flyTo(html, from, toEl, spin){
 /* ---------- actions ---------- */
 async function drawCards(side, k, animate){
   for (let i = 0; i < k && S.hand[side].length < HAND_MAX; i++){
-    const card = newCard(); S.hand[side].push(card);
+    const card = newCard(side); S.hand[side].push(card);
     if (side !== 'p') continue;
     const el = cardEl(card), deck = $('#deck');
     if (animate){ el.classList.add('back'); el.style.setProperty('--x', `${deck.offsetLeft}px`); el.style.setProperty('--y', '10px'); el.style.setProperty('--a', '8deg'); }
@@ -685,6 +737,33 @@ function sourceRect(side, card, fromRect){
   if (side === 'p'){ const el = $(`#hand .card[data-uid="${card.uid}"]`); const r = fromRect || (el && el.getBoundingClientRect()); if (el) el.remove(); layoutHand(); return r; }
   return ($('#ehand') || $('#topbar')).getBoundingClientRect();
 }
+async function absorb(into, list){
+  const tb = box(slotEl(into));
+  await Promise.all(list.map(v => { const el = TILES.get(v.id), b = box(slotEl(v)); return el ? el.animate([{transform:'translate(0,0)', opacity:1}, {transform:`translate(${tb.x - b.x}px,${tb.y - b.y}px) scale(.55)`, opacity:0}], {duration:D(300), easing:'cubic-bezier(.5,0,.5,1)'}).finished : null; }));
+  S.units = S.units.filter(x => !list.includes(x)); syncUnits();
+}
+async function promote(target, fromDesc){
+  const side = target.side, next = F[side].units[target.type + 1];
+  note(side, `${U(target).name} + ${fromDesc} → ${next.name}`);
+  Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
+  if (M().unlock) S.unlocked[side] = Math.max(S.unlocked[side], Math.min(target.type, 2));
+  Sfx.play('up'); syncUnits(); layoutHand(); renderBars();
+  const el = TILES.get(target.id);
+  ringAt(slotEl(target), '#fbbf24');
+  if (el) el.animate([{filter:'brightness(1.9)'}, {filter:'none'}], {duration:D(420)});
+  if (next.summon && target.where === 'f'){
+    const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = target.r + dr, c = target.c + dc; if ((dr || dc) && ZONE[side].includes(r) && c >= 0 && c < COLS() && !fieldAt(r, c)) spots.push({r, c}); }
+    if (spots.length){ const s = spots[0], imp = {id:uid++, side, type:0, hp:F[side].units[0].hp, where:'f', r:s.r, c:s.c, sleep:false}; S.units.push(imp); syncUnits(imp.id); }
+  }
+  await wait(260);
+}
+/* After a trio upgrade the new unit may itself complete another trio: keep going. */
+async function cascade(u){
+  while (alive(u) && u.where === 'f' && u.type < 6){
+    const pair = completionAt(u.side, u.type, u); if (!pair) break;
+    await wait(120); await absorb(u, pair); await promote(u, 'ещё двое рядом');
+  }
+}
 async function deployCard(side, cardUid, dest, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
   if (dest.camp && !M().camp) return false;
@@ -696,40 +775,23 @@ async function deployCard(side, cardUid, dest, fromRect){
   await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick};
+  const pair = !dest.camp && M().upgrade === 'trio' ? completionAt(side, card.type, dest) : null;
   S.units.push(u);
   Sfx.play(dest.camp ? 'camp' : 'place'); syncUnits(u.id); ringAt(toEl, side === 'p' ? '#2dd4bf' : '#f472b6');
-  say(side, `${who(side)}: ${A.name}${dest.camp ? ' в лагерь' : ''} (−${card.type + 1} маны).`);
-  await wait(140); return true;
-}
-async function promote(target, fromDesc){
-  const side = target.side, next = F[side].units[target.type + 1];
-  say(side, `${who(side)}: ${U(target).name} + ${fromDesc} → ${next.name}.`);
-  Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
-  Sfx.play('up'); syncUnits();
-  const el = TILES.get(target.id);
-  ringAt(slotEl(target), '#fbbf24');
-  if (el) el.animate([{filter:'brightness(1.9)'}, {filter:'none'}], {duration:D(420)});
-  if (next.summon && target.where === 'f'){
-    const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = target.r + dr, c = target.c + dc; if ((dr || dc) && ZONE[side].includes(r) && c >= 0 && c < COLS() && !fieldAt(r, c)) spots.push({r, c}); }
-    if (spots.length){ const s = spots[0], imp = {id:uid++, side, type:0, hp:F[side].units[0].hp, where:'f', r:s.r, c:s.c, sleep:false}; S.units.push(imp); syncUnits(imp.id); say(side, 'Дьявол призывает беса.'); }
-  }
-  await wait(280);
-}
-async function upgradeTrio(u){
-  const tr = trioFor(u); if (!tr) return false;
-  const tb = box(slotEl(u));
-  await Promise.all(tr.slice(1).map(v => { const el = TILES.get(v.id), b = box(slotEl(v)); return el ? el.animate([{transform:'translate(0,0)', opacity:1}, {transform:`translate(${tb.x - b.x}px,${tb.y - b.y}px) scale(.6)`, opacity:0}], {duration:D(320), easing:'cubic-bezier(.5,0,.5,1)'}).finished : null; }));
-  S.units = S.units.filter(x => x === u || !tr.includes(x)); S.sel = null;
-  await promote(u, 'ещё двое рядом');
+  if (pair){ await wait(150); await absorb(u, pair); await promote(u, 'пара рядом'); await cascade(u); }
+  else await wait(120);
   return true;
 }
 async function upgradeWithCard(side, cardUid, target, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid);
   if (!card || !alive(target) || target.side !== side || target.type !== card.type || target.type >= 6) return false;
+  const partner = M().upgrade === 'trio' ? partnerOf(target) : null;
+  if (M().upgrade === 'trio' && !partner) return false;
   if (!spendCard(side, cardUid)) return false;
   S.sel = null; const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
   await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, TILES.get(target.id) || slotEl(target), side === 'e');
-  await promote(target, 'карта');
+  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); await cascade(target); }
+  else await promote(target, 'карта');
   return true;
 }
 async function fromCamp(u, dest){
@@ -743,18 +805,17 @@ async function fromCamp(u, dest){
   }
   if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r)) return false;
   Object.assign(u, {where:'f', r:dest.r, c:dest.c}); delete u.i; S.sel = null;
-  Sfx.play('move'); syncUnits(); say(u.side, `${who(u.side)}: ${U(u).name} выходит из лагеря.`);
+  Sfx.play('move'); syncUnits();
   await wait(320); return true;
 }
 async function kill(v){
   const el = TILES.get(v.id); Sfx.play('die');
   if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
   S.units = S.units.filter(x => x !== v); syncUnits();
-  say(v.side === 'p' ? 'e' : 'p', `${U(v).name} погибает.`);
 }
 async function damage(t, dmg){
   t.hp -= dmg; const el = TILES.get(t.id);
-  Sfx.play('impact');
+  Sfx.play('hurt');
   if (el){
     el.animate([{filter:'brightness(2)'}, {filter:'none'}], {duration:D(220)});
     const hb = el.querySelector('.st.h'); if (hb){ hb.querySelector('b').textContent = Math.max(0, t.hp); hb.classList.add('d'); flashHP(hb); }
@@ -777,31 +838,40 @@ async function strikeFx(u, targetPt){
     await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(targetPt.x - a.x) * .4}px,${(targetPt.y - a.y) * .4}px) scale(1.05)`, offset:.55}, {transform:'translate(0,0)'}], {duration:D(300), easing:'cubic-bezier(.5,0,.3,1)'}).finished;
   }
 }
-/* Excess damage beyond the target's remaining HP spills to the enemy hero. */
-async function spill(u, from, amount){
-  const o = other(u.side), hEl = $('#hero-' + o), g = $('#grid');
-  const a = mid(from), edge = u.side === 'p' ? CELLS[0][0].offsetTop - 18 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 18;
+async function travel(from, to){
   const bo = document.createElement('div'); bo.className = 'bolt spill'; $('#units').appendChild(bo);
-  await bo.animate([{transform:`translate(${a.x}px,${a.y}px)`}, {transform:`translate(${a.x}px,${edge}px)`}], {duration:D(260), easing:'ease-in'}).finished; bo.remove();
+  await bo.animate([{transform:`translate(${from.x}px,${from.y}px)`}, {transform:`translate(${to.x}px,${to.y}px)`}], {duration:D(240), easing:'ease-in'}).finished; bo.remove();
+}
+/* Excess damage continues down the column: next enemy behind the killed one, then the hero. */
+async function carry(u, r, c, amount){
+  const d = FWD[u.side]; let from = mid(CELLS[r][c]);
+  for (let rr = r + d; rr >= 0 && rr < ROWS && amount > 0; rr += d){
+    const v = fieldAt(rr, c); if (!v || v.side === u.side) continue;
+    await travel(from, mid(CELLS[rr][c]));
+    const excess = amount - v.hp; await damage(v, amount);
+    if (excess <= 0 || S.over) return;
+    amount = excess; from = mid(CELLS[rr][c]);
+  }
+  if (amount <= 0) return;
+  const o = other(u.side), edge = u.side === 'p' ? CELLS[0][0].offsetTop - 18 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 18;
+  await travel(from, {x:from.x, y:edge});
   S.hero[o] = Math.max(0, S.hero[o] - amount); Sfx.play('spill'); renderBars();
   const h2 = $('#hero-' + o); if (h2) flashHP(h2.querySelector('.hv'));
-  floatAt(a.x, edge + (u.side === 'p' ? 16 : -16), `−${amount}`, 'g');
-  say(u.side, `Лишний урон уходит в героя: −${amount}.`);
-  await wait(260);
+  floatAt(from.x, edge + (u.side === 'p' ? 16 : -16), `−${amount}`, 'g');
+  await wait(220);
 }
 async function hit(u, t){
-  const A = U(u), slot = slotEl(t);
-  await strikeFx(u, mid(slot));
+  const A = U(u), tr = t.r, tc = t.c;
+  await strikeFx(u, mid(slotEl(t)));
   let dmg = A.atk; if (A.ranged && U(t).shield) dmg = Math.ceil(dmg / 2);
-  say(u.side, `${A.name} → ${U(t).name}: ${dmg} урона.`);
   const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
   const sides = A.splash ? [-1, 1].map(dc => fieldAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
   const excess = dmg - t.hp;
   await damage(t, dmg);
   TILES.get(u.id)?.classList.remove('acting');
-  if (excess > 0 && !S.over) await spill(u, slot, excess);
-  if (behind && behind.side !== u.side && alive(behind)){ const d2 = Math.max(1, Math.floor(dmg / 2)); say(u.side, `Пронзает: ${U(behind).name} −${d2}.`); await damage(behind, d2); }
-  for (const v of sides) if (alive(v)){ say(u.side, `Вторая голова: ${U(v).name} −1.`); await damage(v, 1); }
+  if (excess > 0 && !S.over) await carry(u, tr, tc, excess);
+  if (behind && behind.side !== u.side && alive(behind)) await damage(behind, Math.max(1, Math.floor(dmg / 2)));
+  for (const v of sides) if (alive(v)) await damage(v, 1);
 }
 async function heroHit(u){
   const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
@@ -812,7 +882,6 @@ async function heroHit(u){
   const hEl = $('#hero-' + o); if (hEl) flashHP(hEl.querySelector('.hv'));
   floatAt(a.x, edge + (u.side === 'p' ? 18 : -18), `−${dmg}`, 'g');
   TILES.get(u.id)?.classList.remove('acting');
-  say(u.side, `${A.name} бьёт героя: −${dmg}.`);
   await wait(260);
 }
 async function resolve(side){
@@ -832,7 +901,6 @@ function checkOver(){
   if (S.over) return true;
   if (S.hero.e <= 0) S.over = 'win'; else if (S.hero.p <= 0) S.over = 'lose';
   if (S.over){
-    say('sys', S.over === 'win' ? 'Победа: лорд Инферно пал.' : 'Поражение: ваш герой пал.');
     Sfx.play(S.over);
     $('#bwrap').insertAdjacentHTML('beforeend', `<div class="over"><b>${S.over === 'win' ? 'Победа' : 'Поражение'}</b><button class="btn" type="button" id="again">Ещё бой</button></div>`);
     $('#again').onclick = newGame;
@@ -850,11 +918,15 @@ async function startTurn(side, first){
   if (!first) await drawCards(side, 2, side === 'p');
 }
 
-/* ---------- Inferno AI: ranged to the back row, melee to the front, aims at open columns ---------- */
-const BACK = {p:3, e:0}, FRONT = {p:2, e:1};
+/* ---------- Inferno AI ---------- */
+function rowFit(side, type, r){
+  const A = F[side].units[type];
+  if (A.ranged) return r === BACK[side] ? 4 : -6;
+  return r === FRONT[side] ? 3 : .5;
+}
 function cellScore(side, type, r, c){
   const A = F[side].units[type];
-  let s = A.ranged ? (r === BACK[side] ? 4 : -2) : (r === FRONT[side] ? 3 : (fieldAt(FRONT[side], c) ? -1 : .5));
+  let s = A.ranged ? (r === BACK[side] ? 4 : -6) : (r === FRONT[side] ? 3 : (fieldAt(FRONT[side], c) && fieldAt(FRONT[side], c).side === side ? -1 : .5));
   const foes = S.units.filter(u => u.where === 'f' && u.side !== side && u.c === c);
   if (!foes.length) s += 1.5 + A.atk * .4;
   else {
@@ -862,52 +934,50 @@ function cellScore(side, type, r, c){
     s += 1 + (A.atk >= weakest ? 1.2 : 0);
     if (!A.ranged && threat >= A.hp) s -= 1.2;
   }
-  if (M().upgrade === 'trio') s += S.units.filter(u => u.side === side && u.where === 'f' && u.type === type && Math.max(Math.abs(u.r - r), Math.abs(u.c - c)) === 1).length * 2.2;
+  /* cover own ranged: melee in front of an archer or succubus */
+  const behind = fieldAt(BACK[side], c);
+  if (!A.ranged && r === FRONT[side] && behind && behind.side === side && U(behind).ranged) s += 2.8;
+  if (A.ranged && r === BACK[side]){ const fr = fieldAt(FRONT[side], c); if (fr && fr.side === side) s += 1; }
   return s + Math.random() * .3;
 }
-const nextIsRanged = (side, type) => type < 6 && !!F[side].units[type + 1].ranged;
-function fitForNext(side, u){
-  const ranged = nextIsRanged(side, u.type);
-  if (u.where === 'c') return 2;
-  return ranged ? (u.r === BACK[side] ? 3 : -3) : (u.r === FRONT[side] ? 2.5 : 0);
+const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
+/* Follow the cascade a placement would trigger and score the unit that finally stands there. */
+function finalAfterPlacement(side, type, cell, firstPair){
+  const excl = new Set(firstPair); let t = type + 1, pair;
+  while (t < 6 && (pair = completionAt(side, t, cell, excl))){ pair.forEach(x => excl.add(x)); t++; }
+  return t;
 }
 async function aiTurn(){
   const side = 'e', mine = () => S.units.filter(u => u.side === side);
   const freeCells = () => { const f = []; ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) f.push({r, c}); }); return f; };
-  const best = type => freeCells().map(f => ({...f, s:cellScore(side, type, f.r, f.c)})).sort((a, b) => b.s - a.s)[0];
-  const trioUps = async () => {
-    for (let go = true; go && !S.over;){
-      go = false;
-      for (const u of onField(side)){ const tr = trioFor(u); if (!tr) continue;
-        const pick = tr.slice().sort((a, b) => fitForNext(side, b) - fitForNext(side, a))[0];
-        await upgradeTrio(pick); go = true; break; }
-    }
-  };
-  if (M().upgrade === 'trio') await trioUps();
   if (M().camp){
     for (const u of mine().filter(v => v.where === 'c')){
-      const tgt = mine().filter(v => v !== u && v.type === u.type && v.type < 6).sort((a, b) => fitForNext(side, b) - fitForNext(side, a))[0];
-      if (tgt && fitForNext(side, tgt) >= 0){ await fromCamp(u, {unit:tgt}); continue; }
-      const cell = best(u.type); if (cell && cell.s > 1.5 && !u.sleep) await fromCamp(u, cell);
+      const tgt = mine().filter(v => v !== u && v.type === u.type && v.type < 6).map(v => ({v, s:fitNext(side, v.type, v.r, v.where)})).sort((a, b) => b.s - a.s)[0];
+      if (tgt && tgt.s >= 0){ await fromCamp(u, {unit:tgt.v}); continue; }
+      const cell = freeCells().map(f => ({...f, s:cellScore(side, u.type, f.r, f.c)})).sort((a, b) => b.s - a.s)[0];
+      if (cell && cell.s > 1.5 && !u.sleep) await fromCamp(u, cell);
     }
   }
-  for (let guard = 0; guard < 14; guard++){
-    const aff = S.hand[side].filter(c => c.type + 1 <= S.mana[side]).sort((a, b) => b.type - a.type);
+  for (let guard = 0; guard < 14 && !S.over; guard++){
+    const aff = S.hand[side].filter(c => c.type + 1 <= S.mana[side]);
     if (!aff.length) break;
-    let done = false;
+    const opts = [];
     for (const card of aff){
-      if (M().upgrade === 'stack'){
-        const tgt = mine().filter(u => u.type === card.type && u.type < 6).sort((a, b) => fitForNext(side, b) - fitForNext(side, a))[0];
-        if (tgt && fitForNext(side, tgt) >= 0){ await upgradeWithCard(side, card.uid, tgt); done = true; break; }
+      for (const f of freeCells()){
+        const pair = M().upgrade === 'trio' ? completionAt(side, card.type, f) : null;
+        const fin = pair ? finalAfterPlacement(side, card.type, f, pair) : card.type;
+        opts.push({card, kind:'cell', f, s:pair ? 3 + (rowFit(side, fin, f.r) < 0 ? -12 : rowFit(side, fin, f.r)) + fin : cellScore(side, card.type, f.r, f.c) + card.type * .5});
       }
-      const cell = best(card.type);
-      if (M().camp && nextIsRanged(side, card.type) && (!cell || cell.s < 2)){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null){ await deployCard(side, card.uid, {camp:true, i}); done = true; break; } }
-      if (cell){ await deployCard(side, card.uid, {r:cell.r, c:cell.c}); done = true; break; }
-      if (M().camp){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null){ await deployCard(side, card.uid, {camp:true, i}); done = true; break; } }
+      if (M().upgrade === 'trio') onField(side).filter(u => u.type === card.type && partnerOf(u)).forEach(u => { const fin = finalAfterPlacement(side, u.type, u, [u, partnerOf(u)]); const fit = rowFit(side, fin, u.r); opts.push({card, kind:'onto', u, s:3 + (fit < 0 ? -12 : fit) + fin}); });
+      if (M().upgrade === 'stack') mine().filter(u => u.type === card.type && u.type < 6).forEach(u => opts.push({card, kind:'onto', u, s:2 + fitNext(side, u.type, u.r, u.where)}));
+      if (M().camp){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null) opts.push({card, kind:'camp', i, s:(F[side].units[card.type + 1]?.ranged ? 1.5 : .2)}); }
     }
+    const best = opts.sort((a, b) => b.s - a.s)[0];
+    if (!best || best.s < -1) break;
+    if (best.kind === 'cell') await deployCard(side, best.card.uid, {r:best.f.r, c:best.f.c});
+    else if (best.kind === 'onto') await upgradeWithCard(side, best.card.uid, best.u);
+    else await deployCard(side, best.card.uid, {camp:true, i:best.i});
     renderBars();
-    if (!done) break;
-    if (M().upgrade === 'trio') await trioUps();
   }
 }
 
@@ -917,25 +987,23 @@ async function endTurn(){
   S.busy = true; S.sel = null; renderAll();
   await resolve('p');
   if (S.over){ S.busy = false; return; }
-  S.side = 'e'; Sfx.play('turn'); say('e', 'Ход Инферно.');
+  S.side = 'e'; Sfx.play('turn');
   await startTurn('e', S.turn === 1); await wait(180);
   await aiTurn(); await wait(180);
   await resolve('e');
   if (S.over){ S.busy = false; return; }
   S.turn++; S.side = 'p'; Sfx.play('turn');
-  say('sys', `Ход ${S.turn}: ${Math.min(S.turn, MANA_MAX)} маны, +2 карты.`);
   S.busy = false;
   await startTurn('p', false);
   renderAll();
 }
 async function newGame(){
   $('#bwrap .over')?.remove();
-  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, log:[]};
+  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, unlocked:{p:0, e:0}};
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
   buildBoard(); renderModes();
-  for (let i = 0; i < 6; i++) S.hand.e.push(newCard());
+  for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
   await startTurn('p', true);
-  say('sys', `Бой начался, режим «${M().name}». Ход 1: 1 мана.`);
   await drawCards('p', 6, true);
   S.busy = false; renderAll();
 }
@@ -961,7 +1029,6 @@ async function perform(sel, dest, fromRect){
 }
 document.addEventListener('pointerdown', e => {
   if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
-  if (e.target.closest('[data-up]')) return;
   const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
   const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
   if (!card && !campUnit) return;
@@ -979,7 +1046,7 @@ document.addEventListener('pointermove', e => {
     document.body.appendChild(g); drag.ghost = g; drag.src.classList.add('ghosted'); drag.src.style.opacity = '.25';
   }
   if (drag.on){
-    const w = drag.ghost.offsetWidth || 104, h = drag.ghost.offsetHeight || 148;
+    const w = drag.ghost.offsetWidth || 108, h = drag.ghost.offsetHeight || 154;
     drag.ghost.style.transform = `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
     document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
     const d = dropAt(e.clientX, e.clientY); if (d && d.el && (d.el.classList.contains('drop') || d.el.classList.contains('mg'))) d.el.classList.add('hov');
@@ -1000,14 +1067,11 @@ document.addEventListener('dragstart', e => { if (e.target.closest && e.target.c
 $('#hand').addEventListener('keydown', e => { const card = e.target.closest('.card'); if (card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (S.side === 'p' && !S.busy){ S.sel = {card:+card.dataset.uid}; renderAll(); } } });
 $('#bwrap').addEventListener('click', async e => {
   if (!S || S.side !== 'p' || S.busy || S.over) return;
-  const up = e.target.closest('[data-up]');
-  if (up){ const u = S.units.find(v => v.id === +up.dataset.up); S.busy = true; await upgradeTrio(u); S.busy = false; S.sel = null; renderAll(); return; }
   const dest = dropAt(e.clientX, e.clientY);
   if (S.sel && dest){
     if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
     if (await perform(S.sel, dest)) return;
   }
-  if (dest && dest.unit && dest.unit.side === 'p' && dest.unit.where === 'f' && M().upgrade === 'trio'){ S.sel = {unit:dest.unit.id}; renderAll(); return; }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
 $('#end').onclick = endTurn;
@@ -1015,7 +1079,6 @@ $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
 $('#snd').onclick = e => { Sfx.on = !Sfx.on; e.currentTarget.setAttribute('aria-pressed', Sfx.on); e.currentTarget.textContent = Sfx.on ? 'Звук' : 'Без звука'; };
 $('#arr').onclick = e => { SHOW_ARROWS = !SHOW_ARROWS; e.currentTarget.setAttribute('aria-pressed', SHOW_ARROWS); renderOverlay(); };
 
-/* ---------- mode tabs ---------- */
 function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
   $('#modes').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if (S && S.busy && !S.over) return; MODE_ID = b.dataset.m; try { localStorage.setItem('fieldMode', MODE_ID); } catch (e) {} newGame(); });
@@ -1023,23 +1086,25 @@ function renderModes(){
 }
 
 /* ---------- sound lab ---------- */
-function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 450); }
-function renderUpVars(){
-  $('#upvars').innerHTML = UP_VARIANTS.map((n, i) => `<button class="sbtn" type="button" data-uv="${i}" aria-pressed="${i === UP_VAR}"><span>${i + 1}. ${n}${i === UP_VAR ? '<small>выбран</small>' : ''}</span></button>`).join('');
-  $('#upvars').querySelectorAll('[data-uv]').forEach(b => b.onclick = () => { Sfx.ensure(); UP_VAR = +b.dataset.uv; try { localStorage.setItem('fieldUpSound', UP_VAR); } catch (e) {} Sfx.up(UP_VAR); renderUpVars(); });
+function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
+function renderSoundLab(){
+  $('#sndcats').innerHTML = `<h3>События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
+  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + ['p', 'e'].flatMap(s => F[s].units.map(u => `<div class="srow"><b>${u.name}<small>${F[s].name}</small></b><div class="svars">${AVAR[ACLASS[u.key]].map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
 }
-const ALL_SOUNDS = [['draw','Взять карту'],['fly','Полёт карты'],['place','Выставить на поле'],['camp','Выставить в лагерь'],['move','Выход из лагеря'],['up','Улучшение (выбранное)'],['impact','Попадание'],['die','Гибель юнита'],['hero','Удар по герою'],['spill','Лишний урон в героя'],['turn','Начало хода'],['win','Победа'],['lose','Поражение']]
-  .concat(['p', 'e'].flatMap(s => F[s].units.map(u => [u.key, `Атака: ${u.name}`])));
-$('#allsnd').innerHTML = ALL_SOUNDS.map(([k, n]) => `<button class="sbtn" type="button" data-s="${k}"><span>${n}</span></button>`).join('');
-$('#allsnd').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; Sfx.ensure(); const was = Sfx.on; Sfx.on = true; Sfx.play(b.dataset.s); Sfx.on = was; flashBtn(b); });
-renderUpVars();
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
+  Sfx.ensure(); const i = +b.dataset.i;
+  if (b.dataset.cat){ SEL_SND[b.dataset.cat] = i; Sfx.cat(b.dataset.cat, i); } else { SEL_SND.atk[b.dataset.atk] = i; Sfx.attack(b.dataset.atk, i); }
+  saveSnd(); renderSoundLab();
+  const nb = document.querySelector(b.dataset.cat ? `[data-cat="${b.dataset.cat}"][data-i="${i}"]` : `[data-atk="${b.dataset.atk}"][data-i="${i}"]`); if (nb){ flashBtn(nb); nb.focus(); }
+});
 
-/* ---------- icon gallery ---------- */
+/* ---------- icon gallery and roster ---------- */
 function renderIcons(){
-  $('#icons').innerHTML = `<table><thead><tr><th>Юнит</th>${ICON_STYLES.map(s => `<th style="text-align:center"><button class="ihead" type="button" data-is="${s.id}" aria-pressed="${s.id === ICON_STYLE}">${s.name}</button></th>`).join('')}</tr></thead><tbody>`
-    + ['p', 'e'].flatMap(side => F[side].units.map((u, i) => `<tr><td><span style="color:${side === 'p' ? 'var(--tp)' : 'var(--te)'}">●</span> ${u.name} <span class="muted" style="font:500 11px var(--fm)">${RO[i]}</span></td>${ICON_STYLES.map(s => `<td><span class="ibox" style="--t:${TC[i]}">${ico(u.key, s.id)}</span></td>`).join('')}</tr>`)).join('')
+  $('#icons').innerHTML = `<table><thead><tr><th>Юнит</th>${LEVELS.map((n, i) => `<th style="text-align:center"><button class="ihead" type="button" data-lv="${i}" aria-pressed="${i === ICON_LEVEL}">${n}</button></th>`).join('')}</tr></thead><tbody>`
+    + ['p', 'e'].flatMap(side => F[side].units.map((u, i) => `<tr><td><span style="color:${side === 'p' ? 'var(--tp)' : 'var(--te)'}">●</span> ${u.name} <span class="muted" style="font:500 11px var(--fm)">${RO[i]}</span></td>${LEVELS.map((_, lv) => `<td><span class="ibox" style="--t:${TC[i]}">${ico(u.key, lv)}</span></td>`).join('')}</tr>`)).join('')
     + `</tbody></table>`;
-  $('#icons').querySelectorAll('[data-is]').forEach(b => b.onclick = () => { ICON_STYLE = b.dataset.is; try { localStorage.setItem('fieldIconStyle', ICON_STYLE); } catch (e) {} renderIcons(); renderRoster(); if (S){ rerenderHandFaces(); syncUnits(); } });
+  $('#icons').querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { ICON_LEVEL = +b.dataset.lv; try { localStorage.setItem('fieldIconLevel', ICON_LEVEL); } catch (e) {} renderIcons(); renderRoster(); if (S){ rerenderHandFaces(); syncUnits(); } });
 }
 function renderRoster(){
   $('#rosters').innerHTML = ['p', 'e'].map(side => {
@@ -1050,6 +1115,6 @@ function renderRoster(){
       + `</tbody></table></div>`;
   }).join('');
 }
-renderIcons(); renderRoster();
+renderSoundLab(); renderIcons(); renderRoster();
 newGame();
 </script>
