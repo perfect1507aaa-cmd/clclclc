@@ -546,8 +546,11 @@ function seeded(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10
 
 /* ---------- node icons ---------- */
 function rrPath(x, c, y, w, h, r) { x.beginPath(); x.moveTo(c + r, y); x.arcTo(c + w, y, c + w, y + h, r); x.arcTo(c + w, y + h, c, y + h, r); x.arcTo(c, y + h, c, y, r); x.arcTo(c, y, c + w, y, r); x.closePath(); }
-function nodeSprite(tier, owner) {
-  const d = V.dpr, u0 = Math.max(4, REF_R[tier] * V.s * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${tier}|${owner}|${Math.round(u)}`;
+/* The datacenter's look: five candidates while one is being chosen. */
+let DC_STYLE = 1;
+function nodeSprite(tier, owner, style) {
+  const dcs = tier === 4 ? style || DC_STYLE : 0;
+  const d = V.dpr, u0 = Math.max(4, REF_R[tier] * V.s * d), u = Math.pow(2, Math.round(Math.log2(u0) * 3) / 3), key = `${tier}|${dcs}|${owner}|${Math.round(u)}`;
   let spr = nCache.get(key); if (spr) return spr;
   const S = Math.ceil(u * 2.3), cx = S / 2, cy = S / 2, cv = document.createElement('canvas'); cv.width = cv.height = S;
   const x = cv.getContext('2d'), col = PAL.rgb[owner], dark = PAL.dark;
@@ -557,17 +560,68 @@ function nodeSprite(tier, owner) {
   const leds = [], screens = [], icon = TIERS[tier].icon;
   const box = (bx, by, bw, bh, r) => { rrPath(x, cx + bx * u, cy + by * u, bw * u, bh * u, r * u); x.fillStyle = fill; x.fill(); x.stroke(); };
   const line = (a, b, c2, e) => { x.beginPath(); x.moveTo(cx + a * u, cy + b * u); x.lineTo(cx + c2 * u, cy + e * u); x.stroke(); };
-  if (icon === 'dc') {
-    // the datacenter: one big server cabinet — a status screen across the top, two columns of blade units, feet
-    box(-1.0, -0.95, 2.0, 1.86, 0.08);
-    rrPath(x, cx - 0.84 * u, cy - 0.8 * u, 1.68 * u, 0.26 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.84, -0.8, 1.68, 0.26]);
-    for (let col = 0; col < 2; col++) for (let r = 0; r < 4; r++) {
-      const x0 = -0.84 + col * 0.9, y0 = -0.43 + r * 0.33;
-      box(x0, y0, 0.78, 0.25, 0.03);
-      leds.push([x0 + 0.1, y0 + 0.125], [x0 + 0.22, y0 + 0.125]);
-      for (let v = 0; v < 4; v++) line(x0 + 0.4 + v * 0.09, y0 + 0.07, x0 + 0.4 + v * 0.09, y0 + 0.18);
+  const circ = (a, b, r) => { x.beginPath(); x.arc(cx + a * u, cy + b * u, r * u, 0, TAU); x.fillStyle = fill; x.fill(); x.stroke(); };
+  const fan = (a, b, r) => {
+    // a cooling fan: a ring, a hub and four blades
+    circ(a, b, r); circ(a, b, r * 0.24);
+    for (let k = 0; k < 4; k++) { const an = k * TAU / 4 + 0.4; line(a + Math.cos(an) * r * 0.3, b + Math.sin(an) * r * 0.3, a + Math.cos(an + 0.5) * r * 0.85, b + Math.sin(an + 0.5) * r * 0.85); }
+  };
+  if (icon === 'dc' && dcs === 1) {
+    // 1. the building: a flat hall with lit windows, two cooling units on the roof, a door
+    box(-0.8, -0.9, 0.66, 0.42, 0.05); fan(-0.47, -0.69, 0.15);
+    box(0.14, -0.9, 0.66, 0.42, 0.05); fan(0.47, -0.69, 0.15);
+    box(-1.0, -0.48, 2.0, 1.38, 0.05);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) {
+      if (r === 2 && c === 2) continue;
+      const x0 = -0.86 + c * 0.35, y0 = -0.34 + r * 0.32;
+      rrPath(x, cx + x0 * u, cy + y0 * u, 0.26 * u, 0.2 * u, 0.02 * u); x.fillStyle = screenFill; x.fill(); x.stroke();
+      if ((r + c) % 2 === 0) leds.push([x0 + 0.13, y0 + 0.1]);
     }
-    line(-0.8, 0.91, -0.8, 1.02); line(0.8, 0.91, 0.8, 1.02);
+    box(-0.15, 0.3, 0.3, 0.6, 0.02); line(-1.12, 0.9, 1.12, 0.9);
+  } else if (icon === 'dc' && dcs === 2) {
+    // 2. the cooled cabinet: two big fans on top, four blade units below
+    box(-0.9, -0.95, 1.8, 1.86, 0.08);
+    fan(-0.42, -0.56, 0.3); fan(0.42, -0.56, 0.3);
+    for (let r = 0; r < 4; r++) {
+      const y0 = -0.14 + r * 0.25; box(-0.76, y0, 1.52, 0.19, 0.03);
+      leds.push([-0.64, y0 + 0.095], [-0.52, y0 + 0.095]);
+      for (let v = 0; v < 6; v++) line(0.1 + v * 0.1, y0 + 0.05, 0.1 + v * 0.1, y0 + 0.14);
+    }
+    line(-0.7, 0.91, -0.7, 1.02); line(0.7, 0.91, 0.7, 1.02);
+  } else if (icon === 'dc' && dcs === 3) {
+    // 3. the storage stack: three database drums one on another, a light on each
+    const rx = 0.86, ry = 0.2, hh = 0.38;
+    for (let k = 2; k >= 0; k--) {
+      const yt = -0.7 + k * 0.5, yb = yt + hh;
+      x.beginPath(); x.moveTo(cx - rx * u, cy + yt * u); x.lineTo(cx - rx * u, cy + yb * u);
+      x.ellipse(cx, cy + yb * u, rx * u, ry * u, 0, Math.PI, 0, true); x.lineTo(cx + rx * u, cy + yt * u); x.closePath();
+      x.fillStyle = fill; x.fill(); x.stroke();
+      x.beginPath(); x.ellipse(cx, cy + yt * u, rx * u, ry * u, 0, 0, TAU); x.fillStyle = k === 0 ? screenFill : fill; x.fill(); x.stroke();
+      leds.push([0.5, yb - 0.02], [0.64, yb - 0.04]);
+      for (let v = 0; v < 3; v++) line(-0.62 + v * 0.1, yt + 0.24, -0.62 + v * 0.1, yb + 0.06);
+    }
+  } else if (icon === 'dc' && dcs === 4) {
+    // 4. the core: a processor chip with pins on every side and a lit die of cells
+    for (let k = 0; k < 5; k++) { const q = -0.5 + k * 0.25; line(q, -0.74, q, -1.0); line(q, 0.74, q, 1.0); line(-0.74, q, -1.0, q); line(0.74, q, 1.0, q); }
+    box(-0.74, -0.74, 1.48, 1.48, 0.1);
+    rrPath(x, cx - 0.46 * u, cy - 0.46 * u, 0.92 * u, 0.92 * u, 0.05 * u); x.fillStyle = screenFill; x.fill(); x.stroke(); screens.push([-0.46, -0.46, 0.92, 0.92]);
+    for (let k = 1; k < 3; k++) { const q = -0.46 + k * 0.92 / 3; line(q, -0.46, q, 0.46); line(-0.46, q, 0.46, q); }
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) if ((r * 3 + c) % 2 === 0) leds.push([-0.3 + c * 0.3067, -0.3 + r * 0.3067]);
+    x.beginPath(); x.arc(cx - 0.58 * u, cy + 0.58 * u, 0.05 * u, 0, TAU); x.fillStyle = stroke; x.fill();
+  } else if (icon === 'dc') {
+    // 5. the hall: an arched hangar with its front open on a row of racks, an antenna on the roof
+    x.beginPath(); x.moveTo(cx - 1.0 * u, cy + 0.9 * u); x.lineTo(cx - 1.0 * u, cy - 0.2 * u);
+    x.quadraticCurveTo(cx, cy - 1.2 * u, cx + 1.0 * u, cy - 0.2 * u); x.lineTo(cx + 1.0 * u, cy + 0.9 * u); x.closePath();
+    x.fillStyle = fill; x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(cx - 0.72 * u, cy + 0.9 * u); x.lineTo(cx - 0.72 * u, cy - 0.12 * u);
+    x.quadraticCurveTo(cx, cy - 0.8 * u, cx + 0.72 * u, cy - 0.12 * u); x.lineTo(cx + 0.72 * u, cy + 0.9 * u); x.fillStyle = screenFill; x.fill(); x.stroke();
+    line(0, -0.7, 0, -0.98); x.beginPath(); x.arc(cx, cy - 0.98 * u, 0.045 * u, 0, TAU); x.fillStyle = stroke; x.fill();
+    for (const rr of [0.14, 0.24]) { x.beginPath(); x.arc(cx, cy - 0.98 * u, rr * u, -Math.PI * 0.8, -Math.PI * 0.2); x.stroke(); }
+    for (let k = 0; k < 3; k++) {
+      const x0 = -0.56 + k * 0.4; box(x0, 0.06, 0.32, 0.84, 0.03);
+      for (let s2 = 0; s2 < 4; s2++) { line(x0 + 0.05, 0.22 + s2 * 0.18, x0 + 0.27, 0.22 + s2 * 0.18); leds.push([x0 + 0.1, 0.14 + s2 * 0.18]); }
+    }
+    line(-1.12, 0.9, 1.12, 0.9);
   } else if (icon === 's') {
     box(-0.8, -0.72, 1.6, 1.02, 0.1);
     rrPath(x, cx - 0.66 * u, cy - 0.58 * u, 1.32 * u, 0.74 * u, 0.04 * u); x.fillStyle = screenFill; x.fill(); screens.push([-0.66, -0.58, 1.32, 0.74]);
@@ -2484,12 +2538,7 @@ function render(now) {
     const ow = shownOwner(p), vv = shownV(p), cx = TX, cy = TY, rd = nr(p, vv) * (1 + 0.08 * Math.sin(p.pop * Math.PI) * p.pop), R = rd * S, c = PAL.rgb[ow];
     const rr = R * 1.2 + 3, frac = clamp(vv / p.cap, 0, 1), top = -Math.PI / 2;
     const tier = Math.min(tierOf(vv), p.maxT);
-    if (tier === 4 && ow) {
-      // the datacenter's halo: a steady inner ring and a slow dashed outer one in its owner's colour
-      ctx.strokeStyle = rgba(c, dark ? 0.35 : 0.3); ctx.lineWidth = Math.max(1, 1.2 * S); ctx.beginPath(); ctx.arc(cx, cy, rr + 7 * S, 0, TAU); ctx.stroke();
-      ctx.setLineDash([Math.max(2, 5 * S), Math.max(3, 7 * S)]); ctx.lineDashOffset = -t * 12; ctx.strokeStyle = rgba(c, dark ? 0.55 : 0.5);
-      ctx.beginPath(); ctx.arc(cx, cy, rr + 13 * S, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
-    }
+
     if (p.vis && p.assault && p.assault.length) {
       // the ring becomes the balance of forces: one arc per side, the defender first, clockwise from the top
       const sides = [{ o: p.owner, n: p.v }].concat(p.assault), tot = sides.reduce((s, a) => s + a.n, 0) || 1, gap = 0.07;
@@ -2501,7 +2550,7 @@ function render(now) {
         a0 += span;
       }
     }
-    const spr = nodeSprite(tier, ow), scale = rd * S / spr.u, size = spr.cv.width / d * scale;
+    const spr = nodeSprite(tier, ow, p.dcStyle), scale = rd * S / spr.u, size = spr.cv.width / d * scale;
     const gl = p.vis ? p.glitch : 0;
     if (gl > 0.02) {
       const sl = 6, sh = spr.cv.height / sl;
@@ -3117,7 +3166,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
+window.__root = { get G() { return G; }, setDcStyle: n => { DC_STYLE = n; nCache.clear(); }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, sendWifi, wifiCheck, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
 })();
 </script>
 
