@@ -2542,7 +2542,7 @@ function render(now) {
     }
     if (p.owner === 1 && p.incoming > 0) {
       // an enemy bundle is on its way here: how many and how soon
-      const blink = 0.55 + 0.45 * Math.sin(t * 10), yy = TY - (p.capR * 1.2 + (p.kind ? 34 : 18)) * S - 4;
+      const blink = 0.55 + 0.45 * Math.sin(t * 10), yy = TY - (p.capR * 1.2 + (p.kind || p.hq ? 34 : 18)) * S - 4;
       ctx.font = `700 11px ${FONT}`; ctx.fillStyle = PAL.lab[p.incomingO || 2]; ctx.globalAlpha = blink;
       ctx.fillText(`▼ ${secret(p.seed + 5, t)} · ${p.incomingEta.toFixed(1)}с`, TX, yy); ctx.globalAlpha = 1;
     }
@@ -2597,13 +2597,13 @@ function render(now) {
   }
   // fog
   if (G.fog && G.visC) drawFog();
-  // bundles are drawn over the fog: a bundle on a channel you can see stays bright even where the channel runs into the dark
-  // bundles in flight: a small swarm of packets with a head count
+  // bundles in flight: a small swarm of packets with a head count, drawn over the fog. Under the fog of war other players'
+  // bundles are never seen, not even next to your nodes: only the ▼ over a node says that something is coming
+  const hidden = o => G.fog && o !== 1;
   if (dark) ctx.globalCompositeOperation = 'lighter';
   const sz = Math.max(7, 12 * S), heads = [];
   for (const e of G.edges) for (const a of e.ar) {
-    if (a.dead) continue;
-    if (!edgeShown(e)) continue;
+    if (a.dead || hidden(a.o) || !edgeShown(e)) continue;
     const [hx, hy] = posAt(e, a.dir, a.d);
     ts(hx, hy); if (TX < -60 || TX > V.w + 60 || TY < -60 || TY > V.h + 60) continue;
     drawComet(d => posAt(e, a.dir, Math.max(startD(e, a.dir), a.d - d)), a.n, a.o, a.seed, t, sz, 1);
@@ -2612,7 +2612,7 @@ function render(now) {
   // wi-fi jumps: a bundle on a parabola over the map
   for (const J of G.jumps) {
     const u = J.t / J.dur, [hx, hy] = jumpPos(J, u);
-    if (G.fog && !G.nodes[J.from].vis && !G.nodes[J.to].vis) continue;
+    if (hidden(J.o)) continue;
     ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = rgba(PAL.rgb[J.o], 0.22); ctx.lineWidth = 1; ctx.beginPath();
     for (let q = 0; q <= 24; q++) { const [x, y] = jumpPos(J, u * q / 24); ts(x, y); if (q) ctx.lineTo(TX, TY); else ctx.moveTo(TX, TY); }
@@ -2943,7 +2943,7 @@ const HOW = [
   ['<path d="M6 24L24 6M9 6l3 3M18 21l3 3" stroke="currentColor" stroke-width="1.4" fill="none"/><circle cx="15" cy="15" r="3" fill="none" stroke="currentColor"/>',
     'Все каналы одинаковые и остаются навсегда: их нельзя ни улучшить, ни перерезать. Отрезать сеть противника можно, только захватив узлы, через которые она держит связь с датацентром.', 'Особые узлы подписаны над иконкой: фаервол бьёт в 1,8 раза сильнее, усилитель восстанавливается вдвое быстрее, ускоритель разгоняет пачки на 30%, хаб держит до 5 каналов.'],
   ['<rect x="3" y="6" width="24" height="16" fill="none" stroke="currentColor"/><rect x="14" y="11" width="8" height="6" fill="none" stroke="currentColor"/>',
-     'Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Над вашим узлом мигает ▼ с числом и временем, если к нему летит вражеская пачка. Клавиши: Shift — пачка 50%, Q — выделить все узлы, Delete — отменить приказы, правая кнопка — отменить все, T или значок глаза вверху — убрать или вернуть туман войны, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
+     'Карту двигайте перетаскиванием, масштаб колесом или щипком.', 'Над вашим узлом мигает ▼ с числом и временем, если к нему летит вражеская пачка: самих чужих пачек под туманом войны не видно. Клавиши: Shift — пачка 50%, Q — выделить все узлы, Delete — отменить приказы, правая кнопка — отменить все, T или значок глаза вверху — убрать или вернуть туман войны, WASD или стрелки — обзор, H — к базе, Esc — пауза.'],
 ];
 $('#howList').innerHTML = HOW.map(([svg, a, b]) => `<div><svg viewBox="0 0 30 30">${svg}</svg><p>${a}<br><span class="muted">${b}</span></p></div>`).join('');
 $('#btnHowPlay').addEventListener('click', () => { SFX.ui(); startLevel(0); });
