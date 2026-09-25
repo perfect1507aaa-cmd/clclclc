@@ -1,0 +1,560 @@
+<meta charset="utf-8">
+<title>Поле Альянса</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0b0d10; --panel:#14171c; --line:#242933; --ink:#e7eaf0; --mut:#8a93a3;
+  --cell:#171a21; --cell2:#1a1d24; --off:#2a303b;
+  --tp:#2dd4bf; --te:#f472b6; --gold:#fbbf24; --hpc:#f87171; --mana:#38bdf8;
+  --fd:"Unbounded",system-ui,sans-serif; --fb:"Manrope",system-ui,sans-serif; --fm:"JetBrains Mono",ui-monospace,monospace;
+}
+html,body{background:var(--bg);}
+body{color:var(--ink); font:15px/1.55 var(--fb);}
+.wrap{max-width:1240px; margin:0 auto; padding-inline:16px; padding-block:28px 64px; display:grid; gap:20px;}
+.eyebrow,.label{margin:0; font:500 11.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+h1{margin:6px 0 8px; font:700 clamp(26px,4vw,40px)/1.1 var(--fd); letter-spacing:-.01em; text-wrap:balance;}
+h2{margin:30px 0 0; font:700 22px/1.2 var(--fd); text-wrap:balance;}
+h3{margin:0 0 6px; font:700 15px/1.3 var(--fd);}
+p{margin:0 0 10px; max-width:70ch;}
+.lede{color:var(--mut); max-width:74ch;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px;}
+.muted{color:var(--mut);}
+.fix{border-left:3px solid var(--gold); padding:10px 14px; background:#1a1710; border-radius:0 10px 10px 0; color:#f3e4bf; max-width:none;}
+
+.pillars{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:10px;}
+.pillar{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+.pillar b{display:block; font:700 13px/1.3 var(--fd); margin-bottom:4px;}
+.pillar span{font-size:13.5px; color:var(--mut);}
+
+/* ---------- game ---------- */
+.game{display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:16px; align-items:start;}
+.arena{display:grid; gap:10px; min-width:0;}
+.bar-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+.hero{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:12px; background:var(--panel); border:1px solid var(--line); min-width:220px;}
+.hero .ava{width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb,var(--team) 18%,#1b1f27);}
+.hero .ava svg{width:24px; height:24px;} .hero .ava svg *{fill:var(--team);} .hero .ava svg .k{fill:color-mix(in srgb,var(--team) 18%,#1b1f27);}
+.hero b{display:block; font:700 12.5px/1.2 var(--fd);}
+.hero .hb{width:130px; height:6px; margin-top:5px; border-radius:3px; background:var(--off); overflow:hidden;}
+.hero .hb i{display:block; height:100%; background:var(--team); transition:width .3s;}
+.hero small{font:700 12px var(--fm); color:var(--mut); margin-left:auto; padding-left:8px;}
+.chip{padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line); font:700 12px/1.2 var(--fd); color:var(--mut); white-space:nowrap;}
+.chip b{color:var(--ink);}
+.chip.turn{margin-left:auto;}
+.chip.turn.me{background:var(--tp); color:#0b0d10; border-color:var(--tp);}
+.chip.turn.me b{color:#0b0d10;}
+.backs{display:flex; gap:3px;}
+.backs i{width:14px; height:20px; border-radius:3px; background:var(--cell2); box-shadow:inset 0 0 0 1px var(--off);}
+
+.board{position:relative; margin-top:16px; display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; padding:8px; border-radius:16px; background:#111318; border:1px solid var(--line); user-select:none; -webkit-user-select:none;}
+.cell{position:relative; aspect-ratio:1; border-radius:10px; background:var(--cell); container-type:size;}
+.cell:nth-child(odd){background:var(--cell2);}
+.cell.sp-p{background:color-mix(in srgb,var(--tp) 7%,#151a1c);}
+.cell.sp-e{background:color-mix(in srgb,var(--te) 7%,#1b161b);}
+.cell.can-sp{box-shadow:inset 0 0 0 2px var(--tp); cursor:pointer;}
+.cell.can-mv{cursor:pointer;}
+.cell.can-mv::after{content:""; position:absolute; left:50%; top:50%; width:18%; height:18%; translate:-50% -50%; border-radius:50%; background:var(--tp); opacity:.8;}
+.cell.hover{outline:2px solid var(--ink); outline-offset:-2px;}
+.cell .pv{position:absolute; left:50%; bottom:-6px; translate:-50% 0; z-index:5; padding:2px 6px; border-radius:6px; background:var(--te); color:#0b0d10; font:700 10.5px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
+.cell .pv.g{background:var(--gold);}
+.board .edge{position:absolute; top:-22px; font:700 10px/1 var(--fd); letter-spacing:.04em; text-transform:uppercase;}
+
+.tile{position:absolute; inset:4%; border-radius:10px; background:color-mix(in srgb,var(--t) 16%,#1b1f27); box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--team) 70%,transparent); container-type:size; cursor:grab; touch-action:none; transition:opacity .2s;}
+.tile.p{--team:var(--tp);} .tile.e{--team:var(--te);}
+.tile::before{content:""; position:absolute; left:0; top:12%; bottom:12%; width:3px; border-radius:0 3px 3px 0; background:var(--team);}
+.tile .ic{position:absolute; left:50%; top:46%; width:44cqmin; height:44cqmin; translate:-50% -50%;}
+.tile .ic svg{width:100%; height:100%;}
+.tile svg *{fill:var(--t);} .tile svg .k{fill:color-mix(in srgb,var(--t) 16%,#1b1f27);}
+.tile .cnt{position:absolute; right:6%; top:5%; font:700 max(11px,19cqmin)/1 var(--fd); color:var(--ink);}
+.tile .cnt small{font-size:.65em; opacity:.6; margin-right:1px;}
+.tile .tr{position:absolute; left:9%; top:7%; font:700 max(8px,11cqmin)/1 var(--fd); color:var(--t);}
+.tile .hpt{position:absolute; left:9%; bottom:15%; font:700 max(9px,12cqmin)/1 var(--fm); color:#fca5a5;}
+.tile .hpt small{font-size:.8em; opacity:.6;}
+.tile .bar{position:absolute; left:9%; right:7%; bottom:7%; height:max(3px,5cqmin); border-radius:3px; background:var(--off); overflow:hidden;}
+.tile .bar b{display:block; height:100%; background:var(--hpc);}
+.tile .zzz{position:absolute; right:6%; bottom:15%; font:700 max(8px,10cqmin)/1 var(--fd); color:var(--mut);}
+.tile.zz{opacity:.62;}
+.tile.done{opacity:.8;}
+.tile.sel{outline:2px solid var(--tp); outline-offset:2px;}
+.cell.atk .tile{outline:2px dashed var(--te); outline-offset:2px; cursor:crosshair;}
+.cell.mg .tile{outline:2px dashed var(--gold); outline-offset:2px; cursor:copy;}
+.tile.hit{animation:hit .45s ease;}
+@keyframes hit{30%{translate:0 0; filter:brightness(1.8);} 50%{translate:3px 0;} 70%{translate:-3px 0;}}
+@container (max-width:62px){ .tile .hpt,.tile .zzz,.tile .tr{display:none;} .tile .ic{top:52%;} }
+
+.hand{display:flex; gap:8px; flex-wrap:wrap; min-height:118px; align-items:flex-end;}
+.hc{all:unset; box-sizing:border-box; position:relative; width:96px; height:118px; border-radius:12px; background:#1b1f27; box-shadow:inset 0 0 0 1px var(--off), inset 0 -3px 0 var(--t); cursor:grab; touch-action:none; transition:translate .15s;}
+.hc:hover{translate:0 -6px;}
+.hc:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.hc.on{box-shadow:inset 0 0 0 2px var(--tp), inset 0 -3px 0 var(--t); translate:0 -8px;}
+.hc .ic{position:absolute; left:50%; top:32px; width:40px; height:40px; translate:-50% 0;}
+.hc svg{width:100%; height:100%;} .hc svg *{fill:var(--t);} .hc svg .k{fill:#1b1f27;}
+.hc .nx{position:absolute; right:7px; top:7px; padding:2px 6px; border-radius:7px; background:var(--ink); color:#0b0d10; font:700 12px/1.2 var(--fd);}
+.hc .tr{position:absolute; left:8px; top:9px; font:700 10px var(--fd); color:var(--t);}
+.hc b{position:absolute; left:6px; right:6px; bottom:22px; text-align:center; font:800 11px/1.1 var(--fb);}
+.hc small{position:absolute; left:0; right:0; bottom:8px; text-align:center; font:500 10px var(--fm); color:var(--mut);}
+.hand-empty{color:var(--mut); font-size:13px; align-self:center;}
+.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.btn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:999px; background:var(--ink); color:#0b0d10; font:700 13px/1 var(--fd);}
+.btn.ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--off);}
+.btn[disabled]{opacity:.4; cursor:default;}
+.btn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.hint{font-size:13px; color:var(--mut);}
+
+.side{display:grid; gap:12px;}
+.side .panel{padding:14px 16px;}
+.ctr{display:grid; gap:6px; margin-top:8px;}
+.ctr div{display:grid; grid-template-columns:22px 1fr auto; gap:8px; align-items:center; font-size:13px;}
+.ctr .dot{width:22px; height:22px; border-radius:6px; display:grid; place-items:center; background:color-mix(in srgb,var(--t) 16%,#1b1f27);}
+.ctr .dot svg{width:15px; height:15px;} .ctr .dot svg *{fill:var(--t);} .ctr .dot svg .k{fill:#1b1f27;}
+.ctr em{font:700 12px var(--fm); font-style:normal;}
+.log{list-style:none; margin:8px 0 0; padding:0; display:grid; gap:5px; max-height:300px; overflow:auto; font-size:12.5px; line-height:1.4;}
+.log li{padding-left:9px; border-left:2px solid var(--off); color:var(--mut);}
+.log li.p{border-color:var(--tp); color:var(--ink);}
+.log li.e{border-color:var(--te);}
+.log li.sys{border-color:var(--gold); color:#f3e4bf;}
+.over{position:absolute; inset:0; z-index:20; display:grid; place-items:center; align-content:center; gap:14px; border-radius:16px; background:rgba(11,13,16,.82); text-align:center;}
+.over b{font:700 26px var(--fd);}
+.ghost-drag{position:fixed; z-index:100; pointer-events:none; width:84px; height:84px; translate:-50% -50%; opacity:.9; container-type:size;}
+.ghost-drag .tile,.ghost-drag.hcg{border-radius:12px;}
+
+/* ---------- sections ---------- */
+.steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:10px;}
+.step{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; display:grid; gap:10px; align-content:start;}
+.step .n{font:700 11px var(--fm); color:var(--mut);}
+.step .row{display:flex; flex-wrap:wrap; gap:6px; min-height:64px;}
+.step .row .mini{position:relative; width:60px; height:60px; container-type:size;}
+.step .row .mini .tile{inset:0; cursor:default;}
+.step p{font-size:13px; margin:0;}
+.step .ctrs{font:500 11px var(--fm); color:var(--mut);}
+.rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px;}
+.rules ol,.rules ul{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
+.formula{font:500 13px/1.6 var(--fm); background:#101216; border-radius:8px; padding:10px 12px; margin:8px 0; overflow-x:auto; white-space:nowrap;}
+.tbl{overflow-x:auto;}
+table{border-collapse:collapse; width:100%; min-width:640px; font-size:13.5px;}
+th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
+th{font:500 10.5px/1.3 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+td.num{font:500 13px var(--fm); font-variant-numeric:tabular-nums;}
+td.w{white-space:normal; min-width:220px;}
+td .gain{color:var(--tp);} td .loss{color:var(--hpc);}
+.tic{display:inline-grid; place-items:center; width:26px; height:26px; border-radius:7px; vertical-align:middle; margin-right:8px;}
+.tic svg{width:17px; height:17px;}
+.levers{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:10px;}
+.lever{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+.lever b{display:block; font:700 13px/1.3 var(--fd); margin-bottom:4px;}
+.lever span{font-size:13.5px; color:var(--mut);}
+.rec{border:1px solid var(--tp); background:#10201e;}
+@media (max-width:980px){ .game{grid-template-columns:1fr;} }
+@media (prefers-reduced-motion: reduce){ .tile.hit{animation:none;} .hc,.hero .hb i{transition:none;} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Финальная концепция · Альянс · поле 8×5</p>
+    <h1>Поле Альянса</h1>
+    <p class="lede">Пошаговый бой на поле, как в «Героях», но армия приходит из колоды. Отряды высаживаются только на свою первую полосу. Каждая следующая карта того же отряда выходит с большей численностью. Сильные отряды почти не лежат в колоде: их получают слиянием.</p>
+  </header>
+
+  <div class="pillars">
+    <div class="pillar"><b>Поле 8×5</b><span>Ваша полоса высадки слева, у соперника справа.</span></div>
+    <div class="pillar"><b>Высадка без лимита</b><span>Ставьте сколько угодно карт, пока есть свободные клетки на первой полосе.</span></div>
+    <div class="pillar"><b>Счёт по порядку</b><span>1-я карта ополченцев — ×1, 2-я — ×2, 3-я — ×3.</span></div>
+    <div class="pillar"><b>Слияние перетаскиванием</b><span>Два одинаковых отряда дают отряд тиром выше.</span></div>
+    <div class="pillar"><b>Сон и шаг</b><span>Новые отряды спят 1 ход. Все ходят на 1 клетку.</span></div>
+  </div>
+
+  <h2>Поле: попробуйте сами</h2>
+  <p class="lede">Играбельный набросок против простого ИИ. Перетащите карту из руки на подсвеченную клетку первой полосы. Перетащите отряд на такой же отряд, чтобы слить, на соседнюю клетку, чтобы шагнуть, или на врага, чтобы ударить. Можно и кликами: выберите отряд, потом цель.</p>
+
+  <section class="game" aria-label="Песочница боя">
+    <div class="arena">
+      <div class="bar-row" id="top"></div>
+      <div class="board" id="board"></div>
+      <div class="bar-row" id="bottom"></div>
+      <div class="hand" id="hand"></div>
+      <div class="actions"><button class="btn" id="end" type="button">Конец хода</button><button class="btn ghost" id="reset" type="button">Заново</button><span class="hint" id="hint"></span></div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Ваши счётчики</h3><p class="muted" style="font-size:13px;margin:0">Сколько юнитов будет в следующей карте каждого отряда.</p><div class="ctr" id="ctr"></div></div>
+      <div class="panel"><h3>Журнал боя</h3><ul class="log" id="log"></ul></div>
+    </aside>
+  </section>
+
+  <h2>Правило счёта на вашем примере</h2>
+  <p class="lede">В колоде 4 ополченца и 2 лучника. Счётчик ведётся отдельно для каждого отряда и только для карт из руки.</p>
+  <div class="steps" id="steps"></div>
+  <p class="fix">Так я понял пример: слияние даёт меньшую из двух численностей (×1 и ×2 → ×1) и не двигает счётчик руки. Поэтому следующий лучник из руки всё равно ×2. Если вы имели в виду другое, это правка одной строки.</p>
+
+  <h2>Правила</h2>
+  <div class="rules">
+    <div class="panel">
+      <h3>Ход</h3>
+      <ol>
+        <li>Вы добираете 2 карты (в руке до 8).</li>
+        <li>Выставляете любые карты на свободные клетки своей первой полосы.</li>
+        <li>Сливаете отряды: перетащите отряд на такой же. Результат спит 1 ход.</li>
+        <li>Каждый проснувшийся отряд делает шаг на 1 клетку (в любую из 8 сторон) и/или атакует.</li>
+        <li>Отряды на полосе высадки соперника бьют его героя.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>Бой</h3>
+      <p style="font-size:14px">Отряд бьёт всей численностью. Погибают целые юниты, остаток ранит верхнего. Атака против защиты меняет урон на 5% за очко, как в «Героях».</p>
+      <div class="formula">урон = численность × урон юнита × (1 ± 5% × |атака − защита|)</div>
+      <ul>
+        <li>Защитник отвечает один раз за ход, грифоны — на каждый удар.</li>
+        <li>Стрелки бьют через всё поле. Вплотную к врагу и дальше 4 клеток — половина урона.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Победа и полосы</h3>
+      <ul>
+        <li>У каждого героя 30 ХП.</li>
+        <li>Отряд, стоящий на полосе высадки соперника в конце вашего хода, бьёт героя всей численностью.</li>
+        <li>Он же занимает клетку, куда соперник не сможет высадиться. Прорыв на фланге режет соперника по картам.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Баланс: и ополченцы, и лучники</h2>
+  <p class="lede">Ваше сомнение по делу: если поздняя карта ополченцев выходит ×10, зачем их сливать? Ответ в соотношении силы тиров. Если каждый тир примерно в 2,5 раза сильнее предыдущего, слияние по меньшей численности почти не теряет силу, а даёт тир, способности и лечение.</p>
+  <div class="panel tbl" id="balance"></div>
+  <p class="muted" style="font-size:13.5px">Оценка грубая: сила = ХП × урон, без атаки, защиты и способностей. Она показывает главное: ранние слияния почти бесплатны, поздние выгодны. Поэтому в игре остаются оба пути, и держать пачку ×10 для удара, и сливать её в лучников.</p>
+  <div class="levers">
+    <div class="lever"><b>Главный ограничитель — полоса</b><span>На первой полосе всего 5 клеток. Ставить можно сколько угодно, но места нет, пока передние не ушли вперёд. Слияние освобождает клетку.</span></div>
+    <div class="lever"><b>Пачка ополченцев — это сила</b><span>7-я карта ополченцев выходит ×7, как толпа крестьян в «Героях». Слабая защита делает её лёгкой целью для стрелков.</span></div>
+    <div class="lever"><b>Против спама лучниками</b><span>Вплотную и далеко половина урона, мечники со щитом режут выстрелы вдвое. Если мало — боезапас: отряд стреляет столько раз за бой, сколько в нём юнитов.</span></div>
+    <div class="lever"><b>Счётчик не копится впрок</b><span>Держать карты в руке бесполезно: номер получает только выставленная карта. Решение не «когда ставить», а «когда сливать».</span></div>
+    <div class="lever"><b>Ручки настройки</b><span>Множитель силы тира (сейчас ≈2,5), правило численности слияния (меньшая, половина суммы), размер колоды и добор.</span></div>
+    <div class="lever rec"><b>Моя рекомендация</b><span>Играть с этими правилами без правок. Боезапас стрелкам вводить, только если в тестах лучники начнут решать всё.</span></div>
+  </div>
+
+  <h2>Отряды Альянса</h2>
+  <p class="lede">Состав по мотивам замка Haven из «Героев 5», цифры наши: ХП и урон растут примерно в 1,6 раза за тир, их произведение — в 2,5 раза. Так слияние остаётся честным.</p>
+  <div class="panel tbl" id="roster"></div>
+
+  <h2>Колода и забег</h2>
+  <p class="fix">Исправил прошлую ошибку: уровень забега на тиры не влияет. Просто колода почти целиком состоит из карт I–III тира, а крупные отряды получают слиянием.</p>
+  <div class="rules">
+    <div class="panel"><h3>Стартовая колода</h3><p style="font-size:14px">8 ополченцев, 4 лучника, 2 мечника. На старте боя 4 карты в руке. Счётчики обнуляются в начале каждого боя.</p></div>
+    <div class="panel"><h3>Награды за уровень</h3><ul><li>Новая карта I–III тира в колоду.</li><li>Редко: карта IV тира, как награда элиты или босса.</li><li>Реликвии, меняющие правила счёта или слияния.</li></ul></div>
+    <div class="panel"><h3>Примеры реликвий</h3><ul><li><b>Казарма:</b> первая карта ополченцев выходит ×3.</li><li><b>Знамя:</b> слияние даёт большую численность из двух.</li><li><b>Колчан:</b> лучники не теряют урон вплотную.</li></ul></div>
+  </div>
+
+  <h2>Что решить дальше</h2>
+  <div class="panel"><ul style="margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px">
+    <li>Шаг в 8 сторон или только в 4? Сейчас 8, так проще обходить.</li>
+    <li>Нужно ли соседство для слияния? Сейчас нет: сливать можно через всё поле.</li>
+    <li>Бьёт ли героя отряд на чужой полосе или только блокирует высадку?</li>
+    <li>Размер поля: 8×5 даёт встречу на 3–4-м ходу. 10×6, как в «Героях», сделает бой длиннее.</li>
+  </ul></div>
+</div>
+
+<script>
+const ICONS = {
+  peasant:`<rect x="10" y="16" width="30" height="4" rx="2"/><path d="M17 16l3-9h10l3 9z"/><circle cx="25" cy="26" r="7"/><path d="M12 62l4-26h18l4 26z"/><rect x="45" y="15" width="3.5" height="47"/><path d="M39 3v11h16V3h-3v8h-3.5V3h-3v8H42V3z"/>`,
+  archer:`<path d="M18 4c24 10 24 46 0 56l3 2c28-12 28-48 0-60z"/><rect x="17" y="5" width="2" height="54"/><rect x="8" y="31" width="44" height="3"/><path d="M61 32.5L48 26v13z"/><path d="M3 26l9 6.5L3 39l3-6.5z"/>`,
+  footman:`<path d="M6 10h30v24c0 15-8 23-15 27C14 57 6 49 6 34z"/><path class="k" d="M19 16h4v38h-4zM11 26h20v4H11z"/><path d="M46 6l3.5-5 3.5 5v34h-7z"/><rect x="40" y="40" width="19" height="4" rx="2"/><rect x="47.5" y="44" width="4" height="12"/><circle cx="49.5" cy="59" r="3.5"/>`,
+  griffin:`<path d="M2 14c10-2 18 2 22 10-6 0-8 4-6 8-6-2-10 0-12 4-2-8-4-14-4-22z"/><path d="M62 14c-10-2-18 2-22 10 6 0 8 4 6 8 6-2 10 0 12 4 2-8 4-14 4-22z"/><path d="M22 30c0-10 5-18 10-20 5 2 10 10 10 20v6l-4 6 4 20H22l4-20-4-6z"/><path d="M28 22l4 10 4-10z" class="k"/><path d="M32 30l-4 6h8z"/><circle class="k" cx="28" cy="20" r="2"/><circle class="k" cx="36" cy="20" r="2"/>`,
+  priest:`<path d="M26 4c11 0 17 10 17 22v36H9V26C9 14 15 4 26 4z"/><ellipse class="k" cx="26" cy="22" rx="8" ry="9"/><path class="k" d="M23 34h6v22h-6zM18 40h16v5H18z"/><rect x="51" y="16" width="3.5" height="46"/><circle cx="52.7" cy="10" r="7"/>`,
+  cavalier:`<path d="M12 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><circle class="k" cx="36" cy="19" r="2.8"/><path d="M3 34L60 6l1.5 3L5 37z"/>`,
+  angel:`<ellipse cx="32" cy="7" rx="11" ry="4"/><ellipse class="k" cx="32" cy="7" rx="7.5" ry="2"/><circle cx="32" cy="19" r="7"/><path d="M25 28h14l8 34H17z"/><path d="M24 30C12 18 4 20 2 32c6 0 6 6 4 10 6-4 10 0 12 4 2-6 4-10 6-16z"/><path d="M40 30c12-12 20-10 22 2-6 0-6 6-4 10-6-4-10 0-12 4-2-6-4-10-6-16z"/><path class="k" d="M31 34h2v22h-2z"/>`,
+  lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
+  rebel:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M14 18C6 14 4 6 6 0c2 6 6 10 12 12zM50 18c8-4 10-12 8-18-2 6-6 10-12 12z"/>`,
+};
+/* Our numbers, modelled on Heroes 5 Haven: HP and damage grow ~1.6x per tier. */
+const T = [
+  {key:'peasant', name:'Ополченцы', gen:'ополченцев', hp:3, dmg:1, atk:1, def:1, note:'Сила в числе', homm:'Крестьянин / Ополченец'},
+  {key:'archer', name:'Лучники', gen:'лучников', hp:5, dmg:2, atk:3, def:2, ranged:true, note:'Стреляет через всё поле; вплотную и дальше 4 клеток — половина урона', homm:'Лучник / Арбалетчик'},
+  {key:'footman', name:'Мечники', gen:'мечников', hp:8, dmg:3, atk:4, def:6, shield:true, note:'Большой щит: выстрелы по нему наносят половину урона', homm:'Мечник / Латник'},
+  {key:'griffin', name:'Грифоны', gen:'грифонов', hp:13, dmg:5, atk:6, def:5, retAll:true, note:'Отвечает на каждую атаку', homm:'Грифон / Королевский грифон'},
+  {key:'priest', name:'Монахи', gen:'монахов', hp:21, dmg:8, atk:9, def:9, ranged:true, noPen:true, note:'Стреляет без штрафа вплотную и издалека', homm:'Монах / Инквизитор'},
+  {key:'cavalier', name:'Рыцари', gen:'рыцарей', hp:34, dmg:13, atk:13, def:12, charge:true, note:'Разбег: +50% урона, если перед атакой сделал шаг', homm:'Рыцарь / Паладин'},
+  {key:'angel', name:'Ангелы', gen:'ангелов', hp:55, dmg:21, atk:18, def:18, noRet:true, note:'На его удар не отвечают', homm:'Ангел / Архангел'},
+];
+const TC = ['#94a3b8','#84cc16','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#f8fafc'];
+const RO = ['I','II','III','IV','V','VI','VII'];
+const COLS = 8, ROWS = 5, SPAWN = {p:0, e:7}, HERO_HP = 30, HAND_MAX = 8;
+const svg = k => `<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[k]}</svg>`;
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- rules ---------- */
+let S;
+const other = s => s === 'p' ? 'e' : 'p';
+const dist = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const unitAt = (x, y) => S.units.find(u => u.x === x && u.y === y);
+const pool = u => (u.n - 1) * T[u.type].hp + u.top;
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const makeDeck = () => shuffle([0,0,0,0,0,0,0,0,1,1,1,1,2,2]);
+
+function newGame(){
+  S = {turn:1, side:'p', busy:false, over:null, units:[], nextId:1, hero:{p:HERO_HP, e:HERO_HP},
+       deck:{p:makeDeck(), e:makeDeck()}, hand:{p:[], e:[]}, cnt:{p:[0,0,0,0,0,0,0], e:[0,0,0,0,0,0,0]}, sel:null, log:[], hits:new Set()};
+  draw('p', 4); draw('e', 4);
+  say('sys', 'Бой начался. Ваш ход: выставьте отряды на левую полосу.');
+  render();
+}
+function draw(side, k){ for (let i = 0; i < k && S.deck[side].length && S.hand[side].length < HAND_MAX; i++) S.hand[side].push(S.deck[side].pop()); }
+function say(side, text){ S.log.unshift({side, text}); S.log.length = Math.min(S.log.length, 60); }
+const who = side => side === 'p' ? 'Вы' : 'Соперник';
+
+function spawn(side, hi, y){
+  const x = SPAWN[side];
+  if (unitAt(x, y) || hi < 0 || hi >= S.hand[side].length) return false;
+  const t = S.hand[side].splice(hi, 1)[0], n = ++S.cnt[side][t];
+  S.units.push({id:S.nextId++, side, type:t, n, top:T[t].hp, x, y, asleep:true, moved:true, acted:true, ret:false});
+  say(side, `${who(side)}: ${T[t].name} ×${n} — ${n}-я карта ${T[t].gen} в бою.`);
+  return true;
+}
+const canMerge = (a, b) => a && b && a !== b && a.side === b.side && a.type === b.type && a.type < 6;
+function merge(a, b){
+  const t = a.type + 1, n = Math.min(a.n, b.n);
+  say(a.side, `${who(a.side)}: ${T[a.type].name} ×${a.n} + ×${b.n} → ${T[t].name} ×${n}. Раны излечены, отряд спит 1 ход.`);
+  S.units = S.units.filter(u => u !== a);
+  Object.assign(b, {type:t, n, top:T[t].hp, asleep:true, moved:true, acted:true, ret:false});
+  S.hits.add(b.id);
+}
+function mod(a, d){ return a >= d ? Math.min(1 + 0.05 * (a - d), 3) : Math.max(1 / (1 + 0.05 * (d - a)), 0.3); }
+function calc(att, def, kind){
+  const A = T[att.type], D = T[def.type];
+  let dmg = att.n * A.dmg * mod(A.atk, D.def);
+  if (kind === 'shot'){ if (!A.noPen && dist(att, def) > 4) dmg *= 0.5; if (D.shield) dmg *= 0.5; }
+  if (kind === 'melee' && A.ranged && !A.noPen) dmg *= 0.5;
+  if (kind === 'melee' && A.charge && att.stepped) dmg *= 1.5;
+  return Math.max(1, Math.round(dmg));
+}
+function hurt(u, dmg){
+  const hp = T[u.type].hp, p = pool(u) - dmg, before = u.n;
+  if (p <= 0){ u.n = 0; return before; }
+  u.n = Math.ceil(p / hp); u.top = p - (u.n - 1) * hp; return before - u.n;
+}
+function preview(att, def, kind){ const c = {...def}; const dmg = calc(att, def, kind); const k = hurt(c, dmg); return {dmg, k, dead:c.n <= 0}; }
+const hasAdjEnemy = u => S.units.some(v => v.side !== u.side && dist(u, v) === 1);
+function targets(u){
+  if (u.asleep || u.acted) return [];
+  const adj = S.units.filter(v => v.side !== u.side && dist(u, v) === 1).map(t => ({t, kind:'melee'}));
+  if (T[u.type].ranged && !adj.length) return S.units.filter(v => v.side !== u.side).map(t => ({t, kind:'shot'}));
+  return adj;
+}
+function moves(u){
+  if (u.asleep || u.moved || u.acted) return [];
+  const out = [];
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++){
+    const x = u.x + dx, y = u.y + dy;
+    if ((dx || dy) && x >= 0 && x < COLS && y >= 0 && y < ROWS && !unitAt(x, y)) out.push({x, y});
+  }
+  return out;
+}
+function step(u, x, y){ u.x = x; u.y = y; u.moved = true; u.stepped = true; }
+function attack(a, d, kind){
+  const dmg = calc(a, d, kind), k = hurt(d, dmg);
+  S.hits.add(d.id);
+  say(a.side, `${T[a.type].name} ×${a.n} ${kind === 'shot' ? 'стреляют' : 'атакуют'} → ${T[d.type].name}: ${dmg} урона, погибло ${k}.`);
+  if (d.n <= 0){ S.units = S.units.filter(u => u !== d); say(a.side, `Отряд ${T[d.type].gen} уничтожен.`); }
+  else if (kind === 'melee' && !T[a.type].noRet && (!d.ret || T[d.type].retAll)){
+    d.ret = true;
+    const r = calc(d, a, 'melee'), k2 = hurt(a, r);
+    S.hits.add(a.id);
+    say(d.side, `Ответ: ${T[d.type].name} ×${d.n} наносят ${r} урона, погибло ${k2}.`);
+    if (a.n <= 0){ S.units = S.units.filter(u => u !== a); say(d.side, `Отряд ${T[a.type].gen} уничтожен.`); }
+  }
+  a.acted = true; a.moved = true;
+}
+function heroStrike(side){
+  S.units.filter(u => u.side === side && u.x === SPAWN[other(side)]).forEach(u => {
+    const dmg = u.n * T[u.type].dmg;
+    S.hero[other(side)] = Math.max(0, S.hero[other(side)] - dmg);
+    say(side, `${T[u.type].name} ×${u.n} на полосе высадки бьют героя: −${dmg}.`);
+  });
+}
+function checkOver(){
+  if (S.hero.e <= 0) S.over = 'win'; else if (S.hero.p <= 0) S.over = 'lose';
+  if (S.over) say('sys', S.over === 'win' ? 'Победа: герой соперника пал.' : 'Поражение: ваш герой пал.');
+  return !!S.over;
+}
+function startTurn(side){
+  S.units.forEach(u => { u.ret = false; if (u.side === side){ u.asleep = false; u.moved = false; u.acted = false; u.stepped = false; } });
+  draw(side, 2);
+}
+
+/* ---------- enemy AI ---------- */
+async function aiTurn(){
+  const beat = async () => { render(); await sleep(430); S.hits.clear(); };
+  for (let t = 0; t < 6; t++){
+    const us = S.units.filter(u => u.side === 'e' && u.type === t).sort((a, b) => a.n - b.n);
+    if (us.length >= 2 && (Math.min(us[0].n, us[1].n) >= 2 || us[0].top < T[t].hp || us[1].top < T[t].hp)){ merge(us[0], us[1]); await beat(); }
+  }
+  while (S.hand.e.length){
+    const free = [...Array(ROWS).keys()].filter(y => !unitAt(SPAWN.e, y));
+    if (!free.length) break;
+    const hi = S.hand.e.reduce((b, t, i, a) => t > a[b] ? i : b, 0);
+    const foes = S.units.filter(u => u.side === 'p');
+    const y = free.sort((a, b) => (foes.length ? Math.min(...foes.map(f => Math.abs(f.y - a))) - Math.min(...foes.map(f => Math.abs(f.y - b))) : Math.abs(a - 2) - Math.abs(b - 2)))[0];
+    spawn('e', hi, y); await beat();
+  }
+  const best = u => targets(u).map(o => ({...o, ...preview(u, o.t, o.kind)})).sort((a, b) => (b.dead - a.dead) || (b.k * T[b.t.type].hp - a.k * T[a.t.type].hp) || (b.dmg - a.dmg))[0];
+  const mine = S.units.filter(u => u.side === 'e' && !u.asleep).sort((a, b) => a.x - b.x);
+  for (const u of mine){
+    if (S.over || !S.units.includes(u)) continue;
+    let a = best(u);
+    if (a){ attack(u, a.t, a.kind); await beat(); continue; }
+    const foes = S.units.filter(v => v.side === 'p');
+    const goal = foes.length ? foes.sort((p, q) => dist(u, p) - dist(u, q))[0] : {x:SPAWN.p, y:u.y};
+    const mv = moves(u).sort((p, q) => (dist(p, goal) - dist(q, goal)) || (p.x - q.x))[0];
+    if (mv && dist(mv, goal) <= dist(u, goal)){ step(u, mv.x, mv.y); await beat(); a = best(u); if (a){ attack(u, a.t, a.kind); await beat(); } }
+  }
+}
+async function endTurn(){
+  if (S.side !== 'p' || S.busy || S.over) return;
+  S.sel = null; heroStrike('p');
+  if (checkOver()){ render(); return; }
+  S.side = 'e'; S.busy = true; startTurn('e'); say('e', 'Ход соперника.'); render();
+  await sleep(350); await aiTurn();
+  if (!S.over){ heroStrike('e'); checkOver(); }
+  if (!S.over){ S.turn++; S.side = 'p'; startTurn('p'); say('sys', `Ход ${S.turn}. Ваши отряды проснулись, +2 карты.`); }
+  S.busy = false; S.hits.clear(); render();
+}
+
+/* ---------- rendering ---------- */
+function tileHTML(u, extra = ''){
+  const t = T[u.type], f = u.top / t.hp;
+  const done = u.side === 'p' && !u.asleep && u.acted && S && S.side === 'p';
+  return `<div class="tile ${u.side}${u.asleep ? ' zz' : ''}${done ? ' done' : ''}${extra}" data-id="${u.id ?? ''}" style="--t:${TC[u.type]}" title="${t.name}: ${u.n} × ${t.hp} ХП, урон ${t.dmg}, атака ${t.atk}, защита ${t.def}">`
+    + `<span class="tr">${RO[u.type]}</span><b class="cnt"><small>×</small>${u.n}</b><div class="ic">${svg(t.key)}</div>`
+    + `<span class="hpt">${f < 1 ? `${u.top}/${t.hp}` : t.hp}<small> ХП</small></span><i class="bar"><b style="width:${f * 100}%"></b></i>`
+    + (u.asleep ? '<span class="zzz">сон</span>' : '') + `</div>`;
+}
+function hero(side, name, icon){
+  const hp = S.hero[side];
+  return `<div class="hero" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(icon)}</div><div><b>${name}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><small>${hp}/${HERO_HP}</small></div>`;
+}
+function selection(){
+  const sel = S.sel, out = {spawn:new Set(), move:new Set(), atk:new Map(), mg:new Map()};
+  if (S.side !== 'p' || S.busy || S.over || !sel) return out;
+  if (sel.hand != null){ for (let y = 0; y < ROWS; y++) if (!unitAt(SPAWN.p, y)) out.spawn.add(`${SPAWN.p},${y}`); return out; }
+  const u = S.units.find(v => v.id === sel.unit); if (!u) return out;
+  moves(u).forEach(c => out.move.add(`${c.x},${c.y}`));
+  targets(u).forEach(o => out.atk.set(o.t.id, {...o, ...preview(u, o.t, o.kind)}));
+  S.units.filter(v => canMerge(u, v)).forEach(v => out.mg.set(v.id, {type:u.type + 1, n:Math.min(u.n, v.n)}));
+  return out;
+}
+function render(){
+  const H = selection(), me = S.side === 'p' && !S.busy;
+  $('#top').innerHTML = hero('e', 'Мятежный лорд', 'rebel') + `<span class="chip">Рука <b>${S.hand.e.length}</b></span><span class="backs">${'<i></i>'.repeat(S.hand.e.length)}</span><span class="chip">Колода <b>${S.deck.e.length}</b></span>`
+    + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : me ? 'ваш ход' : 'ходит соперник'}</span>`;
+  $('#bottom').innerHTML = hero('p', 'Лорд Годрик', 'lord') + `<span class="chip">Колода <b>${S.deck.p.length}</b></span><span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
+  let b = `<span class="edge" style="left:8px;color:var(--tp)">ваша высадка</span><span class="edge" style="right:8px;color:var(--te)">высадка соперника</span>`;
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++){
+    const u = unitAt(x, y), key = `${x},${y}`;
+    let cls = 'cell' + (x === SPAWN.p ? ' sp-p' : x === SPAWN.e ? ' sp-e' : '');
+    if (H.spawn.has(key)) cls += ' can-sp';
+    if (H.move.has(key)) cls += ' can-mv';
+    let pv = '';
+    if (u && H.atk.has(u.id)){ cls += ' atk'; const a = H.atk.get(u.id); pv = `<span class="pv">−${a.dmg}${a.dead ? ' · уничтожит' : ` · −${a.k}`}</span>`; }
+    if (u && H.mg.has(u.id)){ cls += ' mg'; const m = H.mg.get(u.id); pv = `<span class="pv g">→ ${T[m.type].name} ×${m.n}</span>`; }
+    b += `<div class="${cls}" data-x="${x}" data-y="${y}">${u ? tileHTML(u, (S.sel && S.sel.unit === u.id ? ' sel' : '') + (S.hits.has(u.id) ? ' hit' : '')) : ''}${pv}</div>`;
+  }
+  if (S.over) b += `<div class="over"><b>${S.over === 'win' ? 'Победа' : 'Поражение'}</b><button class="btn" type="button" onclick="newGame()">Ещё бой</button></div>`;
+  $('#board').innerHTML = b;
+  const seen = [0,0,0,0,0,0,0];
+  $('#hand').innerHTML = S.hand.p.length ? S.hand.p.map((t, i) => { seen[t]++; const n = S.cnt.p[t] + seen[t];
+    return `<button class="hc${S.sel && S.sel.hand === i ? ' on' : ''}" type="button" data-h="${i}" style="--t:${TC[t]}" aria-label="${T[t].name}, выйдет ×${n}"><span class="tr">${RO[t]}</span><span class="nx">×${n}</span><div class="ic">${svg(T[t].key)}</div><b>${T[t].name}</b><small>ХП ${T[t].hp} · ур ${T[t].dmg}</small></button>`; }).join('')
+    : '<span class="hand-empty">Рука пуста.</span>';
+  const used = [0,1,2,3,4,5,6].filter(t => S.cnt.p[t] || S.hand.p.includes(t) || S.deck.p.includes(t) || S.units.some(u => u.side === 'p' && u.type === t));
+  $('#ctr').innerHTML = used.map(t => `<div style="--t:${TC[t]}"><span class="dot">${svg(T[t].key)}</span><span>${T[t].name}</span><em>след. ×${S.cnt.p[t] + 1}</em></div>`).join('');
+  $('#log').innerHTML = S.log.map(l => `<li class="${l.side}">${l.text}</li>`).join('');
+  $('#end').disabled = !me || !!S.over;
+  $('#hint').textContent = S.over ? '' : !me ? 'Соперник думает…' : S.sel && S.sel.hand != null ? 'Кликните клетку на левой полосе.' : S.sel ? 'Шаг — на точку, удар — на розовую рамку, слияние — на золотую.' : 'Выберите карту или отряд.';
+}
+
+/* ---------- input: click and drag ---------- */
+function act(targetCell){
+  if (S.side !== 'p' || S.busy || S.over || !S.sel || !targetCell) return false;
+  const x = +targetCell.dataset.x, y = +targetCell.dataset.y, t = unitAt(x, y);
+  if (S.sel.hand != null){ if (x === SPAWN.p && spawn('p', S.sel.hand, y)){ S.sel = null; return true; } return false; }
+  const u = S.units.find(v => v.id === S.sel.unit); if (!u) return false;
+  if (t && canMerge(u, t)){ merge(u, t); S.sel = null; return true; }
+  if (t && targets(u).some(o => o.t === t)){ attack(u, t, targets(u).find(o => o.t === t).kind); S.sel = null; checkOver(); return true; }
+  if (!t && moves(u).some(c => c.x === x && c.y === y)){ step(u, x, y); if (!targets(u).length) S.sel = null; return true; }
+  return false;
+}
+function onClick(el){
+  if (S.side !== 'p' || S.busy || S.over) return;
+  const hc = el.closest('.hc'), cell = el.closest('.cell');
+  if (hc){ const i = +hc.dataset.h; S.sel = S.sel && S.sel.hand === i ? null : {hand:i}; render(); return; }
+  if (!cell) return;
+  if (act(cell)){ render(); setTimeout(() => { S.hits.clear(); }, 500); return; }
+  const u = unitAt(+cell.dataset.x, +cell.dataset.y);
+  if (u && u.side === 'p') S.sel = S.sel && S.sel.unit === u.id ? null : {unit:u.id};
+  else S.sel = null;
+  render();
+}
+let drag = null;
+document.addEventListener('pointerdown', e => {
+  const src = e.target.closest('#hand .hc, #board .tile.p');
+  if (!src || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
+  drag = {src, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6){
+    drag.on = true;
+    if (drag.src.classList.contains('hc')) S.sel = {hand:+drag.src.dataset.h};
+    else { const c = drag.src.closest('.cell'); const u = unitAt(+c.dataset.x, +c.dataset.y); S.sel = {unit:u.id}; }
+    render();
+    const g = document.createElement('div'); g.className = 'ghost-drag';
+    const u = S.sel.unit ? S.units.find(v => v.id === S.sel.unit) : null;
+    g.innerHTML = u ? tileHTML(u) : tileHTML({side:'p', type:S.hand.p[S.sel.hand], n:S.cnt.p[S.hand.p[S.sel.hand]] + 1, top:T[S.hand.p[S.sel.hand]].hp, asleep:true});
+    document.body.appendChild(g); drag.ghost = g;
+  }
+  if (drag.on){
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    document.querySelectorAll('.cell.hover').forEach(c => c.classList.remove('hover'));
+    const c = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell'); if (c) c.classList.add('hover');
+    e.preventDefault();
+  }
+}, {passive:false});
+document.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.ghost) d.ghost.remove();
+  if (!d.on){ onClick(d.src); return; }
+  const c = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell');
+  if (!act(c)) S.sel = null;
+  render(); setTimeout(() => S.hits.clear(), 500);
+});
+document.addEventListener('pointercancel', () => { if (drag?.ghost) drag.ghost.remove(); drag = null; });
+$('#board').addEventListener('click', e => { if (!e.target.closest('.tile.p') && e.detail !== 0) onClick(e.target); });
+$('#hand').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.hc')){ e.preventDefault(); onClick(e.target); } });
+$('#end').onclick = endTurn;
+$('#reset').onclick = newGame;
+
+/* ---------- static sections ---------- */
+function mini(type, n, side = 'p', top){ const u = {type, n, side, top:top ?? T[type].hp, asleep:false}; return `<div class="mini">${tileHTML(u)}</div>`; }
+const STEPS = [
+  {cards:[[0,1]], text:'Ставлю ополченца: карта ×1.', c:'ополченцы: 1'},
+  {cards:[[0,1],[0,2]], text:'Второй ополченец: ×2. Всего 3 юнита.', c:'ополченцы: 2'},
+  {cards:[[0,1],[0,2],[0,3]], text:'Третий ополченец: ×3.', c:'ополченцы: 3'},
+  {cards:[[0,1],[0,2],[0,3],[1,1]], text:'Ставлю лучника: ×1.', c:'ополченцы: 3 · лучники: 1'},
+  {cards:[[1,1],[0,3],[1,1]], text:'Сливаю ополченцев ×1 и ×2 → лучники ×1.', c:'счётчик руки не меняется', gold:true},
+  {cards:[[1,1],[0,3],[1,1],[1,2]], text:'Второй лучник из руки: ×2.', c:'ополченцы: 3 · лучники: 2'},
+];
+$('#steps').innerHTML = STEPS.map((s, i) => `<div class="step"${s.gold ? ' style="border-color:var(--gold)"' : ''}><span class="n">шаг ${i + 1}</span><div class="row">${s.cards.map(([t, n]) => mini(t, n)).join('')}</div><p>${s.text}</p><span class="ctrs">${s.c}</span></div>`).join('');
+
+const pw = T.map(t => t.hp * t.dmg), rel = pw.map(p => p / pw[0]);
+$('#balance').innerHTML = `<table><thead><tr><th>Слияние</th><th>Было юнитов</th><th>Стало</th><th>Сила до</th><th>Сила после</th><th>Итог</th></tr></thead><tbody>`
+  + [1,2,3,5,7].map(k => { const before = (2 * k + 1), after = k * rel[1], d = after / before - 1;
+    return `<tr><td>Ополченцы ×${k} + ×${k + 1}</td><td class="num">${2 * k + 1} ополченцев</td><td class="num">${k} лучн.</td><td class="num">${before.toFixed(1)}</td><td class="num">${after.toFixed(1)}</td><td class="num"><span class="${d >= 0 ? 'gain' : 'loss'}">${d >= 0 ? '+' : ''}${Math.round(d * 100)}%</span></td></tr>`; }).join('')
+  + [1,2,4].map(k => { const before = (2 * k + 1) * rel[1], after = k * rel[2], d = after / before - 1;
+    return `<tr><td>Лучники ×${k} + ×${k + 1}</td><td class="num">${2 * k + 1} лучн.</td><td class="num">${k} мечн.</td><td class="num">${before.toFixed(1)}</td><td class="num">${after.toFixed(1)}</td><td class="num"><span class="${d >= 0 ? 'gain' : 'loss'}">${d >= 0 ? '+' : ''}${Math.round(d * 100)}%</span></td></tr>`; }).join('')
+  + `</tbody></table>`;
+
+$('#roster').innerHTML = `<table><thead><tr><th>Тир</th><th>Отряд</th><th>ХП</th><th>Урон</th><th>Атака</th><th>Защита</th><th>Сила ×</th><th>Особенность</th><th>В «Героях 5»</th></tr></thead><tbody>`
+  + T.map((t, i) => `<tr><td class="num" style="color:${TC[i]}">${RO[i]}</td><td><span class="tic" style="background:color-mix(in srgb,${TC[i]} 16%,#1b1f27)"><svg viewBox="0 0 64 64" style="fill:${TC[i]}">${ICONS[t.key].replace(/class="k"/g, 'style="fill:#1b1f27"')}</svg></span>${t.name}</td><td class="num">${t.hp}</td><td class="num">${t.dmg}</td><td class="num">${t.atk}</td><td class="num">${t.def}</td><td class="num">${rel[i].toFixed(1)}</td><td class="w">${t.note}</td><td class="muted">${t.homm}</td></tr>`).join('')
+  + `</tbody></table>`;
+
+newGame();
+</script>

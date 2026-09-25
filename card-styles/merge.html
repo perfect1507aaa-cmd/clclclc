@@ -532,7 +532,7 @@ $('#merges').innerHTML = MERGES.map(m => {
     const x = 50 + i * (1140 / 11), big = t === 'Босс';
     s += `<circle cx="${x}" cy="90" r="${big ? 26 : 18}" fill="#14171c" stroke="${col[t]}" stroke-width="3"/><text x="${x}" y="95" text-anchor="middle" font-family="Unbounded" font-weight="700" font-size="${big ? 13 : 11}" fill="${col[t]}">${n}</text><text x="${x}" y="${big ? 140 : 134}" text-anchor="middle" font-family="Manrope" font-weight="700" font-size="12.5" fill="#e7eaf0">${t}</text>`;
   });
-  s += `<rect x="${50 + 4 * 1140 / 11 - 20}" y="20" width="${1190 - (50 + 4 * 1140 / 11) + 40}" height="26" rx="13" fill="#2a1f0c"/><text x="${50 + 4 * 1140 / 11}" y="38" font-family="Unbounded" font-weight="700" font-size="11" fill="#fbbf24">с 5-го уровня в руку приходят только тиры I–III, выше — только слиянием</text>`;
+  s += `<rect x="${50 + 4 * 1140 / 11 - 20}" y="20" width="${1190 - (50 + 4 * 1140 / 11) + 40}" height="26" rx="13" fill="#2a1f0c"/><text x="${50 + 4 * 1140 / 11}" y="38" font-family="Unbounded" font-weight="700" font-size="11" fill="#fbbf24">колода почти вся из тиров I–III, крупные отряды получают слиянием</text>`;
   s += `<text x="50" y="190" font-family="Manrope" font-size="13.5" fill="#8a93a3">Отряды, их численность, раны и слияния переходят с уровня на уровень. В лагере сливать можно без ограничений и нанимать новых крестьян.</text>`;
   s += `<text x="50" y="212" font-family="Manrope" font-size="13.5" fill="#8a93a3">Между уровнями выбираете карту в колоду: новый вид отряда тиров I–III, артефакт или заклинание героя.</text></svg>`;
   $('#run').innerHTML = s;
