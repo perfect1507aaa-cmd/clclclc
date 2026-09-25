@@ -101,7 +101,10 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile.acting{z-index:3; box-shadow:inset 0 0 0 2px #fff, 0 0 18px color-mix(in srgb,var(--t) 70%,transparent);}
 .tile.trio{cursor:pointer; box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 60%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 50%,transparent);}
 .tile.trio:hover{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 22px var(--gold);}
-.tile .mgl.tri{padding:1px 8px; font-size:12px; animation:bob 1.1s ease-in-out infinite;}
+.tile.swp{box-shadow:inset 0 0 0 2px var(--tp), 0 0 0 3px color-mix(in srgb,var(--tp) 55%,transparent);}
+.tile .mgl.swl{background:var(--tp);}
+.tile .mgl.tri,.tile .mgl.swl{top:5%; padding:1px 9px; font-size:max(12px,12cqmin);}
+.tile .mgl.tri{animation:bob 1.1s ease-in-out infinite;}
 @keyframes bob{50%{translate:-50% -3px;}}
 .tile .mgl{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
 .tile.drop-in{animation:dropin .34s cubic-bezier(.2,1.3,.4,1);}
@@ -254,26 +257,30 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
         <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
         <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт за своим, стрелки бьют через своих.</li>
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
+        <li>Погиб юнит в переднем ряду — боец ближнего боя, стоявший за ним, сразу шагает на его место. Стрелки всегда остаются в тылу.</li>
+        <li>Манёвр, раз за ход: нажмите на своего юнита, потом на соседнюю пустую клетку (шаг) или на соседнего своего юнита (обмен местами). Вбок, вперёд или назад, не по диагонали.</li>
+        <li>Суккуб бьёт цепью: 3 цели, 2 тому, кто стоит за целью (или ближайшему врагу), и 1 его соседу слева или справа (50 на 50). Нет соседа — ближайшему по диагонали, нет и такого — просто ближайшему врагу. Лишний урон у суккуба не переносится.</li>
+        <li>Грифон даёт сдачу: кто ударил его вблизи, сразу получает 2 в ответ.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую.</li>
       </ul></div>
       <div><h3>Тройка («Колонны», «Открытие»)</h3><ul>
         <li>Тройка — три одинаковых юнита, стоящих вплотную по горизонтали или вертикали. По диагонали не считается.</li>
-        <li>Улучшение необязательно и только в момент выставления. Выставили юнита третьим к паре — тройка загорается золотом, над новым юнитом стрелка ↑. Нажмите на него, и пара сольётся в него: получится юнит тиром выше.</li>
-        <li>Сделали другое действие (выставили карту, взяли юнита из лагеря, закончили ход) — шанс пропал. Позже эту тройку уже не слить.</li>
+        <li>Улучшение необязательно и только в момент выставления. Выставили юнита третьим к паре — все трое загораются золотом со стрелкой ↑. Нажмите на любого из трёх: двое других сольются в него, получится юнит тиром выше на его месте.</li>
+        <li>Сделали другое действие (выставили карту, манёвр, юнит из лагеря, конец хода) — шанс пропал. Позже эту тройку уже не слить.</li>
         <li>Карта, положенная прямо на юнита из пары, улучшает сразу, как раньше.</li>
         <li>Золотом подсвечены готовые тройки, пары, которые достроит карта из руки, и такие карты.</li>
       </ul></div>
       <div><h3>Режимы</h3><ul>
         <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
         <li><b>Открытие:</b> поле 5×4, сначала в руку приходит только I тир. Сделали юнита II тира — в колоде появляется II, сделали III — появляется III.</li>
-        <li><b>Лагерь:</b> поле 4×4 и лагерь на три места. Такой же юнит поверх другого (картой или из лагеря) — тир выше. Из лагеря на поле бесплатно, обратно нельзя.</li>
+        <li><b>Лагерь:</b> поле 4×4 и лагерь на три места. Такой же юнит поверх другого (картой или из лагеря) — тир выше. Юнита в лагере нельзя убрать; пока он спит, его нельзя и сдвинуть, но такую же карту на него положить можно — будет улучшение. Проснувшись, он выходит из лагеря на поле бесплатно, обратно нельзя.</li>
       </ul></div>
     </div>
   </details>
 
   <h2>Звуки</h2>
-  <p class="lede">Новый звук: низкие удары и глухие попадания, свист оружия, рычание, боевые рога и барабаны, тёмное эхо. Ни колокольчиков, ни писка. По 5 вариантов на каждое событие и на атаку каждого юнита. Нажатие проигрывает звук и выбирает его: выбранный (золотая рамка) сразу звучит в бою.</p>
+  <p class="lede">Первый в каждой строке — звук, который вы выбрали. Дальше пять стилей: сухой фоли (близко и реалистично), настолка (деревянные фишки), ретро (8-бит), оркестр (пиццикато, литавры, медь) и кино (плотные короткие удары). Эха почти нет. У атак первым идёт фирменный звук юнита. Нажатие проигрывает звук и выбирает его: выбранный (золотая рамка) сразу звучит в бою.</p>
   <div class="panel" id="sndcats"></div>
   <div class="panel" id="sndatk"></div>
 
@@ -762,7 +769,7 @@ const FAC = {
     {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
     {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
     {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
-    {key:'griffin', name:'Грифон', atk:4, hp:11, diag:true, ab:'Если в колонке пусто, бьёт по соседней', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
+    {key:'griffin', name:'Грифон', atk:2, hp:11, retaliate:true, ab:'Сдача: бьёт в ответ того, кто ударил его вблизи', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
     {key:'priest', name:'Монах', atk:5, hp:20, ranged:true, bolt:'orb', ab:'Стреляет через своих', homm:'Монах', hs:'Атк 12 · Защ 12 · 9–12 · ХП 54'},
     {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
     {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
@@ -771,7 +778,7 @@ const FAC = {
     {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, splash:true, ab:'Три головы: задевает соседей цели на 1', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
-    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', ab:'Стреляет огнём через своих', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
+    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', chain:true, ab:'Цепная атака: 3, потом 2 тому, кто за целью, и 1 его соседу', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
     {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'Два удара за ход', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
@@ -818,20 +825,20 @@ const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 /* ---------- sound: heavier, darker synthesis ---------- */
 const ACLASS = {peasant:'light', imp:'light', pixie:'light', archer:'bow', hunter:'bow', footman:'blade', dancer:'blade', griffin:'beast', hound:'beast', unicorn:'beast',
   priest:'magic', succubus:'magic', angel:'magic', druid:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy', treant:'heavy', gdragon:'heavy'};
-const AVAR = {light:['Фирменный','Тычок','Взмах','Удар с плеча','Колющий'], blade:['Фирменный','Рубящий','Двойной взмах','Тяжёлый замах','Выпад'],
-  beast:['Фирменный','Рык','Укус','Бросок','Когти'], bow:['Фирменный','Тетива','Свист стрелы','Арбалет','Стрела в цель'],
-  magic:['Фирменный','Тёмная волна','Вспышка','Гул','Удар силы'], heavy:['Фирменный','Сокрушение','Замах','Топот','Рёв и удар']};
+/* Five sound styles: every event and every unit attack has one variant per style. */
+const STYLES = ['Сухой фоли', 'Настолка', 'Ретро', 'Оркестр', 'Кино'];
+const ATK_VARS = ['Фирменный', ...STYLES];
 const CATS = {
-  draw:{name:'Вытягивание карты', vars:['Пергамент','Кожаный переплёт','Шорох плаща','Карта на сукно','Тихий шелест']},
-  place:{name:'Выставление', vars:['Тяжёлый шаг','Щит о землю','Боевой барабан','Сапоги по камню','Глухой гул']},
-  hurt:{name:'Получение урона', vars:['Удар по плоти','Рассечение','Пробитый доспех','Тупой удар','Хруст']},
-  die:{name:'Гибель', vars:['Предсмертный стон','Падение тела','Хруст костей','Последний выдох','Прах']},
-  hero:{name:'Удар по герою', vars:['Таран в ворота','Раскат грома','Землетрясение','Военный барабан','Обвал']},
-  up:{name:'Улучшение', vars:['Боевой рог','Рог и барабаны','Низкий хор','Тёмный ритуал','Клятва']},
+  draw:{name:'Вытягивание карты', vars:['Шорох плаща', ...STYLES]},
+  place:{name:'Выставление', vars:['Тяжёлый шаг', ...STYLES]},
+  hurt:{name:'Получение урона', vars:['Пробитый доспех', ...STYLES]},
+  die:{name:'Гибель', vars:['Падение тела', ...STYLES]},
+  hero:{name:'Удар по герою', vars:['Раскат грома', ...STYLES]},
+  up:{name:'Улучшение', vars:['Тёмный ритуал', ...STYLES]},
 };
 let SEL_SND = {draw:0, place:0, hurt:0, die:0, hero:0, up:0, atk:{}};
-try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
-const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds', JSON.stringify(SEL_SND)); } catch (e) {} };
+try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds2') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
+const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds2', JSON.stringify(SEL_SND)); } catch (e) {} };
 const Sfx = {
   ctx:null, on:true, out:null, verb:null, nb:null,
   ensure(){
@@ -839,15 +846,15 @@ const Sfx = {
       if (!this.ctx){
         const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         const lim = c.createDynamicsCompressor(); lim.threshold.value = -14; lim.ratio.value = 8; lim.attack.value = .003; lim.release.value = .2;
-        const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 7000;
-        const sat = c.createWaveShaper(), k = 2.2, curve = new Float32Array(1024);
+        const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 13000;
+        const sat = c.createWaveShaper(), k = 1.5, curve = new Float32Array(1024);
         for (let i = 0; i < 1024; i++){ const x = i / 511.5 - 1; curve[i] = Math.tanh(k * x) / Math.tanh(k); }
         sat.curve = curve;
         const master = c.createGain(); master.gain.value = .8;
         master.connect(sat).connect(tone).connect(lim).connect(c.destination);
-        const len = Math.floor(c.sampleRate * 2.6), ir = c.createBuffer(2, len, c.sampleRate);
+        const len = Math.floor(c.sampleRate * 1.3), ir = c.createBuffer(2, len, c.sampleRate);
         for (let ch = 0; ch < 2; ch++){ const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++){ lp += ((Math.random() * 2 - 1) - lp) * .07; d[i] = lp * 2.6 * Math.pow(1 - i / len, 3); } }
-        const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = .3; conv.connect(wet).connect(master);
+        const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = .12; conv.connect(wet).connect(master);
         const nl = c.sampleRate * 2, nb = c.createBuffer(1, nl, c.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
         this.out = master; this.verb = conv; this.nb = nb;
       }
@@ -900,36 +907,54 @@ const Sfx = {
   choir(freqs, dur, {vol = .05, delay = 0} = {}){ freqs.forEach(f => [-8, 8].forEach(d => this.osc(f * Math.pow(2, d / 1200), dur, {type:'sawtooth', vol, a:dur * .4, delay, wet:true, lp:700, q:4}))); },
   groan(dur = .8, {f = 110, vol = .08, delay = 0} = {}){ this.osc(f, dur, {type:'sawtooth', vol, a:.08, f2:f * .6, delay, wet:true, lp:600, q:5}); this.osc(f * 1.01, dur, {type:'sawtooth', vol:vol * .6, a:.1, f2:f * .58, delay, lp:1100, q:6}); },
   crackle(dur = .4, {vol = .06, delay = 0} = {}){ for (let i = 0; i < 8; i++) this.burst(.012, {vol:vol * (0.5 + Math.random()), type:'highpass', f:1800, delay:delay + Math.random() * dur}); this.burst(dur, {vol:vol * .6, f:700, a:.05, delay}); },
+  /* crisp building blocks for the new styles */
+  click(f = 3000, vol = .15, delay = 0){ this.burst(.012, {vol, type:'bandpass', f, q:1, a:.001, delay}); },
+  knock(f = 900, vol = .3, delay = 0){ this.burst(.07, {vol, type:'bandpass', f, q:9, a:.001, delay}); this.osc(f * .5, .05, {type:'triangle', vol:vol * .4, a:.001, delay}); },
+  sq(f, dur, {f2 = null, vol = .06, delay = 0, type = 'square'} = {}){ this.osc(f, dur, {type, vol, a:.002, f2, delay}); },
+  bits(dur, vol = .05, delay = 0){ this.burst(dur, {vol, type:'highpass', f:1500, a:.002, delay}); },
+  pluck(f, vol = .16, delay = 0){ this.osc(f, .28, {type:'triangle', vol, a:.002, delay, lp:f * 5}); this.osc(f * 2, .12, {type:'sine', vol:vol * .3, a:.002, delay}); },
+  timp(f = 60, vol = .5, delay = 0){ this.osc(f * 1.6, .7, {vol, a:.003, f2:f, delay}); this.burst(.08, {vol:vol * .25, f:700, delay}); },
+  snare(vol = .2, delay = 0){ this.burst(.14, {vol, type:'highpass', f:1600, a:.002, delay}); this.osc(190, .07, {type:'triangle', vol:vol * .6, a:.002, delay}); },
+  stab(f, dur = .3, vol = .08, delay = 0){ this.horn(f, dur, {vol, delay}); },
+  swish(dur = .12, f = 900, f2 = 3200, vol = .12, delay = 0){ this.burst(dur, {vol, type:'bandpass', f, f2, q:2, a:dur * .5, delay}); },
   cat(name, i){
     const R = {
-      draw:[() => { this.burst(.18, {vol:.05, type:'bandpass', f:2600, f2:1400, q:.9, a:.04}); this.burst(.05, {vol:.05, f:400, delay:.14}); },
-        () => { this.burst(.05, {vol:.08, f:600}); this.impact(90, {vol:.12, dur:.1}); },
-        () => this.whoosh(.3, {vol:.06, f:300, f2:900}),
-        () => { this.burst(.08, {vol:.05, type:'bandpass', f:1800, q:.8}); this.impact(70, {vol:.14, dur:.12, delay:.07}); },
-        () => this.burst(.28, {vol:.035, type:'bandpass', f:3000, f2:1800, q:.6, a:.1})],
+      draw:[() => this.whoosh(.3, {vol:.06, f:300, f2:900}),
+        () => { this.burst(.09, {vol:.07, type:'bandpass', f:2500, f2:4200, q:1.2, a:.02}); this.click(5000, .08, .07); },
+        () => { this.knock(1400, .22); this.burst(.04, {vol:.05, type:'bandpass', f:3000, q:1, delay:.01}); },
+        () => { this.sq(660, .07, {f2:990}); this.sq(1320, .06, {delay:.07, vol:.04}); },
+        () => { this.pluck(392, .14); this.pluck(523, .12, .07); },
+        () => { this.swish(.14, 1500, 4500, .08); this.click(4000, .1, .1); this.osc(90, .08, {vol:.15, a:.002, delay:.1}); }],
       place:[() => { this.impact(48, {vol:.55}); this.burst(.1, {vol:.05, f:300}); },
-        () => { this.impact(42, {vol:.6, wet:true}); this.burst(.3, {vol:.06, f:250, delay:.02}); },
-        () => this.drum(52, {vol:.6}),
-        () => { this.impact(80, {vol:.25, dur:.12}); this.impact(75, {vol:.3, dur:.12, delay:.13}); this.burst(.05, {vol:.05, type:'bandpass', f:1500, delay:.13}); },
-        () => { this.osc(40, .7, {vol:.3, a:.01, f2:32, wet:true}); this.burst(.5, {vol:.05, f:180}); }],
-      hurt:[() => this.flesh(.35), () => { this.whoosh(.08, {vol:.07, f:1500, f2:3000}); this.flesh(.3, .05); },
-        () => { this.burst(.03, {vol:.12, type:'bandpass', f:1100, q:3}); this.impact(60, {vol:.45, dur:.22}); },
-        () => this.impact(40, {vol:.6, dur:.3}), () => { this.crackle(.08, {vol:.12}); this.impact(55, {vol:.3, dur:.15}); }],
-      die:[() => { this.groan(.9, {f:98}); this.impact(40, {vol:.35, delay:.4}); },
-        () => { this.impact(38, {vol:.6, dur:.4}); this.burst(.4, {vol:.08, f:400, f2:120, delay:.03}); },
-        () => { this.crackle(.25, {vol:.14}); this.impact(45, {vol:.4, delay:.12}); },
-        () => { this.burst(.9, {vol:.06, type:'bandpass', f:700, f2:250, q:1.5, a:.08, wet:true}); this.osc(80, .8, {vol:.08, f2:45, wet:true}); },
-        () => { this.burst(1.2, {vol:.07, f:1500, f2:120, a:.05, wet:true}); this.osc(55, 1, {vol:.12, f2:30, a:.1, wet:true}); }],
-      hero:[() => { this.impact(34, {vol:.8, dur:.6, wet:true}); this.burst(.5, {vol:.1, f:300, f2:80}); },
-        () => { this.burst(1.6, {vol:.18, f:260, f2:60, a:.02, wet:true}); this.impact(30, {vol:.7, dur:.8}); },
-        () => { this.burst(1.4, {vol:.2, f:120, a:.2}); this.osc(28, 1.2, {vol:.5, a:.1, wet:true}); },
-        () => { this.drum(48, {vol:.7}); this.drum(40, {vol:.8, delay:.22}); },
-        () => { this.crackle(.8, {vol:.12}); this.impact(32, {vol:.7, dur:.9, wet:true}); this.burst(1, {vol:.12, f:400, f2:90, delay:.1}); }],
-      up:[() => { this.horn(73, 1.1); this.impact(40, {vol:.35}); },
-        () => { this.horn(98, .9, {delay:.2}); [0, .18, .36].forEach((d, k) => this.drum(50 + k * 2, {vol:.4 + k * .1, delay:d})); },
-        () => { this.choir([110, 131, 165], 1.4, {vol:.035}); this.drum(44, {vol:.5}); },
-        () => { this.osc(36, 1.4, {vol:.4, a:.5, wet:true}); this.burst(1.2, {vol:.07, type:'bandpass', f:300, f2:1400, q:2, a:.8, wet:true}); this.impact(34, {vol:.6, delay:1.1, wet:true}); },
-        () => { this.choir([82, 123], 1, {vol:.04}); this.horn(55, 1.2, {vol:.08}); }],
+        () => { this.impact(70, {vol:.35, dur:.12}); this.click(3000, .14); this.burst(.05, {vol:.08, type:'bandpass', f:1200, q:1}); },
+        () => { this.knock(700, .35); this.knock(500, .2, .035); },
+        () => { this.sq(220, .1, {f2:110}); this.bits(.05, .04); },
+        () => this.timp(65, .5),
+        () => { this.impact(45, {vol:.6, dur:.25}); this.click(2500, .2); this.burst(.25, {vol:.08, f:900, f2:200}); }],
+      hurt:[() => { this.burst(.03, {vol:.12, type:'bandpass', f:1100, q:3}); this.impact(60, {vol:.45, dur:.22}); },
+        () => { this.burst(.04, {vol:.14, type:'bandpass', f:1800, q:1}); this.impact(90, {vol:.3, dur:.1}); },
+        () => { this.knock(1100, .3); this.knock(1600, .15, .04); },
+        () => { this.sq(330, .12, {f2:80}); this.bits(.08, .05); },
+        () => { this.pluck(110, .2); this.snare(.22); },
+        () => { this.click(3500, .25); this.impact(55, {vol:.5, dur:.18}); this.burst(.12, {vol:.08, f:2000, f2:300}); }],
+      die:[() => { this.impact(38, {vol:.6, dur:.4}); this.burst(.4, {vol:.08, f:400, f2:120, delay:.03}); },
+        () => { this.impact(50, {vol:.5, dur:.2}); this.burst(.2, {vol:.08, f:800, f2:200}); this.burst(.15, {vol:.06, type:'bandpass', f:1200, q:1, delay:.05}); },
+        () => { this.knock(600, .3); this.knock(450, .25, .08); this.knock(350, .2, .18); },
+        () => [440, 330, 220, 110].forEach((f, k) => this.sq(f, .08, {delay:k * .07, vol:.05})),
+        () => { this.timp(55, .55); this.pluck(147, .14, .08); this.pluck(98, .14, .2); },
+        () => { this.impact(35, {vol:.7, dur:.45}); this.burst(.6, {vol:.1, f:1500, f2:80}); this.click(2500, .2); }],
+      hero:[() => { this.burst(1.6, {vol:.18, f:260, f2:60, a:.02, wet:true}); this.impact(30, {vol:.7, dur:.8}); },
+        () => { this.impact(40, {vol:.8, dur:.35}); this.burst(.15, {vol:.1, type:'bandpass', f:600, q:1}); this.crackle(.2, {vol:.1}); },
+        () => { this.knock(300, .5); this.knock(260, .4, .12); this.burst(.2, {vol:.08, f:500}); },
+        () => { this.sq(110, .3, {f2:55, vol:.07}); this.bits(.3, .06); this.sq(82, .2, {delay:.1, vol:.05}); },
+        () => { this.timp(45, .7); this.timp(45, .6, .18); this.stab(73, .5, .07); },
+        () => { this.impact(28, {vol:.9, dur:.7}); this.click(2000, .3); this.burst(.8, {vol:.14, f:3000, f2:60}); }],
+      up:[() => { this.osc(36, 1.4, {vol:.4, a:.5, wet:true}); this.burst(1.2, {vol:.07, type:'bandpass', f:300, f2:1400, q:2, a:.8, wet:true}); this.impact(34, {vol:.6, delay:1.1, wet:true}); },
+        () => { this.burst(.05, {vol:.1, type:'bandpass', f:2500, q:1}); this.impact(80, {vol:.3, dur:.12}); this.burst(.1, {vol:.08, type:'bandpass', f:1200, q:1, delay:.1}); this.impact(60, {vol:.4, dur:.15, delay:.12}); },
+        () => { [500, 700, 900].forEach((f, k) => this.knock(f, .25, k * .09)); this.knock(400, .45, .3); },
+        () => { [262, 330, 392, 523].forEach((f, k) => this.sq(f, .06, {delay:k * .06, vol:.05})); this.sq(784, .15, {delay:.24, vol:.05}); },
+        () => { this.stab(98, .5); this.stab(147, .6, .08, .2); this.timp(49, .5, .35); },
+        () => { this.burst(.5, {vol:.1, type:'bandpass', f:200, f2:3000, q:1.5, a:.4}); this.impact(35, {vol:.7, delay:.5}); this.click(3000, .2, .5); }],
     };
     (R[name][i] || R[name][0])();
   },
@@ -960,16 +985,34 @@ const Sfx = {
   },
   attack(key, i){
     if (!i) return this.signature(key);
-    const cls = ACLASS[key], tier = Math.max(0, Object.values(FAC).map(f => f.units.findIndex(u => u.key === key)).find(x => x >= 0) ?? 0), f = 70 - tier * 6;
-    const V = {
-      light:[, () => { this.burst(.05, {vol:.06, f:800}); this.flesh(.3, .03); }, () => { this.whoosh(.18); this.flesh(.3, .15); }, () => { this.whoosh(.3, {vol:.12, f:250, f2:1000}); this.impact(f * .7, {vol:.55, delay:.25}); }, () => { this.whoosh(.08, {vol:.08, f:1800, f2:3500}); this.flesh(.25, .07); }],
-      blade:[, () => { this.whoosh(.16, {vol:.1, f:700, f2:2800}); this.burst(.05, {vol:.1, type:'bandpass', f:1300, q:1.5, delay:.14}); this.impact(f, {vol:.4, delay:.14}); }, () => { this.whoosh(.12, {vol:.1}); this.whoosh(.12, {vol:.1, delay:.14}); this.flesh(.3, .26); }, () => { this.whoosh(.4, {vol:.13, f:200, f2:1200}); this.impact(f * .6, {vol:.65, delay:.36}); }, () => { this.whoosh(.1, {vol:.1, f:1500, f2:3500}); this.flesh(.35, .08); }],
-      beast:[, () => this.growl(.55, {f:f, band:500, vol:.12}), () => { this.crackle(.06, {vol:.14}); this.impact(f, {vol:.4, dur:.14}); }, () => { this.whoosh(.25, {vol:.1, f:200, f2:800}); this.impact(f * .7, {vol:.5, delay:.2}); this.growl(.25, {f:f, vol:.08, delay:.2}); }, () => [0, .06, .12].forEach(d => this.burst(.05, {vol:.1, type:'bandpass', f:1600, q:1.5, delay:d}))],
-      bow:[, () => this.osc(85, .22, {type:'triangle', vol:.2, a:.002, f2:70, lp:600}), () => this.whoosh(.35, {vol:.08, f:3000, f2:700}), () => { this.burst(.02, {vol:.12, type:'bandpass', f:1500, q:2}); this.impact(90, {vol:.25, dur:.1, delay:.02}); this.whoosh(.2, {vol:.06, f:2500, f2:900, delay:.03}); }, () => { this.osc(85, .2, {type:'triangle', vol:.16, a:.002, f2:70, lp:600}); this.flesh(.3, .3); }],
-      magic:[, () => { this.burst(.6, {vol:.08, f:150, f2:1500, a:.35, wet:true}); this.osc(f * .8, .6, {vol:.14, a:.3, wet:true}); }, () => { this.burst(.4, {vol:.07, f:300, f2:3000, a:.3}); this.impact(f * .6, {vol:.5, delay:.35, wet:true}); }, () => this.choir([f * 2, f * 3], .8, {vol:.035}), () => { this.osc(f * 1.5, .5, {vol:.4, a:.005, f2:f * .4, wet:true}); this.burst(.4, {vol:.08, f:600, f2:100}); }],
-    };
-    V.heavy = [, () => { this.whoosh(.2, {vol:.1, f:200, f2:900}); this.impact(f * .55, {vol:.7, delay:.18, wet:true}); }, () => { this.whoosh(.45, {vol:.13, f:150, f2:900}); this.impact(f * .5, {vol:.7, delay:.4}); }, () => [0, .14, .28].forEach((d, k) => this.impact(f * .6, {vol:.3 + k * .15, dur:.18, delay:d})), () => { this.growl(.4, {f:f * .7, band:320, vol:.12}); this.impact(f * .5, {vol:.7, delay:.3, wet:true}); }];
-    (V[cls][i] || (() => this.signature(key)))();
+    const cls = ACLASS[key], tier = Math.max(0, Object.values(FAC).map(f => f.units.findIndex(u => u.key === key)).find(x => x >= 0) ?? 0);
+    const f = 90 - tier * 8, m = 1 - tier * .07;
+    const STY = [
+      /* сухой фоли: close, dry, realistic */
+      {light:() => { this.swish(.12, 800, 2500, .12); this.impact(f * 1.4, {vol:.3, dur:.1, delay:.1}); this.click(3000, .12, .1); },
+       blade:() => { this.swish(.14, 2000, 5000, .12); this.burst(.05, {vol:.12, type:'bandpass', f:3000, q:1.4, delay:.12}); this.impact(f, {vol:.35, dur:.14, delay:.12}); },
+       bow:() => { this.osc(120 * m, .15, {type:'triangle', vol:.2, a:.002, f2:100 * m, lp:1500}); this.swish(.2, 4000, 1500, .06, .04); this.impact(120, {vol:.2, dur:.08, delay:.25}); },
+       beast:() => { this.growl(.2, {f:f, band:700, vol:.1}); this.crackle(.05, {vol:.14, delay:.12}); this.impact(f, {vol:.35, dur:.12, delay:.12}); },
+       magic:() => { this.burst(.3, {vol:.08, type:'bandpass', f:300, f2:2500, q:1.5, a:.2}); this.crackle(.2, {vol:.08, delay:.2}); this.impact(f * .8, {vol:.3, dur:.15, delay:.3}); },
+       heavy:() => { this.swish(.3, 150, 700, .14); this.impact(f * .6, {vol:.7, dur:.3, delay:.28}); this.crackle(.2, {vol:.08, delay:.3}); }},
+      /* настолка: wooden pieces on a table */
+      {light:() => this.knock(1200 * m, .3), blade:() => { this.knock(1500 * m, .28); this.knock(900 * m, .2, .04); }, bow:() => { this.pluck(196 * m, .14); this.knock(1300 * m, .2, .12); },
+       beast:() => { this.knock(700 * m, .3); this.knock(700 * m, .25, .07); }, magic:() => [1000, 1300, 1600].forEach((x, k) => this.knock(x * m, .2, k * .05)), heavy:() => { this.knock(400 * m, .5); this.knock(300 * m, .3, .06); }},
+      /* ретро: 8-bit */
+      {light:() => this.sq(440 * m, .08, {f2:220 * m}), blade:() => { this.bits(.06, .05); this.sq(880 * m, .06, {f2:440 * m}); }, bow:() => this.sq(1200 * m, .15, {f2:300 * m}),
+       beast:() => { this.sq(150 * m, .12, {vol:.07}); this.bits(.1, .05); }, magic:() => [523, 659, 784].forEach((x, k) => this.sq(x * m, .05, {delay:k * .04, vol:.05})), heavy:() => { this.sq(110 * m, .2, {f2:55 * m, vol:.07}); this.bits(.15, .06); }},
+      /* оркестр: pizzicato, timpani, brass */
+      {light:() => this.pluck(262 * m, .16), blade:() => { this.pluck(330 * m, .15); this.snare(.2, .02); }, bow:() => { this.pluck(440 * m, .14); this.pluck(220 * m, .12, .05); },
+       beast:() => this.stab(82 * m, .3, .08), magic:() => [392, 494, 587].forEach((x, k) => this.pluck(x * m, .12, k * .05)), heavy:() => { this.timp(f * .7, .6); this.stab(55, .35, .06); }},
+      /* кино: tight, punchy hits */
+      {light:() => { this.swish(.1, 1000, 3500, .1); this.click(3500, .15, .08); this.impact(f * 1.2, {vol:.35, dur:.12, delay:.08}); },
+       blade:() => { this.swish(.08, 2500, 6000, .12); this.click(4000, .2, .07); this.impact(f, {vol:.45, dur:.15, delay:.07}); },
+       bow:() => { this.swish(.25, 5000, 1200, .07); this.click(2500, .18, .22); this.impact(100, {vol:.3, dur:.1, delay:.22}); },
+       beast:() => { this.growl(.25, {f:f * .8, band:500, vol:.1}); this.impact(f * .7, {vol:.55, dur:.2, delay:.15}); this.click(2000, .15, .15); },
+       magic:() => { this.burst(.35, {vol:.1, type:'bandpass', f:200, f2:4000, q:1, a:.3}); this.osc(f * 1.5, .4, {vol:.4, a:.005, f2:f * .4, delay:.3}); },
+       heavy:() => { this.swish(.35, 120, 900, .15); this.impact(28, {vol:.9, dur:.5, delay:.32}); this.click(2000, .2, .32); this.crackle(.3, {vol:.08, delay:.35}); }},
+    ];
+    (STY[i - 1]?.[cls] || (() => this.signature(key)))();
   },
   play(name){
     if (!this.on || !this.ctx) return;
@@ -1038,15 +1081,16 @@ function completionAt(side, type, cell, excl){
 const partnerOf = u => u.type < 6 ? onField(u.side).find(w => w !== u && w.type === u.type && adj(u, w)) : null;
 /* The trio offer belongs to the unit just placed (or just upgraded) and lapses with the next action. */
 const trioOf = u => u && alive(u) && u.where === 'f' && M().upgrade === 'trio' && u.type < 6 ? completionAt(u.side, u.type, u) : null;
-const offerUnit = () => S && S.offer ? S.units.find(u => u.id === S.offer && u.side === 'p') : null;
+/* Members of the trio just formed; any of them can be chosen until the next action. */
+const offerMembers = () => S && S.offer ? S.offer.map(id => S.units.find(u => u.id === id)).filter(u => u && alive(u) && u.where === 'f') : [];
 function readyTrios(){
   const set = new Set(); if (!S || S.side !== 'p' || S.busy || S.over) return set;
-  const u = offerUnit(), pair = trioOf(u);
-  if (pair){ set.add(u.id); pair.forEach(v => set.add(v.id)); }
+  const m = offerMembers(); if (m.length === 3) m.forEach(u => set.add(u.id));
   return set;
 }
 function setOffer(u){
-  S.offer = u && u.side === 'p' && trioOf(u) ? u.id : null;
+  const pair = u && u.side === 'p' ? trioOf(u) : null;
+  S.offer = pair ? [u.id, ...pair.map(v => v.id)] : null;
   if (S.offer) Sfx.play('offer');
 }
 function cardUpgradeInfo(side, type){
@@ -1097,9 +1141,10 @@ function syncUnits(dropId){
     el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${!mg && !tri && pairs.has(u.id) ? ' pair' : ''}${keep}`;
     el.style.setProperty('--t', TC[u.type]);
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
-    const offer = tri && u.id === S.offer;
-    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${offer ? `\nНажмите сейчас: тройка сольётся сюда → ${next}` : ''}`;
-    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : offer ? `<span class="mgl tri">↑ ${next}</span>` : '');
+    const swp = T.swaps.includes(u);
+    if (swp) el.classList.add('swp');
+    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${tri ? `\nНажмите сейчас: тройка сольётся сюда → ${next}` : ''}`;
+    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : tri ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : '');
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
@@ -1126,11 +1171,24 @@ function renderOverlay(){
 new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
 
 function targetsFor(sel){
-  const out = {cells:[], ups:[], upCells:[]};
+  const out = {cells:[], ups:[], upCells:[], swaps:[]};
   if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
   let type, src = null;
   if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
-  else { src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p' || src.where !== 'c') return out; type = src.type; }
+  else {
+    src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p') return out;
+    /* once per turn: step to an empty neighbouring cell or swap with a neighbouring unit of yours */
+    if (src.where === 'f'){
+      if (S.moved.p) return out;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]){
+        const r = src.r + dr, c = src.c + dc; if (!ZONE.p.includes(r) || c < 0 || c >= COLS()) continue;
+        const v = fieldAt(r, c); if (!v) out.cells.push(CELLS[r][c]); else if (v.side === 'p') out.swaps.push(v);
+      }
+      return out;
+    }
+    if (src.sleep) return out;
+    type = src.type;
+  }
   ZONE.p.forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) out.cells.push(CELLS[r][c]); });
   if (sel.card != null && M().camp) for (let i = 0; i < CAMP_N; i++) if (!campAt('p', i)) out.cells.push(CAMP.p[i]);
   if (M().upgrade === 'stack' && type < 6) out.ups = S.units.filter(u => u.side === 'p' && u !== src && u.type === type);
@@ -1152,10 +1210,10 @@ function renderBars(){
   const unl = side => M().unlock ? `<span class="chip unl">Карты до <b>${RO[S.unlocked[side]]}</b> тира</span>` : '';
   $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + unl('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
-  $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
+  $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span><span class="chip" title="Раз за ход: сдвинуть юнита на соседнюю клетку или поменять местами двух соседних">Манёвр <b>${S.moved.p ? 'сделан' : 'есть'}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель: золото — улучшение.'
-    : readyTrios().size ? 'Тройка собрана: нажмите на только что выставленного юнита (↑), чтобы слить её в него. Любое другое действие — и шанс пропадёт.' : 'Выставьте карты, потом «Конец хода».';
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (S.sel.unit != null && S.units.find(u => u.id === S.sel.unit)?.where === 'f' ? 'Манёвр: нажмите на соседнюю клетку или на соседнего юнита (⇄).' : 'Выберите подсвеченную цель: золото — улучшение.')
+    : readyTrios().size ? 'Тройка собрана: нажмите на любого из трёх (↑) — двое других сольются в него. Любое другое действие, и шанс пропадёт.' : S.moved.p ? 'Выставьте карты, потом «Конец хода».' : 'Выставьте карты. Раз за ход можно сдвинуть юнита или поменять двух соседних: нажмите на своего юнита.';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
@@ -1260,9 +1318,10 @@ async function promote(target, fromDesc){
   await wait(260);
 }
 /* Optional trio upgrade: the two neighbours merge into the chosen unit. */
-async function trioUpgrade(u){
-  const pair = trioOf(u); if (!pair) return false;
-  await absorb(u, pair); await promote(u, 'тройка'); setOffer(u); return true;
+async function trioUpgrade(u, members){
+  const others = members ? members.filter(v => v !== u && alive(v)) : trioOf(u);
+  if (!others || others.length !== 2) return false;
+  await absorb(u, others); await promote(u, 'тройка'); setOffer(u); return true;
 }
 async function deployCard(side, cardUid, dest, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
@@ -1311,6 +1370,25 @@ async function kill(v){
   const el = TILES.get(v.id); Sfx.play('die');
   if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
   S.units = S.units.filter(x => x !== v); syncUnits();
+  /* a melee ally standing behind steps into the gap; ranged units stay in the rear */
+  if (v.where === 'f' && v.r === FRONT[v.side]){
+    const b = fieldAt(BACK[v.side], v.c);
+    if (b && b.side === v.side && !U(b).ranged){ b.r = FRONT[v.side]; Sfx.play('move'); syncUnits(); await wait(300); }
+  }
+}
+/* Once per turn: move one unit to a free neighbouring cell or swap two neighbouring units. */
+async function maneuver(u, dest){
+  if (!alive(u) || u.where !== 'f' || S.moved[u.side]) return false;
+  if (dest.id != null){
+    const v = dest; if (!alive(v) || v.side !== u.side || v.where !== 'f' || !adj(u, v)) return false;
+    const a = {r:u.r, c:u.c}; Object.assign(u, {r:v.r, c:v.c}); Object.assign(v, a);
+  } else {
+    if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r) || !adj(u, dest)) return false;
+    Object.assign(u, {r:dest.r, c:dest.c});
+  }
+  S.moved[u.side] = true; S.sel = null;
+  Sfx.play('move'); syncUnits(); renderBars();
+  await wait(340); return true;
 }
 const eff = (t, dmg) => U(t).armor ? Math.max(1, dmg - U(t).armor) : dmg;
 async function damage(t, raw){
@@ -1346,7 +1424,7 @@ async function travel(from, to){
 /* Excess damage continues down the column: next enemy behind the killed one, then the hero. */
 async function carry(u, r, c, amount){
   const d = FWD[u.side]; let from = mid(CELLS[r][c]);
-  for (let rr = r + d; rr >= 0 && rr < ROWS && amount > 0; rr += d){
+  for (let rr = r; rr >= 0 && rr < ROWS && amount > 0; rr += d){
     const v = fieldAt(rr, c); if (!v || v.side === u.side) continue;
     await travel(from, mid(CELLS[rr][c]));
     const excess = eff(v, amount) - v.hp; await damage(v, amount);
@@ -1368,14 +1446,40 @@ async function hit(u, t){
   const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
   const sides = A.splash ? [-1, 1].map(dc => fieldAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
   const flame = A.breath ? S.units.filter(v => v.where === 'f' && v.side !== u.side && v.c === tc && (v.r - tr) * FWD[u.side] > 0) : [];
+  const hop1 = A.chain ? chainFirst(u, t) : null;
   const excess = eff(t, dmg) - t.hp;
   await damage(t, dmg);
   TILES.get(u.id)?.classList.remove('acting');
   if (A.blind && alive(t)){ t.stun = true; const b = box(TILES.get(t.id) || slotEl(t)); floatAt(b.x + b.w / 2, b.y + b.h * .3, 'ослеп', 'g'); syncUnits(); }
+  if (U(t).retaliate && !A.ranged && alive(t) && alive(u) && !S.over){
+    const el = TILES.get(t.id), a = mid(slotEl(t)), b = mid(slotEl(u));
+    if (el) await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(b.x - a.x) * .35}px,${(b.y - a.y) * .35}px)`, offset:.5}, {transform:'translate(0,0)'}], {duration:D(260)}).finished;
+    const bb = box(TILES.get(u.id) || slotEl(u)); floatAt(bb.x + bb.w / 2, bb.y + bb.h * .3, 'сдача', 't');
+    Sfx.play(U(t).key); await damage(u, U(t).atk);
+  }
+  if (A.chain){ await chainRest(u, hop1, {r:tr, c:tc}, t); return; }
   if (excess > 0 && !S.over) await carry(u, tr, tc, excess);
   if (behind && behind.side !== u.side && alive(behind)) await damage(behind, Math.max(1, Math.floor(dmg / 2)));
   for (const v of sides) if (alive(v)) await damage(v, 1);
   for (const v of flame) if (alive(v) && !S.over) await damage(v, A.breath);
+}
+/* Succubus chain: 3 to the target, 2 to the enemy behind it (or the nearest one), then 1 to a side neighbour of that one (random), else a diagonal one, else the nearest. */
+const enemiesOf = u => S.units.filter(v => v.where === 'f' && v.side !== u.side && alive(v));
+const dist = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
+const nearestTo = (u, p, skip) => enemiesOf(u).filter(v => !skip.includes(v)).sort((a, b) => dist(a, p) - dist(b, p) || Math.random() - .5)[0] || null;
+function chainFirst(u, t){
+  const v = fieldAt(t.r + FWD[u.side], t.c);
+  return v && v.side !== u.side ? v : nearestTo(u, t, [t]);
+}
+async function chainRest(u, hop1, from, t){
+  if (!hop1 || !alive(hop1) || S.over) return;
+  const p1 = {r:hop1.r, c:hop1.c};
+  const sides = [-1, 1].map(dc => fieldAt(p1.r, p1.c + dc)).filter(v => v && v.side !== u.side && v !== t);
+  const diag = [[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([dr, dc]) => fieldAt(p1.r + dr, p1.c + dc)).filter(v => v && v.side !== u.side && v !== t);
+  const hop2 = sides.length ? sides[Math.floor(Math.random() * sides.length)] : diag.length ? diag[Math.floor(Math.random() * diag.length)] : nearestTo(u, p1, [t, hop1]);
+  await travel(mid(CELLS[from.r][from.c]), mid(CELLS[p1.r][p1.c])); await damage(hop1, 2);
+  if (!hop2 || !alive(hop2) || S.over) return;
+  await travel(mid(CELLS[p1.r][p1.c]), mid(slotEl(hop2))); await damage(hop2, 1);
 }
 async function heroHit(u){
   const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
@@ -1414,6 +1518,7 @@ function checkOver(){
 }
 async function startTurn(side, first){
   S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; } });
+  S.moved[side] = false;
   S.mana[side] = Math.min(S.turn, MANA_MAX);
   for (const u of onField(side).filter(v => U(v).heal)){
     onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); });
@@ -1446,20 +1551,38 @@ function cellScore(side, type, r, c){
 }
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
 /* A short, uneven pause before each move, as if the opponent is thinking. */
-const think = (a = 160, b = 420) => new Promise(r => setTimeout(r, RM ? 0 : a + Math.random() * b));
-/* The AI takes the trio offer at once, and only if the next tier suits this row. */
+const think = () => new Promise(r => setTimeout(r, RM ? 0 : 300 + Math.random() * 700));
+/* The AI takes a trio offer at once: it merges into whichever of the three stands in the best row for the next tier. */
 async function aiOffer(u){
-  while (u && trioOf(u) && !S.over && rowFit(u.side, u.type + 1, u.r) >= 0){ await think(120, 260); await trioUpgrade(u); }
+  for (let g = 0; g < 6 && u && !S.over; g++){
+    const pair = trioOf(u); if (!pair) return;
+    const members = [u, ...pair], best = members.map(x => ({x, s:rowFit(x.side, x.type + 1, x.r) + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
+    if (best.s < 0) return;
+    await think(); u = best.x; await trioUpgrade(u, members);
+  }
+}
+/* One move per turn: pull a ranged unit out of the front row, or push a melee unit forward to cover the rear. */
+async function aiManeuver(side){
+  for (const u of onField(side)){
+    if (U(u).ranged && u.r === FRONT[side]){
+      const b = fieldAt(BACK[side], u.c);
+      if (!b){ await think(); return maneuver(u, {r:BACK[side], c:u.c}); }
+      if (b.side === side && !U(b).ranged){ await think(); return maneuver(u, b); }
+    }
+  }
+  for (const u of onField(side)){
+    if (!U(u).ranged && u.r === BACK[side] && !fieldAt(FRONT[side], u.c) && S.units.some(v => v.where === 'f' && v.side !== side && v.c === u.c)){ await think(); return maneuver(u, {r:FRONT[side], c:u.c}); }
+  }
 }
 async function aiTurn(){
   const side = 'e', mine = () => S.units.filter(u => u.side === side);
   const freeCells = () => { const f = []; ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) f.push({r, c}); }); return f; };
-  await think(300, 600);
+  await think();
   if (M().camp){
     for (const u of mine().filter(v => v.where === 'c')){
       await think();
       const tgt = mine().filter(v => v !== u && v.type === u.type && v.type < 6).map(v => ({v, s:fitNext(side, v.type, v.r, v.where)})).sort((a, b) => b.s - a.s)[0];
-      if (tgt && tgt.s >= 0){ await fromCamp(u, {unit:tgt.v}); continue; }
+      if (tgt && tgt.s >= 0 && !u.sleep){ await fromCamp(u, {unit:tgt.v}); continue; }
       const cell = freeCells().map(f => ({...f, s:cellScore(side, u.type, f.r, f.c)})).sort((a, b) => b.s - a.s)[0];
       if (cell && cell.s > 1.5 && !u.sleep) await fromCamp(u, cell);
     }
@@ -1489,6 +1612,7 @@ async function aiTurn(){
     if (placed && placed.where === 'f' && M().upgrade === 'trio') await aiOffer(placed);
     renderBars();
   }
+  if (!S.over) await aiManeuver(side);
 }
 
 /* ---------- turn flow ---------- */
@@ -1509,7 +1633,7 @@ async function endTurn(){
 }
 async function newGame(){
   $('#bwrap .over')?.remove();
-  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, offer:null, unlocked:{p:0, e:0}};
+  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, offer:null, moved:{p:false, e:false}, unlocked:{p:0, e:0}};
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
   buildBoard(); renderModes();
   for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
@@ -1519,7 +1643,7 @@ async function newGame(){
 }
 
 /* ---------- input ---------- */
-let drag = null;
+let drag = null, skipClick = false;
 function dropAt(x, y){
   const el = document.elementFromPoint(x, y); if (!el) return null;
   const t = el.closest('#units .tile'); if (t) return {unit:S.units.find(u => u.id === +t.dataset.id), el:t};
@@ -1530,10 +1654,12 @@ function dropAt(x, y){
 async function perform(sel, dest, fromRect){
   if (!sel || !dest) return false;
   const T = targetsFor(sel);
-  if (dest.unit){ if (!T.ups.includes(dest.unit)) return false; }
+  if (dest.unit){ if (!T.ups.includes(dest.unit) && !T.swaps.includes(dest.unit)) return false; }
   else if (!T.cells.includes(dest.el)) return false;
   S.busy = true; S.offer = null; renderBars(); let ok;
-  if (sel.card != null) ok = dest.unit ? await upgradeWithCard('p', sel.card, dest.unit, fromRect) : await deployCard('p', sel.card, dest, fromRect);
+  const src = sel.unit != null ? S.units.find(u => u.id === sel.unit) : null;
+  if (src && src.where === 'f') ok = await maneuver(src, dest.unit ? dest.unit : dest);
+  else if (sel.card != null) ok = dest.unit ? await upgradeWithCard('p', sel.card, dest.unit, fromRect) : await deployCard('p', sel.card, dest, fromRect);
   else ok = await fromCamp(S.units.find(u => u.id === sel.unit), dest.unit ? {unit:dest.unit} : dest);
   S.busy = false; S.sel = null; renderAll(); return ok;
 }
@@ -1544,6 +1670,7 @@ document.addEventListener('pointerdown', e => {
   if (!card && !campUnit) return;
   e.preventDefault();
   if (campUnit && S.sel && targetsFor(S.sel).ups.includes(campUnit)) return;
+  if (campUnit && campUnit.sleep){ $('#hint').textContent = 'Юнит в лагере спит: сдвинуть его можно со следующего хода. Такую же карту можно положить на него сразу.'; return; }
   drag = {sel:card ? {card:+card.dataset.uid} : {unit:campUnit.id}, src:card || tile, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
 });
 document.addEventListener('pointermove', e => {
@@ -1567,7 +1694,7 @@ document.addEventListener('pointerup', async e => {
   if (!drag) return;
   const d = drag; drag = null;
   document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
-  if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); renderAll(); return; }
+  if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = true; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
   const dest = dropAt(e.clientX, e.clientY);
   if (!(await perform(d.sel, dest, d.sel.card != null ? rect : null))){ S.sel = null; renderAll(); }
@@ -1576,16 +1703,22 @@ document.addEventListener('pointercancel', () => { if (drag){ drag.ghost?.remove
 document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
 $('#hand').addEventListener('keydown', e => { const card = e.target.closest('.card'); if (card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (S.side === 'p' && !S.busy){ S.sel = {card:+card.dataset.uid}; renderAll(); } } });
 $('#bwrap').addEventListener('click', async e => {
+  if (skipClick){ skipClick = false; return; }
   if (!S || S.side !== 'p' || S.busy || S.over) return;
   const dest = dropAt(e.clientX, e.clientY);
   if (S.sel && dest){
     if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
     if (await perform(S.sel, dest)) return;
   }
-  if (dest && dest.unit && dest.unit.side === 'p' && dest.unit.id === S.offer && trioOf(dest.unit)){
+  if (dest && dest.unit && readyTrios().has(dest.unit.id)){
+    const members = offerMembers();
     S.sel = null; S.busy = true; renderAll();
-    await trioUpgrade(dest.unit);
+    await trioUpgrade(dest.unit, members);
     S.busy = false; renderAll(); return;
+  }
+  /* pick one of your units on the field for this turn's move or swap */
+  if (dest && dest.unit && dest.unit.side === 'p' && dest.unit.where === 'f' && !S.moved.p){
+    S.sel = S.sel && S.sel.unit === dest.unit.id ? null : {unit:dest.unit.id}; Sfx.play('pick'); renderAll(); return;
   }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
@@ -1612,7 +1745,7 @@ function renderModes(){
 function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
 function renderSoundLab(){
   $('#sndcats').innerHTML = `<h3>События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
-  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${AVAR[ACLASS[u.key]].map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
+  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${ATK_VARS.map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
