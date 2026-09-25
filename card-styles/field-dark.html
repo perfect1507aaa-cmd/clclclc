@@ -1,0 +1,1647 @@
+<meta charset="utf-8">
+<title>Поле: тёмная редакция</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Cormorant+SC:wght@600;700&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0a0908; --panel:#131110; --line:#27231f; --ink:#e9e1d3; --mut:#978c7d; --off:#2e2924;
+  --tp:#7fb2c4; --te:#c8483a; --gold:#d2a247; --hpc:#d0473b; --mana:#6f9fd8;
+  --fd:"Oswald",system-ui,sans-serif; --fb:"Manrope",system-ui,sans-serif; --fm:"JetBrains Mono",ui-monospace,monospace; --fs:"Cormorant SC",Georgia,serif;
+}
+html,body{background:var(--bg);}
+body{color:var(--ink); font:15px/1.55 var(--fb);}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:24px 64px; display:grid; gap:18px;}
+.eyebrow,.label{margin:0; font:500 11.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+h1{margin:4px 0 6px; font:700 clamp(30px,4.4vw,46px)/1.05 var(--fs); letter-spacing:-.01em; text-wrap:balance;}
+h2{margin:26px 0 0; font:700 28px/1.2 var(--fs); text-wrap:balance;}
+h3{margin:0 0 6px; font:700 15px/1.3 var(--fd);}
+p{margin:0 0 10px; max-width:70ch;}
+.lede{color:var(--mut); max-width:74ch; margin:0;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px;}
+.muted{color:var(--mut);}
+
+/* ---------- mode tabs ---------- */
+.modes{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+.mbtn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 16px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font:700 13px/1.2 var(--fd);}
+.mbtn small{display:block; margin-top:3px; font:500 11.5px/1.2 var(--fb); color:var(--mut);}
+.mbtn[aria-pressed="true"]{background:#2a2119; color:var(--gold); border-color:var(--gold);}
+.mbtn[aria-pressed="true"] small{color:var(--mut);}
+.mbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.mdesc{margin:0; font-size:14px; color:var(--mut); max-width:90ch;}
+.races{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center;}
+.rgroup{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+.rgroup .label{min-width:84px;}
+.rbtn{all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:8px; padding:6px 12px 6px 6px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font:700 12.5px/1.2 var(--fd);}
+.rbtn i{--t:var(--rc); width:30px; height:30px; border-radius:7px; display:grid; place-items:center; background:color-mix(in srgb,var(--rc) 18%,#16130f);}
+.rbtn svg{width:20px; height:20px;} .rbtn svg *{fill:var(--rc);} .rbtn svg .k{fill:#16130f;}
+.rbtn[aria-pressed="true"]{border-color:var(--rc); box-shadow:inset 0 0 0 1px var(--rc); background:color-mix(in srgb,var(--rc) 10%,var(--panel));}
+.rbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+
+/* ---------- game: full width stage ---------- */
+.arena{display:grid; gap:10px; justify-items:center; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; width:min(100%,var(--bw,860px));}
+.hero{display:flex; align-items:center; gap:10px; padding:8px 12px 8px 8px; border-radius:12px; background:var(--panel); border:1px solid var(--line); min-width:210px;}
+.hero .ava{--t:var(--team); width:42px; height:42px; border-radius:10px; display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, color-mix(in srgb,var(--team) 24%,#1a1715), #0e0c0b);}
+.hero .ava svg{width:28px; height:28px;} .hero .ava svg *{fill:var(--team);} .hero .ava svg .k{fill:color-mix(in srgb,var(--team) 18%,#16130f);}
+.hero b{display:block; font:700 12.5px/1.2 var(--fd);}
+.hero .hb{width:120px; height:6px; margin-top:5px; border-radius:3px; background:var(--off); overflow:hidden;}
+.hero .hb i{display:block; height:100%; background:var(--team); transition:width .35s;}
+.hero .hv{margin-left:auto; min-width:34px; padding:3px 7px; border-radius:8px; background:#0b0d10; box-shadow:inset 0 0 0 1.5px #5b2a2a; color:#fca5a5; font:700 14px/1.2 var(--fd); text-align:center;}
+.chip{padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line); font:700 12px/1.2 var(--fd); color:var(--mut); white-space:nowrap;}
+.chip b{color:var(--ink);}
+.chip.turn{margin-left:auto;}
+.chip.turn.me{background:var(--tp); color:#0b0d10; border-color:var(--tp);} .chip.turn.me b{color:#0b0d10;}
+.chip.unl b{color:var(--gold);}
+.mana{display:flex; align-items:center; gap:8px; padding:5px 11px; border-radius:999px; background:var(--panel); border:1px solid var(--line);}
+.mana b{font:700 12px/1 var(--fd); color:var(--mana); white-space:nowrap;}
+.gems{display:flex; gap:3px;}
+.gems i{width:8px; height:13px; border-radius:3px; background:var(--off);}
+.gems i.on{background:var(--mana);}
+.gems i.cap{background:#1f2630; box-shadow:inset 0 0 0 1px #2e3744;}
+.ehand{display:flex;}
+.ehand i{width:18px; height:26px; margin-left:-6px; border-radius:4px; background:linear-gradient(135deg,#3a1d19,#211210); box-shadow:inset 0 0 0 1px #5a2622, 0 2px 4px rgba(0,0,0,.4);}
+.ehand i:first-child{margin-left:0;}
+
+.board-wrap{position:relative; width:min(100%,var(--bw,860px)); padding:10px; border-radius:20px; box-sizing:border-box; background:#0f1115; box-shadow:inset 0 0 0 1px #20242c;}
+.grid{position:relative; display:grid; gap:6px;}
+.cell{position:relative; aspect-ratio:1; border-radius:10px; background:#15181d; box-shadow:inset 0 0 0 1px #1e2229;}
+.cell.zp{background:#141a1c; box-shadow:inset 0 0 0 1px #1b2528;}
+.cell.ze{background:#1a1619; box-shadow:inset 0 0 0 1px #271f25;}
+.cell.camp{background:#121418; box-shadow:inset 0 0 0 1px #20242c; outline:1px dashed #2a303b; outline-offset:-5px;}
+.camplabel{align-self:center; justify-self:center; text-align:center; font:700 9px/1.3 var(--fd); letter-spacing:.05em; text-transform:uppercase; opacity:.8;}
+.cell.drop{cursor:pointer; box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--tp) 60%,transparent);}
+.cell.drop.upc{box-shadow:inset 0 0 0 2px var(--gold), 0 0 14px color-mix(in srgb,var(--gold) 35%,transparent);}
+.cell.hov{box-shadow:inset 0 0 0 2px var(--ink);}
+.frontline{align-self:center; height:1px; pointer-events:none; background:linear-gradient(90deg, transparent, #4b3a48 20%, #5d6470 50%, #2f4b49 80%, transparent);}
+.units{position:absolute; inset:0; pointer-events:none;}
+.overlay{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:6;}
+
+.tile{position:absolute; box-sizing:border-box; border-radius:12px; pointer-events:auto; cursor:pointer; container-type:size; touch-action:none;
+  background:radial-gradient(90% 80% at 50% 35%, color-mix(in srgb,var(--t) 22%,#1a1715), color-mix(in srgb,var(--t) 6%,#0e0c0b));
+  box-shadow:inset 0 0 0 2px var(--team), inset 0 0 18px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.55);
+  transition:left .3s cubic-bezier(.3,.8,.3,1), top .3s cubic-bezier(.3,.8,.3,1);}
+.tile.p{--team:color-mix(in srgb,var(--tp) 80%,transparent);} .tile.e{--team:color-mix(in srgb,var(--te) 80%,transparent); cursor:default;}
+.tile .ic{position:absolute; left:50%; top:43%; width:57cqmin; height:57cqmin; translate:-50% -50%; filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));}
+.tile .ic svg{width:100%; height:100%; overflow:visible;}
+.tile svg *{fill:var(--t);} .tile svg .k{fill:color-mix(in srgb,var(--t) 18%,#16130f);}
+.tile .tr{position:absolute; left:9%; top:8%; font:700 max(8px,10cqmin)/1 var(--fd); color:var(--t);}
+.tile .zz{position:absolute; right:8%; top:7%; width:max(16px,20cqmin); height:max(11px,14cqmin);}
+.tile .zz svg *{fill:#c7d2fe;}
+.tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,13cqmin)/1.2 var(--fd);}
+.tile .st svg{width:max(9px,10cqmin); height:max(9px,10cqmin);}
+.tile .st.a{left:6%; background:var(--ink); color:#0b0d10;} .tile .st.a svg *{fill:#0b0d10;}
+.tile .st.h{right:6%; background:#0b0d10; color:#fca5a5; box-shadow:inset 0 0 0 1.5px #5b2a2a;} .tile .st.h svg *{fill:var(--hpc);}
+.tile .st.h.d{color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
+.tile.sleep .ic{opacity:.62;}
+.tile.sel{box-shadow:inset 0 0 0 2px var(--team), 0 0 0 3px var(--tp), 0 6px 14px rgba(0,0,0,.45);}
+.tile.mg,.tile.pair{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 50%,transparent), 0 0 14px color-mix(in srgb,var(--gold) 40%,transparent);}
+.tile.mg.hov{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 20px var(--gold);}
+.tile.acting{z-index:3; box-shadow:inset 0 0 0 2px #fff, 0 0 18px color-mix(in srgb,var(--t) 70%,transparent);}
+.tile.trio{cursor:pointer; box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 60%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 50%,transparent);}
+.tile.trio:hover{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 22px var(--gold);}
+.tile .mgl.tri{padding:1px 8px; font-size:12px; animation:bob 1.1s ease-in-out infinite;}
+@keyframes bob{50%{translate:-50% -3px;}}
+.tile .mgl{position:absolute; left:50%; top:-11px; translate:-50% 0; z-index:3; padding:2px 8px; border-radius:999px; background:var(--gold); color:#0b0d10; font:700 10px/1.3 var(--fd); white-space:nowrap; pointer-events:none;}
+.tile.drop-in{animation:dropin .34s cubic-bezier(.2,1.3,.4,1);}
+@keyframes dropin{0%{transform:scale(1.3) translateY(-12px); opacity:0;} 60%{opacity:1;} 100%{transform:none;}}
+@container (max-width:60px){ .tile .tr{display:none;} .tile .st{padding:1px 3px;} .tile .st svg{display:none;} }
+.float{position:absolute; z-index:20; pointer-events:none; font:700 26px/1 var(--fd); color:#fff; -webkit-text-stroke:5px #7f1d1d; paint-order:stroke fill; translate:-50% -50%;}
+.float.g{-webkit-text-stroke-color:#78350f;} .float.t{-webkit-text-stroke-color:#134e4a;}
+.bolt{position:absolute; z-index:15; left:0; top:0; pointer-events:none;}
+.bolt.arrow{width:30px; height:3px; margin:-1.5px 0 0 -15px; border-radius:2px; background:linear-gradient(90deg, transparent, #e7eaf0 60%, #fff); box-shadow:0 0 6px rgba(255,255,255,.6);}
+.bolt.orb{width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:radial-gradient(circle, #fff, #fde68a 45%, rgba(251,191,36,0) 72%); box-shadow:0 0 16px 4px rgba(251,191,36,.55);}
+.bolt.fire{width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:radial-gradient(circle, #fff7ed, #fb923c 45%, rgba(239,68,68,0) 72%); box-shadow:0 0 18px 5px rgba(239,68,68,.5);}
+.bolt.leaf{width:16px; height:10px; margin:-5px 0 0 -8px; border-radius:0 80% 0 80%; background:linear-gradient(135deg,#bbf7d0,#22c55e); box-shadow:0 0 12px 3px rgba(74,222,128,.5);}
+.bolt.spark{width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:radial-gradient(circle,#fff,#f9a8d4 50%,rgba(249,168,212,0) 72%); box-shadow:0 0 12px 4px rgba(249,168,212,.55);}
+.bolt.spill{width:13px; height:13px; margin:-6.5px 0 0 -6.5px; border-radius:50%; background:#fca5a5; box-shadow:0 0 12px 3px rgba(248,113,113,.7);}
+.ring{position:absolute; z-index:4; pointer-events:none; border-radius:12px;}
+.over{position:absolute; inset:0; z-index:30; display:grid; place-items:center; align-content:center; gap:14px; border-radius:20px; background:rgba(11,13,16,.82); text-align:center;}
+.over b{font:700 28px var(--fd);}
+
+/* ---------- hand ---------- */
+.handwrap{position:relative; width:min(100%,var(--bw,860px)); height:200px;}
+.card{position:absolute; left:0; top:36px; width:108px; height:154px; z-index:1; perspective:700px; cursor:grab; touch-action:none; -webkit-user-drag:none;
+  transform:translate(var(--x),var(--y)) rotate(var(--a)); transition:transform .3s cubic-bezier(.2,.8,.2,1), opacity .2s;}
+.card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 30px)) rotate(0deg) scale(1.1); z-index:40;}
+.card:focus-visible{outline:2px solid var(--tp); outline-offset:3px; border-radius:12px;}
+.card.ghosted{opacity:.2;}
+.card.canup .face{box-shadow:inset 0 0 0 2px var(--gold), 0 0 18px color-mix(in srgb,var(--gold) 45%,transparent), 0 10px 22px rgba(0,0,0,.5);}
+.card.canup::after{content:"↑"; position:absolute; right:-7px; top:-7px; z-index:3; width:22px; height:22px; border-radius:50%; background:var(--gold); color:#0b0d10; font:700 13px/22px var(--fd); text-align:center;}
+.card .in{position:absolute; inset:0; transform-style:preserve-3d; transition:transform .4s cubic-bezier(.3,.7,.3,1);}
+.card.back .in{transform:rotateY(180deg);}
+.face,.backf{position:absolute; inset:0; border-radius:12px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; overflow:hidden;}
+.face{background:linear-gradient(180deg,#1e1b18,#131110); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 55%,#2a303b), 0 10px 22px rgba(0,0,0,.5);}
+.face .art{position:absolute; left:7px; right:7px; top:7px; height:70px; border-radius:8px; display:grid; place-items:center;
+  background:radial-gradient(80% 90% at 50% 30%, color-mix(in srgb,var(--t) 30%,#1a1715), color-mix(in srgb,var(--t) 6%,#0e0c0b)); box-shadow:inset 0 0 14px rgba(0,0,0,.7);}
+.face .art svg{width:54px; height:54px; overflow:visible; filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));}
+.face svg *{fill:var(--t);} .face svg .k{fill:color-mix(in srgb,var(--t) 22%,#16130f);}
+.face .cost{position:absolute; left:4px; top:4px; z-index:2; width:24px; height:24px; border-radius:50%; background:var(--mana); color:#0b0d10; font:700 12px/24px var(--fd); text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.5);}
+.card.poor .face .cost{background:var(--off); color:var(--mut);}
+.card.poor .face{filter:saturate(.45) brightness(.72);}
+.face .tr{position:absolute; right:10px; top:10px; font:700 10px var(--fd); color:var(--t); text-shadow:0 1px 3px #000;}
+.face .nm{position:absolute; left:6px; right:6px; top:82px; text-align:center; font:800 11px/1.15 var(--fb);}
+.face .ab{position:absolute; left:7px; right:7px; top:98px; text-align:center; font:500 9px/1.25 var(--fb); color:var(--mut);}
+.face .sts{position:absolute; left:7px; right:7px; bottom:7px; display:flex; justify-content:space-between;}
+.face .sts span{display:flex; align-items:center; gap:3px; padding:2px 6px; border-radius:6px; font:700 11px/1.2 var(--fd);}
+.face .sts svg{width:10px; height:10px;}
+.face .sts .a{background:var(--ink); color:#0b0d10;} .face .sts .a svg *{fill:#0b0d10;}
+.face .sts .h{background:#0b0d10; color:#fca5a5;} .face .sts .h svg *{fill:var(--hpc);}
+.backf{transform:rotateY(180deg); background:repeating-linear-gradient(45deg,#1b1f22 0 6px,#15181a 6px 12px); box-shadow:inset 0 0 0 1.5px #3b4a52, 0 10px 22px rgba(0,0,0,.5);}
+.backf::after{content:""; position:absolute; left:50%; top:50%; width:34px; height:34px; translate:-50% -50%; rotate:45deg; border-radius:4px; border:2px solid var(--tp); background:#101416;}
+.backf.e{background:repeating-linear-gradient(45deg,#2a1614 0 6px,#211210 6px 12px); box-shadow:inset 0 0 0 1.5px #5a2622;}
+.backf.e::after{border-color:var(--te); background:#1c0f0d;}
+.deck{position:absolute; right:0; top:46px; width:74px; height:104px;}
+.deck i{position:absolute; inset:0; border-radius:10px; background:repeating-linear-gradient(45deg,#1b1f22 0 6px,#15181a 6px 12px); box-shadow:inset 0 0 0 1.5px #3b4a52, 0 4px 10px rgba(0,0,0,.4);}
+.deck i:nth-child(2){translate:-3px -3px;} .deck i:nth-child(3){translate:-6px -6px;}
+.deck b{position:absolute; left:50%; bottom:-22px; translate:-50% 0; font:700 11px var(--fd); color:var(--mut); white-space:nowrap;}
+.fly{position:fixed; z-index:200; pointer-events:none; width:108px; height:154px; left:0; top:0; transform-origin:0 0;}
+.fly .face,.fly .backf{transform:none;}
+.fly.tilefly{width:auto; height:auto;}
+.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,var(--bw,860px));}
+.btn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:999px; background:var(--ink); color:#0b0d10; font:700 13px/1 var(--fd);}
+.btn.ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--off);}
+.btn.ghost[aria-pressed="false"]{color:var(--mut);}
+.btn[disabled]{opacity:.4; cursor:default;}
+.btn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.hint{font-size:13px; color:var(--mut);}
+
+/* ---------- collapsible rules ---------- */
+details.panel > summary{cursor:pointer; font:700 15px/1.3 var(--fd); list-style:none; display:flex; align-items:center; gap:10px;}
+details.panel > summary::-webkit-details-marker{display:none;}
+details.panel > summary::before{content:""; width:0; height:0; border-left:7px solid var(--mut); border-top:5px solid transparent; border-bottom:5px solid transparent; transition:rotate .2s;}
+details[open].panel > summary::before{rotate:90deg;}
+details.panel > summary:focus-visible{outline:2px solid var(--tp); outline-offset:4px;}
+.rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:14px; margin-top:14px;}
+.rules ul,.rules ol{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
+
+/* ---------- sound lab, icons, roster ---------- */
+.srow{display:grid; grid-template-columns:170px 1fr; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
+.srow:last-child{border-bottom:none;}
+.srow > b{font:700 12.5px/1.3 var(--fb);}
+.srow > b small{display:block; font:500 11px var(--fm); color:var(--mut);}
+.svars{display:flex; flex-wrap:wrap; gap:6px;}
+.sbtn{all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:8px; background:#16130f; border:1px solid var(--off); font:600 12px/1.2 var(--fb);}
+.sbtn::before{content:""; flex:none; width:0; height:0; border-left:7px solid var(--ink); border-top:5px solid transparent; border-bottom:5px solid transparent;}
+.sbtn:hover{border-color:#3a4150;}
+.sbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
+.sbtn[aria-pressed="true"]{border-color:var(--gold); background:#221d10;}
+.sbtn[aria-pressed="true"]::before{border-left-color:var(--gold);}
+.sbtn.playing{background:#16302e;}
+@media (max-width:640px){ .srow{grid-template-columns:1fr;} }
+.igal{overflow-x:auto;}
+.igal table{min-width:680px;}
+.igal td{text-align:center;}
+.igal td:first-child{text-align:left;}
+.ibox{display:inline-grid; place-items:center; width:72px; height:72px; border-radius:12px; background:radial-gradient(90% 80% at 50% 35%, color-mix(in srgb,var(--t) 22%,#1a1715), color-mix(in srgb,var(--t) 6%,#0e0c0b)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 45%,transparent), inset 0 0 16px rgba(0,0,0,.6);}
+.ibox svg{width:52px; height:52px; overflow:visible;} .ibox svg *{fill:var(--t);} .ibox svg .k{fill:color-mix(in srgb,var(--t) 18%,#16130f);}
+.ihead{all:unset; cursor:pointer; padding:5px 10px; border-radius:8px; font:700 11px/1.2 var(--fd); color:var(--mut); border:1px solid var(--off);}
+.ihead[aria-pressed="true"]{background:var(--ink); color:#0b0d10; border-color:var(--ink);}
+.ihead:focus-visible{outline:2px solid var(--tp);}
+.tbl{overflow-x:auto;}
+table{border-collapse:collapse; width:100%; min-width:720px; font-size:13.5px;}
+th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;}
+th{font:500 10.5px/1.3 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+td.num{font:500 13px var(--fm); font-variant-numeric:tabular-nums;}
+td.w{white-space:normal; min-width:220px;}
+.tic{display:inline-grid; place-items:center; width:40px; height:40px; border-radius:8px; vertical-align:middle; margin-right:8px;}
+.tic svg{width:28px; height:28px; overflow:visible;} .tic svg *{fill:var(--t);} .tic svg .k{fill:#16130f;}
+.fac{display:flex; align-items:center; gap:10px; margin:18px 0 8px;}
+.fac i{width:12px; height:12px; border-radius:50%;}
+.fac b{font:700 16px var(--fd);}
+.lvrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:12px;}
+.lvrow .label{margin-right:6px;}
+.igal th{vertical-align:bottom;}
+.ihead small{display:block; margin-top:3px; font:500 10px/1.2 var(--fb); color:inherit; opacity:.75; text-transform:none; letter-spacing:0;}
+tr.frow td{padding-top:16px; font:700 13px var(--fd); border-bottom-color:var(--off);}
+svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-order:stroke;}
+@media (prefers-reduced-motion: reduce){ .card,.card .in,.tile,.hero .hb i{transition:none;} .tile.drop-in,.tile .mgl.tri{animation:none;} }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow" id="eyebrow">Три режима · три расы</p>
+    <h1>Поле · тёмная редакция</h1>
+    <p class="lede">Юниты стоят там, где их выставили, и бьют по своей колонке. Лишний урон проходит дальше: в юнита за убитым, а потом в героя. Вторая, взрослая версия: другие иконки и звук, герои по 30 ХП, в руку по 3 карты за ход.</p>
+  </header>
+
+  <div class="modes" id="modes" role="group" aria-label="Режим"></div>
+  <p class="mdesc" id="mdesc"></p>
+  <div class="races" id="races"></div>
+
+  <section class="arena" aria-label="Поле боя">
+    <div class="bar" id="topbar"></div>
+    <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
+    <div class="bar" id="botbar"></div>
+    <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
+    <div class="actions">
+      <button class="btn" id="end" type="button">Конец хода</button>
+      <button class="btn ghost" id="reset" type="button">Заново</button>
+      <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук</button>
+      <button class="btn ghost" id="arr" type="button" aria-pressed="true">Цели</button>
+      <span class="hint" id="hint"></span>
+    </div>
+  </section>
+
+  <details class="panel">
+    <summary>Как играть и правила</summary>
+    <p style="margin-top:12px" id="howto"></p>
+    <div class="rules">
+      <div><h3>Общее</h3><ul>
+        <li>Мана = номер хода, не больше 10. Карта стоит столько маны, какого она тира.</li>
+        <li>На старте 6 карт, дальше +3 за ход, в руке до 9.</li>
+        <li>Конец хода: ваши юниты бьют по очереди, от фронта к тылу, слева направо.</li>
+        <li>Юнит бьёт ближайшего врага в своей колонке. Ближний бой ждёт за своим, стрелки бьют через своих.</li>
+        <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
+        <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
+        <li>Расу можно выбрать себе и противнику, в том числе одинаковую.</li>
+      </ul></div>
+      <div><h3>Тройка («Колонны», «Открытие»)</h3><ul>
+        <li>Тройка — три одинаковых юнита, стоящих вплотную по горизонтали или вертикали. По диагонали не считается.</li>
+        <li>Улучшение необязательно и только в момент выставления. Выставили юнита третьим к паре — тройка загорается золотом, над новым юнитом стрелка ↑. Нажмите на него, и пара сольётся в него: получится юнит тиром выше.</li>
+        <li>Сделали другое действие (выставили карту, взяли юнита из лагеря, закончили ход) — шанс пропал. Позже эту тройку уже не слить.</li>
+        <li>Карта, положенная прямо на юнита из пары, улучшает сразу, как раньше.</li>
+        <li>Золотом подсвечены готовые тройки, пары, которые достроит карта из руки, и такие карты.</li>
+      </ul></div>
+      <div><h3>Режимы</h3><ul>
+        <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
+        <li><b>Открытие:</b> поле 5×4, сначала в руку приходит только I тир. Сделали юнита II тира — в колоде появляется II, сделали III — появляется III.</li>
+        <li><b>Лагерь:</b> поле 4×4 и лагерь на три места. Такой же юнит поверх другого (картой или из лагеря) — тир выше. Из лагеря на поле бесплатно, обратно нельзя.</li>
+      </ul></div>
+    </div>
+  </details>
+
+  <h2>Звуки</h2>
+  <p class="lede">Новый звук: низкие удары и глухие попадания, свист оружия, рычание, боевые рога и барабаны, тёмное эхо. Ни колокольчиков, ни писка. По 5 вариантов на каждое событие и на атаку каждого юнита. Нажатие проигрывает звук и выбирает его: выбранный (золотая рамка) сразу звучит в бою.</p>
+  <div class="panel" id="sndcats"></div>
+  <div class="panel" id="sndatk"></div>
+
+  <h2>Иконки: 5 вариантов фигуры</h2>
+  <p class="lede">Тот же стиль, что у «Фигуры»: один цвет тира и тёмные прорези. Пять разных рисунков каждого юнита: исправленная фигура, удар в движении, стойка анфас, профиль, острые «руны». Злые глаза, ни одной улыбки, фея без крыльев. Нажмите на заголовок столбца, чтобы включить вариант в игре.</p>
+  <div class="panel igal" id="icons"></div>
+
+  <h2>Отряды</h2>
+  <div id="rosters"></div>
+</div>
+
+<script>
+/* ---------- figures: layered parts [svg, material] on a 100×100 canvas ---------- */
+const ART = {
+  peasant:[
+    [`<path d="M38 64L34 95h9l4-24h6l4 24h9l-4-31z"/>`,'leather'],
+    [`<path d="M34 36q16-6 32 0l3 31-5 6-4-6-5 7-5-6-5 7-5-7-4 6-5-6z"/>`,'body'],
+    [`<path d="M36 37l-6 15 3 18h5l-2-17 5-13zM64 37l-4 7-5-3 3-5z"/>`,'body'],
+    [`<path d="M33 55h34v4H33z"/>`,'wood'],
+    [`<g transform="rotate(38.8 50 50)"><path d="M48.5 10h3v92h-3z"/><path d="M41 11h18v3.4H41z"/></g>`,'wood'],
+    [`<g transform="rotate(38.8 50 50)"><path d="M41 12V-4l1.3-3 1.3 3v16zM48.7 12V-6l1.3-3 1.3 3v18zM56.4 12V-4l1.3-3 1.3 3v16z"/></g>`,'metal'],
+    [`<path d="M38 26q0-16 12-17 12 1 12 17l2 12q-14-4-28 0z"/>`,'dark'],
+    [`<path d="M43 18q7-3 14 0v10q-7 6-14 0z"/>`,'skin'],
+    [`<path d="M42 18.4h16v3.4l-8 2.4-8-2.4z"/>`,'void'],
+    [`<path d="M44.6 22.3l3.8 1-.4 1.2-3.4-.8zM55.4 22.3l-3.8 1 .4 1.2 3.4-.8z"/>`,'eye'],
+    [`<circle cx="56.3" cy="42.2" r="3.4"/><circle cx="34.3" cy="69.5" r="3.4"/>`,'skin'],
+  ],
+  archer:[
+    [`<path d="M31 30q-7 30-11 64h24l2-54z"/>`,'dark'],
+    [`<path d="M26 26l8-2 6 34-8 2z"/>`,'leather'],
+    [`<path d="M26 27l-3-11 4 2 1.4 8zM30.4 25.6l-.6-12 3 3 .4 8.4z"/>`,'bone'],
+    [`<path d="M38 64l-6 31h8l6-23 6 23h8l-6-31z"/>`,'leather'],
+    [`<path d="M34 34q12-6 22 0l2 30H34z"/>`,'body'],
+    [`<path d="M38 33l14 5v5l-15-5zM54 36l24 8v4l-25-6z"/>`,'body'],
+    [`<path d="M77 7q16 20 4 39 12 19-4 41l2.4 1.2q17-22 5-42 12-20-5-40z"/>`,'wood'],
+    [`<path d="M78 8.6L52 40l.9 1L79 9.6zM78 86.4L52 41.4l.9-1L79 85.4z"/>`,'bone'],
+    [`<path d="M48 40l42 5.2v1.3L48 41.4z"/><path d="M46.4 37.6l6 2.6-6 .8zM46.4 44l6-2.6-6-.6z"/>`,'wood'],
+    [`<path d="M89 43.2l8 3-8 2z"/>`,'metal'],
+    [`<path d="M36 30q-2-18 10-21 10 0 12 11l2 10q-12-4-24 0z"/>`,'dark'],
+    [`<path d="M47 16q8 0 9 8l-2 5h-7z"/>`,'void'],
+    [`<path d="M50 20.4l4 .6-.4 1.2-3.6-.6z"/>`,'eye'],
+    [`<circle cx="52.4" cy="40.6" r="3"/><circle cx="79" cy="46.2" r="3.2"/>`,'skin'],
+  ],
+  footman:[
+    [`<path d="M38 66l-3 29h9l4-23h4l4 23h9l-3-29z"/>`,'metal'],
+    [`<path d="M36 34q14-6 28 0l2 34H34z"/>`,'body'],
+    [`<path d="M62 34l12-14 4 4-12 14z"/>`,'metal'],
+    [`<path d="M74.6 17.6L90 1l2.6 2.6L79 21.6z"/>`,'metal'],
+    [`<path d="M70.6 15.6l10.8 8.8.8-1-10.8-8.8z"/><circle cx="76.4" cy="20" r="3.4"/>`,'leather'],
+    [`<circle cx="36" cy="36" r="7"/><circle cx="64" cy="36" r="7"/>`,'metal'],
+    [`<path d="M40 26q0-18 10-19 10 1 10 19l-2 6H42z"/>`,'metal'],
+    [`<path d="M49.2 7h1.6v24h-1.6z"/>`,'dark'],
+    [`<path d="M42 18h16v3H42z"/>`,'void'],
+    [`<path d="M44 18.8h4v1.4h-4zM52 18.8h4v1.4h-4z"/>`,'eye'],
+    [`<path d="M15 33h34v23q0 27-17 40-17-13-17-40z"/>`,'metal'],
+    [`<path d="M18 36h28v20q0 23-14 34-14-11-14-34z"/>`,'body'],
+    [`<path d="M30 40h4v42h-4zM21 52h22v4H21z"/>`,'gold'],
+  ],
+  griffin:[
+    [`<path d="M44 40Q34 20 6 7q5 5 3 10-5 0-6 5 6 3 6 8-5 2-4 7 8 1 10 6-2 4 0 7 10-2 20 5zM56 40q10-20 38-33-5 5-3 10 5 0 6 5-6 3-6 8 5 2 4 7-8 1-10 6 2 4 0 7-10-2-20 5z"/>`,'body'],
+    [`<path d="M11 18l19 12-1 1.5L10 19.5zM12 30l18 8-1 1.5-18-8zM18 41l15 5-1 1.5-15-5zM89 18L70 30l1 1.5 19-12zM88 30l-18 8 1 1.5 18-8zM82 41l-15 5 1 1.5 15-5z"/>`,'dark'],
+    [`<path d="M50 76q6 16 20 18l-2 3q-16-1-20-19z"/>`,'hide'],
+    [`<path d="M36 68l-8 22 10 2 6-16zM64 68l8 22-10 2-6-16z"/>`,'hide'],
+    [`<path d="M36 40q14-8 28 0l2 30q-16 10-32 0z"/>`,'body'],
+    [`<path d="M44 48l6 4 6-4v2l-6 4-6-4zM42 57l8 5 8-5v2l-8 5-8-5z"/>`,'dark'],
+    [`<path d="M42 58l-6 18 6 2 4-16zM58 58l6 18-6 2-4-16z"/>`,'body'],
+    [`<path d="M34 76l-3 8 5-5zM37.4 78l-1 8 3.4-6zM41 78l1.4 7 1-6.6zM66 76l3 8-5-5zM62.6 78l1 8-3.4-6zM59 78l-1.4 7-1-6.6z"/>`,'bone'],
+    [`<path d="M43 20l-8-13 11 9zM57 20l8-13-11 9z"/>`,'body'],
+    [`<path d="M42 34q-2-16 8-20 10 4 8 20-8 4-16 0z"/>`,'body'],
+    [`<path d="M46 27h8l-2 12-2 6-2-6z"/>`,'gold'],
+    [`<path d="M42 21l7 3-.5 1-6.5-2.4zM58 21l-7 3 .5 1 6.5-2.4z"/>`,'void'],
+    [`<path d="M43.4 23.4l4.4 1.8-.4 1.4-4-1.6zM56.6 23.4l-4.4 1.8.4 1.4 4-1.6z"/>`,'eye'],
+  ],
+  priest:[
+    [`<path d="M34 34q16-6 32 0l8 60H26z"/>`,'body'],
+    [`<path d="M47 40h6v54h-6z"/>`,'gold'],
+    [`<path d="M36 36l-6 14 5 2 6-12zM62 36l10 2v5l-12-1z"/>`,'body'],
+    [`<path d="M28.6 47.6l15-2.2v12.4l-15 2.2z"/>`,'leather'],
+    [`<path d="M72 12h3.6v82H72z"/>`,'wood'],
+    [`<path d="M73.8 1l6 7-6 8-6-8z"/>`,'holy'],
+    [`<path d="M36 36q-2-22 14-26 16 4 14 26-14-6-28 0z"/>`,'dark'],
+    [`<path d="M44 18q6-3 12 0v10q-6 5-12 0z"/>`,'skin'],
+    [`<path d="M43 18h14v4l-7 1.6-7-1.6z"/>`,'void'],
+    [`<path d="M45.4 22.3l3.4.8-.3 1.2-3.1-.7zM54.6 22.3l-3.4.8.3 1.2 3.1-.7z"/>`,'eye'],
+    [`<circle cx="73.8" cy="40.6" r="3.4"/><circle cx="37" cy="58" r="3"/>`,'skin'],
+  ],
+  cavalier:[
+    [`<path d="M20 56q-10 4-12 18 6-8 14-12z"/>`,'dark'],
+    [`<path d="M26 62l-4 16 4 16h5l-3-16 5-12zM36 66l2 28h5l-1-26zM70 62l6 18-6 14h5l6-14-6-20zM62 66l-2 28h5l2-26z"/>`,'hide'],
+    [`<path d="M20 58q2-12 18-12h30q6 0 8 6v12q-16 6-38 4-16 0-18-10z"/>`,'hide'],
+    [`<path d="M66 48l12-22q6-6 12-2l6 10-3 4-7-2-8 20z"/><path d="M80 24l2-8 3 7z"/>`,'hide'],
+    [`<path d="M82 22l14 12-3 4-9-6z"/>`,'metal'],
+    [`<path d="M86 28l3.4 1-.4 1.2-3-.8z"/>`,'eye'],
+    [`<path d="M24 52q6-4 16-4h26l2 18q-16 4-30 3-12-2-14-9z"/>`,'body'],
+    [`<circle cx="46" cy="58" r="4"/>`,'gold'],
+    [`<path d="M42 50l-2 16h6l2-14z"/>`,'metal'],
+    [`<path d="M40 26q6-4 14 0v24H40z"/>`,'metal'],
+    [`<path d="M30 37L99 30v1.6L30 41z"/>`,'wood'],
+    [`<path d="M46 32l10 2v4l-10 4z"/><path d="M48 30l6 6-4 2-5-5z"/>`,'metal'],
+    [`<path d="M34 28h12v12q0 10-6 14-6-4-6-14z"/>`,'body'],
+    [`<path d="M38.6 32h2.8v16h-2.8zM35.4 36.6h9.2v2.8h-9.2z"/>`,'gold'],
+    [`<path d="M44 5q-8-7-14 3 6-4 10 2z"/>`,'body'],
+    [`<path d="M42 12q0-8 6-8 7 0 7 8v10H42z"/>`,'metal'],
+    [`<path d="M47 12h9v2.6h-9z"/>`,'void'],
+    [`<path d="M50 12.6h4v1.4h-4z"/>`,'eye'],
+  ],
+  angel:[
+    [`<path d="M42 34Q24 10 2 4q6 10 4 16 8 0 4 10 10 0 4 12 12-2 8 12 10-6 16 2zM58 34Q76 10 98 4q-6 10-4 16-8 0-4 10-10 0-4 12-12-2-8 12-10-6-16 2z"/>`,'feather'],
+    [`<path d="M10 16l20 12-1 1.6L9 17.6zM12 28l18 8-1 1.6-18-8zM17 41l15 6-1 1.6-15-6zM90 16L70 28l1 1.6 20-12zM88 28l-18 8 1 1.6 18-8zM83 41l-15 6 1 1.6 15-6z"/>`,'dark'],
+    [`<path d="M38 56l-6 38h36l-6-38z"/>`,'body'],
+    [`<path d="M38 32q12-6 24 0v26q-12 4-24 0z"/>`,'metal'],
+    [`<path d="M38 54h24v3H38z"/>`,'gold'],
+    [`<path d="M38 32l8 3v5l-9-3zM62 32l-8 3v5l9-3z"/>`,'metal'],
+    [`<path d="M47 44h6l-1 48-2 5-2-5z"/>`,'holy'],
+    [`<path d="M40 41h20v4H40z"/><circle cx="50" cy="31" r="2.5"/>`,'gold'],
+    [`<path d="M48 32h4v9h-4z"/>`,'leather'],
+    [`<ellipse cx="50" cy="37.4" rx="5.4" ry="3"/>`,'metal'],
+    [`<path d="M43 22q0-12 7-13 7 1 7 13l-1 6q-6 4-12 0z"/>`,'skin'],
+    [`<path d="M42 21q0-14 8-15 8 1 8 15l-2-5H44z"/><path d="M42 12l-8-6 9 2zM58 12l8-6-9 2z"/>`,'metal'],
+    [`<path d="M44.6 20.2l3.8.9-.3 1.2-3.5-.8zM55.4 20.2l-3.8.9.3 1.2 3.5-.8z"/>`,'void'],
+  ],
+  imp:[
+    [`<path d="M40 38L13 20l5 10-10 2 8 8-8 6h14l8 6zM60 38l27-18-5 10 10 2-8 8 8 6H78l-8 6z"/>`,'wing'],
+    [`<path d="M50 62q14 18 32 16l4-4 2 8h-8q-18 2-32-18z"/>`,'body'],
+    [`<path d="M38 58l-10 16 6 16h8l-4-14 8-12zM62 58l10 16-6 16h-8l4-14-8-12z"/>`,'body'],
+    [`<path d="M38 38q12-6 24 0l2 22q-14 6-28 0z"/>`,'body'],
+    [`<path d="M38 42L26 58l4 4 12-14zM62 42l12 16-4 4-12-14z"/>`,'body'],
+    [`<path d="M24 58l-4 8 7-5zM27 61l-2 8 5-6zM76 58l4 8-7-5zM73 61l2 8-5-6zM33 89h9v3h-11zM58 89h9l2 3H58z"/>`,'bone'],
+    [`<path d="M39 24L26 16l12 14zM61 24l13-8-12 14z"/>`,'body'],
+    [`<path d="M38 26q0-14 12-14t12 14q0 10-12 12-12-2-12-12z"/>`,'body'],
+    [`<path d="M42 15L36 2l10 10zM58 15l6-13-10 10z"/>`,'bone'],
+    [`<path d="M41 20l8 4-.5 1.4-8-3zM59 20l-8 4 .5 1.4 8-3z"/>`,'void'],
+    [`<path d="M42 22.6l6 2.6-.6 1.6-5.4-2.4zM58 22.6l-6 2.6.6 1.6 5.4-2.4z"/>`,'eyeR'],
+  ],
+  demon:[
+    [`<path d="M36 66l-6 28h12l5-20h6l5 20h12l-6-28z"/>`,'body'],
+    [`<path d="M30 92h12v4H30zM58 92h12v4H58z"/>`,'bone'],
+    [`<path d="M28 36L16 58l6 12 8-4-4-8 8-14zM72 36l12 22-6 12-8-4 4-8-8-14z"/>`,'body'],
+    [`<circle cx="22" cy="70" r="5.4"/><circle cx="78" cy="70" r="5.4"/>`,'body'],
+    [`<path d="M26 34q24-12 48 0l-4 30q-20 8-40 0z"/>`,'body'],
+    [`<path d="M49 42h2v20h-2zM40 50h20v2H40zM36 40l8 6-1 1.4-8-6zM64 40l-8 6 1 1.4 8-6z"/>`,'dark'],
+    [`<path d="M40 62h20l-4 16-6-6-6 6z"/>`,'leather'],
+    [`<path d="M40 22q0-10 10-10t10 10l-2 10q-8 4-16 0z"/>`,'body'],
+    [`<path d="M42 16q-12-8-18 2-2 10 8 10-4-6 0-10 4-2 8 4zM58 16q12-8 18 2 2 10-8 10 4-6 0-10-4-2-8 4z"/>`,'bone'],
+    [`<path d="M41 19l9 4-.5 1.4-9-3zM59 19l-9 4 .5 1.4 9-3z"/>`,'void'],
+    [`<path d="M43 21.4l5 1.8-.5 1.4-4.5-1.6zM57 21.4l-5 1.8.5 1.4 4.5-1.6z"/>`,'eyeR'],
+  ],
+  hound:[
+    [`<path d="M16 50Q4 44 4 30q6 12 14 16z"/>`,'body'],
+    [`<path d="M20 62l-4 26h7l4-22zM32 64v26h7V66zM60 62l-2 28h7l3-28zM70 58l4 30h7l-4-32z"/>`,'body'],
+    [`<path d="M14 56q2-14 20-16h28q8 0 12 6v16q-14 4-40 4-16 0-20-10z"/>`,'body'],
+    [`<path d="M24 42q0-12 6-16-1 8 4 10 0-10 8-16-2 10 4 14 2-8 8-10-2 8 4 14z"/>`,'fire'],
+    [`<path d="M15 87h9v3h-10zM31 89h9v3h-9zM57 89h9v3h-9zM73 87h9l1 3H73z"/>`,'bone'],
+    [`<g transform="translate(54 16) scale(.8)"><path d="M0 8q2-8 12-8l4-6 2 7q8 1 12 6l8 2-2 4-12-1zM4 14h20l10 4-12 2q-14 0-18-6zM8 2L6-8l7 8z"/></g><g transform="translate(62 32) scale(.95)"><path d="M0 8q2-8 12-8l4-6 2 7q8 1 12 6l8 2-2 4-12-1zM4 14h20l10 4-12 2q-14 0-18-6zM8 2L6-8l7 8z"/></g><g transform="translate(56 48) scale(.8)"><path d="M0 8q2-8 12-8l4-6 2 7q8 1 12 6l8 2-2 4-12-1zM4 14h20l10 4-12 2q-14 0-18-6zM8 2L6-8l7 8z"/></g>`,'body'],
+    [`<g transform="translate(54 16) scale(.8)"><path d="M22 12l15 .5-3 5L22 15z"/></g><g transform="translate(62 32) scale(.95)"><path d="M22 12l15 .5-3 5L22 15z"/></g><g transform="translate(56 48) scale(.8)"><path d="M22 12l15 .5-3 5L22 15z"/></g>`,'void'],
+    [`<g transform="translate(54 16) scale(.8)"><path d="M26 12.2l1 2.4 1-2.3zM30 12.4l1 2.4 1-2.3z"/></g><g transform="translate(62 32) scale(.95)"><path d="M26 12.2l1 2.4 1-2.3zM30 12.4l1 2.4 1-2.3z"/></g><g transform="translate(56 48) scale(.8)"><path d="M26 12.2l1 2.4 1-2.3zM30 12.4l1 2.4 1-2.3z"/></g>`,'bone'],
+    [`<g transform="translate(54 16) scale(.8)"><path d="M15 4l6 1-.6 1.6-5.4-1z"/></g><g transform="translate(62 32) scale(.95)"><path d="M15 4l6 1-.6 1.6-5.4-1z"/></g><g transform="translate(56 48) scale(.8)"><path d="M15 4l6 1-.6 1.6-5.4-1z"/></g>`,'eyeR'],
+  ],
+  succubus:[
+    [`<path d="M40 36L10 10l6 14-12 2 10 10-10 8h14l-4 12 20-8zM60 36l30-26-6 14 12 2-10 10 10 8H82l4 12-20-8z"/>`,'wing'],
+    [`<path d="M52 58q10 18 24 16l4-4v8h-6q-14 2-24-18z"/>`,'body'],
+    [`<path d="M40 14q10-10 20 0l4 30-8-4-2-18h-8l-2 18-8 4z"/>`,'dark'],
+    [`<path d="M42 60l-4 35h7l5-27 5 27h7l-4-35z"/>`,'leather'],
+    [`<path d="M42 30q8-4 16 0l-2 20 4 10H40l4-10z"/>`,'body'],
+    [`<path d="M43 40h14l-1 12H44z"/>`,'leather'],
+    [`<path d="M57 31l13-13 3 3-13 14zM43 31l-9 15 3 2 9-13z"/>`,'body'],
+    [`<path d="M34 47q-14 13-8 29 4 10-6 16l-1-2q8-6 4-14-7-16 9-31z"/>`,'leather'],
+    [`<circle cx="74" cy="14" r="7.4"/>`,'fire'],
+    [`<circle cx="74" cy="14" r="3.4"/>`,'holy'],
+    [`<path d="M44 16q6-4 12 0v10q-6 5-12 0z"/>`,'body'],
+    [`<path d="M45 15L38 2l10 10zM55 15l7-13-10 10z"/>`,'bone'],
+    [`<path d="M44 19l5 2.4-.4 1.2-4.6-2zM56 19l-5 2.4.4 1.2 4.6-2z"/>`,'void'],
+    [`<path d="M45 20.6l3.6 1.6-.3 1-3.3-1.4zM55 20.6l-3.6 1.6.3 1 3.3-1.4z"/>`,'eyeR'],
+  ],
+  charger:[
+    [`<path d="M24 64Q8 64 4 80q10-8 18-8-10 8-10 20 10-12 14-18z"/>`,'fire'],
+    [`<path d="M26 68l-6 26h8l4-20zM38 70l2 24h8l-2-24z"/>`,'hide'],
+    [`<path d="M22 76q-6-16 8-26l24-14q12-6 18 4l-2 14q-10 12-24 20-12 10-24 2z"/>`,'hide'],
+    [`<path d="M60 48l12 8 8-6 4 4-10 8-14-6zM54 54l8 12 8-2 2 4-10 4-12-12z"/>`,'hide'],
+    [`<path d="M56 34l10-18q4-8 12-6l12 12-2 5h-8l-6-2-4 18z"/><path d="M70 10V2l5 7z"/>`,'hide'],
+    [`<path d="M58 32q-4-10 0-18 2 8 6 8-2-10 4-16 0 8 4 10l-6 14z"/>`,'fire'],
+    [`<path d="M89 24q7-2 9 2-4-1-8 1z"/><path d="M19 92h10v4H19zM39 92h10v4H39zM82 50l4 4-3 3-3-4zM70 64l3 4-3 2-2-4z"/>`,'fire'],
+    [`<path d="M74 13l5 1.6-.5 1.4-4.5-1.4z"/>`,'eyeR'],
+  ],
+  fiend:[
+    [`<path d="M36 32L8 8l4 14H2l8 12-8 8h14l-4 12 18-8zM64 32l28-24-4 14h10l-8 12 8 8H84l4 12-18-8z"/>`,'wing'],
+    [`<path d="M34 60l-6 18 6 16h10l-4-14 8-14zM66 60l6 18-6 16H56l4-14-8-14z"/>`,'body'],
+    [`<path d="M33 92h11v3H33zM56 92h11v3H56z"/>`,'bone'],
+    [`<path d="M28 30q22-10 44 0l-4 32q-18 8-36 0z"/>`,'body'],
+    [`<path d="M40 38l8 10-1 1-8-10zM60 38l-8 10 1 1 8-10zM49 50h2v10h-2z"/>`,'dark'],
+    [`<path d="M30 32L20 52l4 4 10-16zM70 32l12-12 4 4-12 14z"/>`,'body'],
+    [`<path d="M20 50l6-6 2 2-6 6z"/>`,'wood'],
+    [`<path d="M18 54l6 4-14 32q-8-2-8-10z"/>`,'metal'],
+    [`<circle cx="21.4" cy="55" r="4"/><circle cx="84" cy="20" r="5"/>`,'body'],
+    [`<path d="M80 14q2-10 8-12-2 6 2 8 2-6 6-4-4 8-8 12z"/>`,'fire'],
+    [`<path d="M42 14Q30 4 22 12q6-2 12 2-4 2-2 8zM58 14q12-10 20-2-6-2-12 2 4 2 2 8zM46 11L44 0l5 9zM54 11L56 0l-5 9z"/>`,'bone'],
+    [`<path d="M40 22q0-12 10-12t10 12l-2 8q-8 4-16 0z"/>`,'body'],
+    [`<path d="M41 18l9 4-.5 1.4-9-3zM59 18l-9 4 .5 1.4 9-3z"/>`,'void'],
+    [`<path d="M43 20.4l5 1.8-.5 1.4-4.5-1.6zM57 20.4l-5 1.8.5 1.4 4.5-1.6z"/>`,'eyeR'],
+  ],
+  devil:[
+    [`<path d="M38 30L6 6l4 16H0l8 12-8 10h16l-4 14 22-10zM62 30L94 6l-4 16h10l-8 12 8 10H84l4 14-22-10z"/>`,'wing'],
+    [`<path d="M34 30L20 95h60L66 30z"/>`,'dark'],
+    [`<path d="M40 60l-2 34h9l3-26 3 26h9l-2-34z"/>`,'body'],
+    [`<path d="M38 30q12-6 24 0l-2 32H40z"/>`,'metal'],
+    [`<path d="M40 44h20v3H40z"/>`,'gold'],
+    [`<path d="M62 32l10 6-2 4-10-5zM38 32l-8 14 3 2 8-12z"/>`,'metal'],
+    [`<path d="M72 14h3v81h-3z"/>`,'metal'],
+    [`<path d="M67 12l2-7 1 9q3.5 4 7 0l1-9 2 7-1 6q-3.5 5-6.5 5t-6-5zM72 6l1.5-5 1.5 5v8h-3z"/>`,'gold'],
+    [`<circle cx="73.5" cy="40" r="3.2"/><circle cx="31.6" cy="47.4" r="3"/>`,'body'],
+    [`<path d="M30 42q-6-8 0-16 2 6 6 6-2-8 4-12-1 6 2 10-4 8-12 12z"/>`,'fire'],
+    [`<path d="M45 16q-9-6-9-16 6 8 11 12zM55 16q9-6 9-16-6 8-11 12z"/>`,'bone'],
+    [`<path d="M44 16q6-4 12 0v10l-6 7-6-7z"/>`,'body'],
+    [`<path d="M43 14l1-6 2 5 2-7 2 6 2-6 2 7 2-5 1 6z"/>`,'gold'],
+    [`<path d="M44 18l5 2.4-.4 1.2-4.6-2zM56 18l-5 2.4.4 1.2 4.6-2z"/>`,'void'],
+    [`<path d="M45 19.6l3.6 1.6-.3 1-3.3-1.4zM55 19.6l-3.6 1.6.3 1 3.3-1.4z"/>`,'eyeR'],
+  ],
+  pixie:[
+    [`<path d="M42 16q-2-12 10-12 14 2 26-2-8 8-6 14-8-4-12 4l-2 14H44z"/>`,'dark'],
+    [`<path d="M42 58l-2 22 4 12 3-12 3-18 3 18 3 12 4-12-2-22z"/>`,'body'],
+    [`<path d="M44 28q6-4 12 0v22l4 8H40l4-8z"/>`,'leaf'],
+    [`<path d="M44 34l6 4 6-4v2l-6 4-6-4zM44 42l6 4 6-4v2l-6 4-6-4z"/>`,'dark'],
+    [`<path d="M45 30l-5 16 4 14 3-2-3-12 4-14zM55 30l7 8-2 4-7-8z"/>`,'skin'],
+    [`<path d="M19 91.2l1.9 1.5 64-80-1.9-1.5z"/>`,'wood'],
+    [`<path d="M84 12l8-10-4 14zM30 78l-4 1 3-3zM44 60l-4 .6 3-2.4zM58 42l-4 .4 3.2-2.6zM72 26l-4 .2 3.4-2.8z"/>`,'bone'],
+    [`<circle cx="61.6" cy="40" r="2.8"/><circle cx="44" cy="62" r="2.8"/>`,'skin'],
+    [`<path d="M45 14q5-4 10 0v10l-5 4-5-4z"/><path d="M45 18l-12-7 12 11zM55 18l12-7-12 11z"/>`,'skin'],
+    [`<path d="M45 17.6l4.4 2.2-.4 1.2-4-1.8zM55 17.6l-4.4 2.2.4 1.2 4-1.8zM48 25h4v.9h-4z"/>`,'void'],
+    [`<path d="M45.6 18.8l3.2 1.6-.3.9-2.9-1.3zM54.4 18.8l-3.2 1.6.3.9 2.9-1.3z"/>`,'magic'],
+    [`<circle cx="38" cy="96" r="1.3"/><circle cx="50" cy="98" r="1"/><circle cx="62" cy="95" r="1.4"/><circle cx="32" cy="88" r=".9"/><circle cx="68" cy="89" r="1"/>`,'magic'],
+  ],
+  dancer:[
+    [`<path d="M44 34q-16 2-34-6 12 12 4 20 16-4 28-4z"/>`,'body'],
+    [`<path d="M44 54L24 78 14 90h10l8-8 18-20zM54 54l14 18-2 22h8l2-24-16-16z"/>`,'leather'],
+    [`<path d="M42 32q10-6 18 0l-2 24H42z"/>`,'body'],
+    [`<path d="M42 44h18v3H42z"/>`,'leather'],
+    [`<path d="M58 32l16 6-1 4-16-5zM44 34l-14 10 2 3 14-9z"/>`,'skin'],
+    [`<path d="M74 38q12-12 25-18-9 10-21 22z"/>`,'metal'],
+    [`<path d="M30 44Q16 56 4 72q16-10 29-24z"/>`,'metal'],
+    [`<circle cx="75" cy="40" r="3"/><circle cx="31" cy="46" r="3"/>`,'leather'],
+    [`<path d="M47 12Q36 8 30 16q8-4 16 1z"/>`,'dark'],
+    [`<path d="M46 20q0-10 7-10t7 10l-1 8H47z"/>`,'dark'],
+    [`<path d="M49 17h10v4H49z"/>`,'void'],
+    [`<path d="M50 18.2h3.5v1.4H50zM55 18.2h3.5v1.4H55z"/>`,'magic'],
+  ],
+  hunter:[
+    [`<path d="M34 26q-10 30-16 58h32l-4-44z"/>`,'leaf'],
+    [`<path d="M36 62L24 82l6 4 14-16zM24 82l24 4v4l-26-2zM48 62l14 8-4 22h8l4-24-16-10z"/>`,'leather'],
+    [`<path d="M36 34q10-6 18 0v30H36z"/>`,'body'],
+    [`<path d="M52 36l28 8v4l-28-7zM40 34l12 5v5l-14-5z"/>`,'body'],
+    [`<path d="M77 6q17 20 5 40 12 20-5 40l2.4 1q18-21 6-41 12-20-6-41z"/>`,'wood'],
+    [`<path d="M78 7.6L52 41l.9 1L79 8.6zM78 84.4L52 42.4l.9-1L79 83.4z"/>`,'bone'],
+    [`<path d="M50 40l44 2v1.2l-44-1.8zM50 43l42 6v1.2l-42-5.8z"/>`,'wood'],
+    [`<path d="M93 40.4l6 2.2-6 1.8zM91 47l6 3-6 1.6z"/>`,'metal'],
+    [`<path d="M38 30q-2-16 8-20 10 0 12 12v8q-10-3-20 0z"/>`,'leaf'],
+    [`<path d="M48 16q8 0 9 8l-2 5h-7z"/>`,'void'],
+    [`<path d="M50.4 20.4l4.2.8-.4 1.2-3.8-.7z"/>`,'magic'],
+    [`<circle cx="52.4" cy="42" r="3"/><circle cx="81" cy="46" r="3"/>`,'leather'],
+  ],
+  druid:[
+    [`<path d="M24 94q-8-4-16 2h22zM76 94q8-4 16 2H70z"/>`,'wood'],
+    [`<path d="M32 34q18-8 36 0l8 60H24z"/>`,'body'],
+    [`<path d="M47 40h6v54h-6z"/>`,'leather'],
+    [`<path d="M36 38l-12 4v5l13-3zM64 38l10-8 3 3-11 10z"/>`,'body'],
+    [`<path d="M20 94l2-74q-4-6 0-12 4 4 3 12l-1 74z"/>`,'wood'],
+    [`<path d="M22 2l4 6-4 8-4-8z"/><circle cx="80" cy="24" r="3"/><circle cx="86" cy="17" r="2"/><circle cx="90" cy="11" r="1.4"/>`,'magic'],
+    [`<path d="M42 12q-8-4-12-12h2q3 5 6 7l-1-6h2l1 6q2 2 4 3zM58 12q8-4 12-12h-2q-3 5-6 7l1-6h-2l-1 6q-2 2-4 3z"/>`,'bone'],
+    [`<path d="M36 36q-4-24 14-28 18 4 14 28-14-6-28 0z"/>`,'dark'],
+    [`<path d="M43 16q7-3 14 0v12H43z"/>`,'void'],
+    [`<path d="M43 26h14l-3 14-4 6-4-6z"/>`,'bone'],
+    [`<path d="M44.6 20l4.2 1-.3 1.2-3.9-.9zM55.4 20l-4.2 1 .3 1.2 3.9-.9z"/>`,'magic'],
+    [`<circle cx="23" cy="44" r="3.4"/><circle cx="76" cy="31" r="3.4"/>`,'skin'],
+  ],
+  unicorn:[
+    [`<path d="M24 64Q8 64 4 80q10-8 18-8-10 8-10 20 10-12 14-18z"/>`,'bone'],
+    [`<path d="M26 68l-6 26h8l4-20zM38 70l2 24h8l-2-24z"/>`,'hide'],
+    [`<path d="M22 76q-6-16 8-26l24-14q12-6 18 4l-2 14q-10 12-24 20-12 10-24 2z"/>`,'hide'],
+    [`<path d="M60 48l12 8 8-6 4 4-10 8-14-6zM54 54l8 12 8-2 2 4-10 4-12-12z"/>`,'hide'],
+    [`<path d="M56 34l10-18q4-8 12-6l12 12-2 5h-8l-6-2-4 18z"/><path d="M70 10V2l5 7z"/>`,'hide'],
+    [`<path d="M58 32q-6-10 2-20 0 8 4 8-2-10 6-14l-4 26z"/>`,'bone'],
+    [`<path d="M77 10.6L97 0l-16 14z"/>`,'holy'],
+    [`<path d="M19 92h10v4H19zM39 92h10v4H39zM82 50l4 4-3 3-3-4zM70 64l3 4-3 2-2-4z"/>`,'metal'],
+    [`<path d="M74 14l5 1.6-.5 1.4-4.5-1.4z"/>`,'magic'],
+  ],
+  treant:[
+    [`<path d="M30 90L14 96h18zM70 90l16 6H68zM44 92l-4 6h10z"/>`,'bark'],
+    [`<path d="M36 40l-18 4-12-8 4 6-8 2 8 4-6 6 12-4h20zM64 40l18 4 12-8-4 6 8 2-8 4 6 6-12-4H64z"/>`,'bark'],
+    [`<path d="M34 30q-4 20 0 36l-4 28h40l-4-28q4-16 0-36z"/>`,'bark'],
+    [`<path d="M14 30L8 18l10 2-2-12 12 6 4-12 8 10 10-12 8 12 8-10 4 12 12-6-2 12 12-2-6 12-16 4H30z"/>`,'leaf'],
+    [`<path d="M36 70l2 20h1.5l-1.9-20zM64 70l-2 20h-1.5l1.9-20zM50 72l-1 18h2zM38 38l12 6 12-6v4l-12 6-12-6z"/>`,'dark'],
+    [`<path d="M40 56h20l-2 10-4-4-4 6-4-6-4 4z"/>`,'void'],
+    [`<path d="M40 44l7 3-.6 2-6.4-2zM60 44l-7 3 .6 2 6.4-2z"/>`,'magic'],
+  ],
+  gdragon:[
+    [`<path d="M50 40Q40 18 20 3q4 12 2 19-8-4-16-2 6 8 6 14-6 0-10 6 14 4 28 10z"/>`,'wing'],
+    [`<path d="M66 70q18 8 24 20 2 6 10 4l-2 5q-12 1-14-7-6-10-22-16z"/><path d="M78 76l4-6 1 7zM86 84l5-5v7z"/>`,'scale'],
+    [`<path d="M36 70l-8 18-8 6h16l10-18zM58 72l2 14-6 8h14l-2-22z"/>`,'scale'],
+    [`<path d="M20 91h16v3H19zM54 91h14v3H54z"/>`,'bone'],
+    [`<path d="M28 62q0-20 20-23 20 0 25 17 2 18-13 23-20 5-28-6-4-5-4-11z"/>`,'scale'],
+    [`<path d="M40 52q10-6 20 0l-2 22q-8 4-16 0z"/>`,'bone'],
+    [`<path d="M41 57h18v1.4H41zM41 63h17v1.4H41zM42 69h15v1.4H42z"/>`,'dark'],
+    [`<path d="M52 42q6-26 22-40 0 12 4 16 8-6 18-6-6 10-6 16 6 2 10 8-16 4-30 14z"/>`,'wing'],
+    [`<path d="M52 42L73 2l1.4.8L53.6 43zM54 44l41-32 1 1.2-41 32zM56 46l43-10 .4 1.4-43 10z"/>`,'dark'],
+    [`<path d="M44 58l-10 6-4 8 6-2 10-6z"/><path d="M36 50Q22 40 24 24l14-4q-2 14 12 26z"/>`,'scale'],
+    [`<path d="M30 40l-6 1 4-5zM28 32l-6-1 5-4zM34 46l-5 3 3-6z"/>`,'bone'],
+    [`<path d="M40 22q-2-12-14-12L12 12 2 18l4 4h14l16 8zM34 30l-16-2-14 6 4 2 14-1h14z"/>`,'scale'],
+    [`<path d="M20 22.5L5 21.5l1 12 12-5.3z"/>`,'void'],
+    [`<path d="M8 21.8l1 2.6 1-2.4zM12 22l1 2.6 1-2.4zM16 22.2l1 2.4 1-2.2zM8 32.4l1-2.6 1 2.4zM12 31.4l1-2.6 1 2.4z"/>`,'bone'],
+    [`<path d="M36 14l16-10-12 14zM32 12l10-12-6 14z"/>`,'bone'],
+    [`<path d="M24 14.6l6 1.2-.6 1.8-5.4-1.2z"/>`,'eye'],
+    [`<path d="M6 25q-6-4-10 2 4 2 0 6 6-1 10-3z"/>`,'fire'],
+  ],
+  lord:[
+    [`<path d="M14 100q2-26 20-30h32q18 4 20 30z"/>`,'body'],
+    [`<circle cx="26" cy="74" r="12"/><circle cx="74" cy="74" r="12"/>`,'metal'],
+    [`<path d="M47 6q-8-8-18 2 8-2 12 4z"/>`,'body'],
+    [`<path d="M28 44q0-36 22-38 22 2 22 38l-4 24H32z"/>`,'metal'],
+    [`<path d="M48.6 6h2.8v62h-2.8z"/>`,'dark'],
+    [`<path d="M32 38h36v6H32zM47 44h6v18h-6z"/>`,'void'],
+    [`<path d="M36 39.6h8v2.6h-8zM56 39.6h8v2.6h-8z"/>`,'eye'],
+  ],
+  demonlord:[
+    [`<path d="M36 30L6 4l4 16H0l10 12-8 10 26-4zM64 30L94 4l-4 16h10L90 32l8 10-26-4z"/>`,'wing'],
+    [`<path d="M12 100q4-26 22-30h32q18 4 22 30z"/>`,'metal'],
+    [`<path d="M36 30Q20 20 16 4q12 10 24 14zM64 30q16-10 20-26-12 10-24 14z"/>`,'bone'],
+    [`<path d="M30 40q0-28 20-30 20 2 20 30l-6 22-14 10-14-10z"/>`,'body'],
+    [`<path d="M32 36l14 6-1 2-14-5zM68 36l-14 6 1 2 14-5zM40 56h20l-4 6h-12z"/>`,'void'],
+    [`<path d="M35 40l9 3.6-.6 2-8.4-3.2zM65 40l-9 3.6.6 2 8.4-3.2z"/>`,'eyeR'],
+    [`<path d="M40 56l2 6 2-6zM56 56l2 6 2-6z"/>`,'bone'],
+    [`<path d="M32 18l3-12 5 9 5-13 5 12 5-12 5 13 5-9 3 12z"/>`,'gold'],
+  ],
+  elflord:[
+    [`<path d="M12 100q4-28 24-32h28q20 4 24 32z"/>`,'leaf'],
+    [`<path d="M34 66l16 14 16-14v4L50 84 34 70z"/>`,'gold'],
+    [`<path d="M26 58q-2-44 24-50 26 6 24 50l-8-4-2-26H36l-2 26z"/>`,'dark'],
+    [`<path d="M36 30L10 16l24 22zM64 30l26-14-24 22z"/>`,'skin'],
+    [`<path d="M36 28q0-12 14-12t14 12v20q-6 12-14 12t-14-12z"/>`,'skin'],
+    [`<path d="M34 24q16-10 32 0l-2 4q-14-8-28 0z"/><path d="M50 18q-6-8 0-16 6 8 0 16z"/>`,'gold'],
+    [`<path d="M38 34l10 3v2l-10-2zM62 34l-10 3v2l10-2zM46 50h8v1.4h-8z"/>`,'void'],
+    [`<path d="M39 35.6l7.4 2.2-.4 1.4-7-2zM61 35.6l-7.4 2.2.4 1.4 7-2z"/>`,'magic'],
+  ],
+};
+const ICONS = {
+  peasant:`<rect x="10" y="16" width="30" height="4" rx="2"/><path d="M17 16l3-9h10l3 9z"/><circle cx="25" cy="26" r="7"/><path d="M12 62l4-26h18l4 26z"/><rect x="45" y="15" width="3.5" height="47"/><path d="M39 3v11h16V3h-3v8h-3.5V3h-3v8H42V3z"/>`,
+  archer:`<path d="M18 4c24 10 24 46 0 56l3 2c28-12 28-48 0-60z"/><rect x="17" y="5" width="2" height="54"/><rect x="8" y="31" width="44" height="3"/><path d="M61 32.5L48 26v13z"/><path d="M3 26l9 6.5L3 39l3-6.5z"/>`,
+  footman:`<path d="M6 10h30v24c0 15-8 23-15 27C14 57 6 49 6 34z"/><path class="k" d="M19 16h4v38h-4zM11 26h20v4H11z"/><path d="M46 6l3.5-5 3.5 5v34h-7z"/><rect x="40" y="40" width="19" height="4" rx="2"/><rect x="47.5" y="44" width="4" height="12"/><circle cx="49.5" cy="59" r="3.5"/>`,
+  griffin:`<path d="M2 14c10-2 18 2 22 10-6 0-8 4-6 8-6-2-10 0-12 4-2-8-4-14-4-22z"/><path d="M62 14c-10-2-18 2-22 10 6 0 8 4 6 8 6-2 10 0 12 4 2-8 4-14 4-22z"/><path d="M22 30c0-10 5-18 10-20 5 2 10 10 10 20v6l-4 6 4 20H22l4-20-4-6z"/><path d="M28 22l4 10 4-10z" class="k"/><path d="M32 30l-4 6h8z"/><circle class="k" cx="28" cy="20" r="2"/><circle class="k" cx="36" cy="20" r="2"/>`,
+  priest:`<path d="M26 4c11 0 17 10 17 22v36H9V26C9 14 15 4 26 4z"/><ellipse class="k" cx="26" cy="22" rx="8" ry="9"/><path class="k" d="M23 34h6v22h-6zM18 40h16v5H18z"/><rect x="51" y="16" width="3.5" height="46"/><circle cx="52.7" cy="10" r="7"/>`,
+  cavalier:`<path d="M12 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><circle class="k" cx="36" cy="19" r="2.8"/><path d="M3 34L60 6l1.5 3L5 37z"/>`,
+  angel:`<ellipse cx="32" cy="7" rx="11" ry="4"/><ellipse class="k" cx="32" cy="7" rx="7.5" ry="2"/><circle cx="32" cy="19" r="7"/><path d="M25 28h14l8 34H17z"/><path d="M24 30C12 18 4 20 2 32c6 0 6 6 4 10 6-4 10 0 12 4 2-6 4-10 6-16z"/><path d="M40 30c12-12 20-10 22 2-6 0-6 6-4 10-6-4-10 0-12 4-2-6-4-10-6-16z"/><path class="k" d="M31 34h2v22h-2z"/>`,
+  imp:`<path d="M20 4l8 12h8l8-12 1 16c3 4 3 9 0 13H19c-3-4-3-9 0-13z"/><circle class="k" cx="27" cy="25" r="2.5"/><circle class="k" cx="37" cy="25" r="2.5"/><path d="M18 38L2 28l4 14 6-2 2 8z"/><path d="M46 38l16-10-4 14-6-2-2 8z"/><path d="M22 35h20l-4 17H26z"/><path d="M38 50c8 4 14 2 16-4l3 4-4 1c-4 6-10 7-16 3z"/><rect x="25" y="51" width="4" height="11"/><rect x="35" y="51" width="4" height="11"/>`,
+  demon:`<path d="M8 2c2 10 8 14 14 14l-2-8c4 2 20 2 24 0l-2 8c6 0 12-4 14-14 4 10 0 22-10 26v10l6 26H14l6-26V28C10 24 4 12 8 2z"/><circle class="k" cx="26" cy="22" r="3"/><circle class="k" cx="38" cy="22" r="3"/><path class="k" d="M26 30h12l-3 4h-6z"/>`,
+  hound:`<circle cx="14" cy="22" r="9"/><circle cx="32" cy="15" r="10"/><circle cx="50" cy="22" r="9"/><path d="M6 16l-2-10 8 5zM58 16l2-10-8 5zM25 8l-1-8 6 4zM39 8l1-8-6 4z"/><path d="M10 30h44l-4 22h-6v10h-6V52h-12v10h-6V52h-6z"/><circle class="k" cx="12" cy="21" r="2"/><circle class="k" cx="29" cy="14" r="2"/><circle class="k" cx="35" cy="14" r="2"/><circle class="k" cx="52" cy="21" r="2"/>`,
+  succubus:`<path d="M24 8l-4-7 7 4zM36 8l4-7-7 4z"/><circle cx="30" cy="14" r="7"/><path d="M21 14c0-12 18-12 18 0l2 11H19z"/><path d="M24 24h12l6 38H18z"/><path d="M22 28C10 18 2 22 2 34c6-2 10 0 12 6 2-6 6-8 8-12z"/><path d="M38 28c10-8 16-6 18 2-6-1-9 1-10 6-2-4-5-6-8-8z"/><circle cx="54" cy="12" r="7"/><circle class="k" cx="54" cy="12" r="3"/>`,
+  charger:`<path d="M14 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><circle class="k" cx="38" cy="19" r="2.8"/><path d="M22 34l-12-4 9-3-10-8 11 2-6-10 10 6 1-10 5 12z"/>`,
+  fiend:`<path d="M14 2c0 10 4 14 10 16h16c6-2 10-6 10-16 4 8 4 18-4 24v6l12 8-4 6-8-4v22H20V42l-8 4-4-6 12-8v-6C10 20 10 10 14 2z"/><circle class="k" cx="27" cy="23" r="3"/><circle class="k" cx="37" cy="23" r="3"/><path class="k" d="M26 30h12l-6 5z"/>`,
+  devil:`<path d="M20 4c0 8 4 12 8 12h8c4 0 8-4 8-12 3 6 3 14-2 18v4l6 4v32H18V30l6-4v-4c-5-4-5-12-4-18z"/><circle class="k" cx="28" cy="22" r="2.5"/><circle class="k" cx="36" cy="22" r="2.5"/><path d="M18 32C9 22 1 24 1 36c6-2 9 2 11 8 2-6 4-9 6-12z"/><rect x="54" y="18" width="3" height="44"/><path d="M50 4v11h11V4h-2.5v7H57V4h-2v7h-2.5V4z"/>`,
+  lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
+  demonlord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M14 18C6 14 4 6 6 0c2 6 6 10 12 12zM50 18c8-4 10-12 8-18-2 6-6 10-12 12z"/>`,
+};
+/* Sylvan figures and the elf hero. */
+Object.assign(ICONS, {
+  pixie:`<path d="M29 27C20 10 6 8 4 18c-1 7 9 12 25 11z"/><path d="M35 27c9-17 23-19 25-9 1 7-9 12-25 11z"/><path d="M29 32c-12 1-19 9-15 15 3 4 10 1 15-10z"/><path d="M35 32c12 1 19 9 15 15-3 4-10 1-15-10z"/><circle class="k" cx="15" cy="19" r="3"/><circle class="k" cx="49" cy="19" r="3"/><path d="M30 12c-2-5-5-8-8-9l1-1.5c4 1 7 4 9 9z"/><path d="M34 12c2-5 5-8 8-9l-1-1.5c-4 1-7 4-9 9z"/><circle cx="32" cy="17" r="6"/><path d="M29 24h6l3 17H26z"/><path d="M25 40h14l-3 9h-8z"/><rect x="28.6" y="48" width="2.6" height="13"/><rect x="32.8" y="48" width="2.6" height="13"/><path d="M54 48l1.6 4.4L60 54l-4.4 1.6L54 60l-1.6-4.4L48 54l4.4-1.6z"/>`,
+  dancer:`<path d="M12 31C4 25 1 14 5 3c1 10 5 18 11 24z"/><path d="M52 31c8-6 11-17 7-28-1 10-5 18-11 24z"/><path d="M27 21L13 29l1.6 2.6L28 25z"/><path d="M37 21l14 8-1.6 2.6L36 25z"/><path d="M36 7c6-1 11 3 13 9-4-2-8-3-11-2z"/><circle cx="32" cy="11" r="6"/><path d="M26 19h12l-1 19H27z"/><path d="M27 37l-9 25h5.5l8.5-19 8.5 19H46l-9-25z"/><path class="k" d="M27 30h10v2.4H27z"/>`,
+  hunter:`<path d="M50 3c11 13 11 45 0 58l-2.2-1.4c9.6-12 9.6-43 0-55z"/><path d="M50 4.6L30 31.4l1.2 1L51.4 6z"/><path d="M50 59.4L30 32.6l1.2-1L51.4 58z"/><path d="M11 62l3-32h24l3 32z"/><path d="M13 32c0-15 7-24 17-24 7 0 11 4 13 9l-4 3v12z"/><path class="k" d="M29 16c5 0 9 4 9 9v6h-9z"/><rect x="26" y="30.9" width="34" height="2.2"/><path d="M64 32L56 27.6v8.8z"/><path d="M22 27.4l6 4.6-6 4.6 2-4.6z"/><path class="k" d="M20 44c4-3 9-2 10 3-4 3-9 2-10-3z"/>`,
+  druid:`<path d="M18 14c-5-2-7-7-5-12 1.5 3 3.5 4.5 6 5-1-2-.8-4 .3-6 .6 4 2.6 7.4 5.2 9.4z"/><path d="M38 14c5-2 7-7 5-12-1.5 3-3.5 4.5-6 5 1-2 .8-4-.3-6-.6 4-2.6 7.4-5.2 9.4z"/><path d="M12 62l6-34h20l6 34z"/><path d="M16 30c0-11 5-19 12-19s12 8 12 19z"/><ellipse class="k" cx="28" cy="24" rx="6" ry="7"/><path d="M23 27h10l-5 14z"/><path class="k" d="M26.6 44h2.8v16h-2.8z"/><rect x="49" y="16" width="3.4" height="46"/><path d="M50.7 17c-8-1-11-7-9-12 5 1 9 6 9 12z"/><path d="M50.7 17c8-1 11-7 9-12-5 1-9 6-9 12z"/><path d="M50.7 14c-3-4-3-9 0-13 3 4 3 9 0 13z"/>`,
+  unicorn:`<path d="M13 46c-7-5-8-15-3-22 0 5 2 7 4 8-1-7 2-13 8-16-2 5-1 9 1 11z"/><path d="M12 62V42c0-13 7-23 19-29l4-9 4 9c8 4 13 12 13 21l-9 4-6-6-4 7v23z"/><path d="M38 15L59 1 43 19z"/><path class="k" d="M44.4 12.6l2.4 1.8-1 1-2.4-1.8zM49.6 9l2.2 1.6-.9.9-2.2-1.6z"/><circle class="k" cx="36" cy="21" r="2.6"/><circle class="k" cx="47" cy="34" r="1.3"/><path class="k" d="M22 30c-2 4-3 8-3 12h2.4c0-4 1-8 3-11z"/>`,
+  treant:`<circle cx="32" cy="17" r="15"/><circle cx="16" cy="25" r="10"/><circle cx="48" cy="25" r="10"/><path class="k" d="M24 30.4c2.4 2 5 3 8 3s5.6-1 8-3v2.6c-2.4 2-5 3-8 3s-5.6-1-8-3z"/><path d="M23 33h18l3 29H20z"/><path d="M24 40L8 34l1.4-2.6L25 36z"/><path d="M40 40l16-6-1.4-2.6L39 36z"/><path d="M9 34l-7-5 5.4.6L6 24l4.6 6z"/><path d="M55 34l7-5-5.4.6L58 24l-4.6 6z"/><path d="M20 62H9l9-6zM44 62h11l-9-6z"/><ellipse class="k" cx="28" cy="43" rx="2.4" ry="1.8"/><ellipse class="k" cx="36" cy="43" rx="2.4" ry="1.8"/><path class="k" d="M28 51c3 2 5 2 8 0v2c-3 2-5 2-8 0z"/>`,
+  gdragon:`<path d="M24 28C14 14 4 12 1 17c4 4 4 10 2 16 4-3 8-2 10 2 1-4 5-5 8-2 0-2 1-4 3-5z"/><path d="M40 28c10-14 20-16 23-11-4 4-4 10-2 16-4-3-8-2-10 2-1-4-5-5-8-2 0-2-1-4-3-5z"/><path d="M27 11L22 1l8 7zM37 11l5-10-8 7z"/><path d="M26 12l6-6 6 6v13H26z"/><path d="M25 26h14l4 22-11 10-11-10z"/><path d="M32 56c6 3 13 1 17-5l2 3.6c-5 7-13 9-20 7z"/><path d="M22 44l-6 8h6l3-4zM42 44l6 8h-6l-3-4z"/><circle class="k" cx="29.2" cy="15" r="1.5"/><circle class="k" cx="34.8" cy="15" r="1.5"/><path class="k" d="M30 21h4l-2 2z"/><path class="k" d="M29 31h6v1.8h-6zM28.5 36h7v1.8h-7zM29 41h6v1.8h-6z"/>`,
+  elflord:`<path d="M13 28L1 18l13 3zM51 28l12-10-13 3z"/><path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M32 8c-5-3-6-7 0-9 6 2 5 6 0 9z"/>`,
+});
+/* ---------- Figure set fixes: no smiles, angry slit eyes, wingless pixie, combat dancer, new dragon ---------- */
+Object.assign(ICONS, {
+  imp:`<path d="M20 4l8 12h8l8-12 1 16c3 4 3 9 0 13H19c-3-4-3-9 0-13z"/><path class="k" d="M22 22l6 2.4-.5 1.6-5.5-2zM42 22l-6 2.4.5 1.6 5.5-2z"/><path d="M18 38L2 28l4 14 6-2 2 8z"/><path d="M46 38l16-10-4 14-6-2-2 8z"/><path d="M22 35h20l-4 17H26z"/><path d="M38 50c8 4 14 2 16-4l3 4-4 1c-4 6-10 7-16 3z"/><rect x="25" y="51" width="4" height="11"/><rect x="35" y="51" width="4" height="11"/>`,
+  demon:`<path d="M8 2c2 10 8 14 14 14l-2-8c4 2 20 2 24 0l-2 8c6 0 12-4 14-14 4 10 0 22-10 26v10l6 26H14l6-26V28C10 24 4 12 8 2z"/><path class="k" d="M21 19l7 3-.6 1.8-6.6-2.6zM43 19l-7 3 .6 1.8 6.6-2.6z"/><rect class="k" x="26" y="31" width="12" height="2"/>`,
+  hound:`<circle cx="14" cy="22" r="9"/><circle cx="32" cy="15" r="10"/><circle cx="50" cy="22" r="9"/><path d="M6 16l-2-10 8 5zM58 16l2-10-8 5zM25 8l-1-8 6 4zM39 8l1-8-6 4z"/><path d="M10 30h44l-4 22h-6v10h-6V52h-12v10h-6V52h-6z"/><path class="k" d="M8 20l5 1.8-.4 1.3-4.6-1.5zM27 13l4 1.6-.4 1.2-3.6-1.3zM37 13l-4 1.6.4 1.2 3.6-1.3zM56 20l-5 1.8.4 1.3 4.6-1.5z"/>`,
+  griffin:`<path d="M2 14c10-2 18 2 22 10-6 0-8 4-6 8-6-2-10 0-12 4-2-8-4-14-4-22z"/><path d="M62 14c-10-2-18 2-22 10 6 0 8 4 6 8 6-2 10 0 12 4 2-8 4-14 4-22z"/><path d="M22 30c0-10 5-18 10-20 5 2 10 10 10 20v6l-4 6 4 20H22l4-20-4-6z"/><path d="M28 22l4 10 4-10z" class="k"/><path d="M32 30l-4 6h8z"/><path class="k" d="M25 18l4.4 1.8-.4 1.3-4-1.5zM39 18l-4.4 1.8.4 1.3 4-1.5z"/>`,
+  fiend:`<path d="M14 2c0 10 4 14 10 16h16c6-2 10-6 10-16 4 8 4 18-4 24v6l12 8-4 6-8-4v22H20V42l-8 4-4-6 12-8v-6C10 20 10 10 14 2z"/><path class="k" d="M22 21l6 2.6-.5 1.6-5.5-2.2zM42 21l-6 2.6.5 1.6 5.5-2.2zM26 30h12v2H26z"/>`,
+  devil:`<path d="M20 4c0 8 4 12 8 12h8c4 0 8-4 8-12 3 6 3 14-2 18v4l6 4v32H18V30l6-4v-4c-5-4-5-12-4-18z"/><path class="k" d="M25 20l5 2.2-.5 1.4-4.5-1.8zM39 20l-5 2.2.5 1.4 4.5-1.8z"/><path d="M18 32C9 22 1 24 1 36c6-2 9 2 11 8 2-6 4-9 6-12z"/><rect x="54" y="18" width="3" height="44"/><path d="M50 4v11h11V4h-2.5v7H57V4h-2v7h-2.5V4z"/>`,
+  pixie:`<path d="M29 9c0-6 4-9 9-8 6 1 12-1 18-3-3 4-3 7-2 9-4-2-7 0-8 4l-3 6H29z"/><circle cx="32" cy="12" r="5.4"/><path d="M27 12l-10-5 9 8z"/><path class="k" d="M28 11l3.4 1.3-.4 1.1-3-1zM36 11l-3.4 1.3.4 1.1 3-1z"/><path d="M28.6 19h6.8l2 15-3 4h-4.8l-3-4z"/><path d="M28 37l-3 14 3 11 2-11 2-9 2 9 2 11 3-11-3-14z"/><path d="M29 21l-7 9 1 10 2.4-.6-.6-8 6-7zM35 21l8 5-1.2 2.2-8-4z"/><path d="M8 62L56 5l1.8 1.4L9.8 63.4z"/><path d="M56 5l7-5-3 9zM21 48l-3.6.6 2.8-2.6zM31 36l-3.6.6 2.8-2.6zM41 25l-3.6.6 2.8-2.6z"/><circle cx="16" cy="60" r="1.2"/><circle cx="44" cy="61" r="1"/><circle cx="50" cy="56" r="1.3"/>`,
+  dancer:`<circle cx="34" cy="10" r="5.4"/><path d="M37 6c6-1 10 2 12 7-3-2-7-2-10-1z"/><path class="k" d="M30.6 9.4l3 1.2-.4 1-2.6-.9zM37.4 9.4l-3 1.2.4 1 2.6-.9z"/><path d="M29 17h10l-2 16h-7z"/><path d="M30 32L18 46l-8 8h6l7-6 13-13zM36 32l8 12-2 18h5l2-20-9-12z"/><path d="M38 18l12 4-1 2.6-12-3zM30 19l-10 7 1.6 2L31 22.6z"/><path d="M49 21c6-6 10-12 14-21-2 9-6 17-12 24z"/><path d="M21 27C14 34 8 42 2 52c8-6 14-14 21-22z"/>`,
+  treant:`<circle cx="32" cy="17" r="15"/><circle cx="16" cy="25" r="10"/><circle cx="48" cy="25" r="10"/><path class="k" d="M24 30.4c2.4 2 5 3 8 3s5.6-1 8-3v2.6c-2.4 2-5 3-8 3s-5.6-1-8-3z"/><path d="M23 33h18l3 29H20z"/><path d="M24 40L8 34l1.4-2.6L25 36z"/><path d="M40 40l16-6-1.4-2.6L39 36z"/><path d="M9 34l-7-5 5.4.6L6 24l4.6 6z"/><path d="M55 34l7-5-5.4.6L58 24l-4.6 6z"/><path d="M20 62H9l9-6zM44 62h11l-9-6z"/><path class="k" d="M24 40l6 2.4-.6 1.6-5.4-2.2zM40 40l-6 2.4.6 1.6 5.4-2.2zM26 48h12l-1.4 5-2.2-2-2.4 3-2.4-3-2.2 2z"/>`,
+  gdragon:`<path d="M34 26L22 2l2 10-9-4 4 9-9-1 6 9-6 3 10 3z"/><path d="M34 28l8-26 2 8 7-5-1 9 10-3-5 9 8 3-12 5-12 6z"/><path d="M42 46c10 4 14 10 16 14h5l-1 3c-6 1-8-2-10-6-3-5-6-7-12-8z"/><path d="M24 46l-5 11-4 4h9l6-12zM38 48l2 10-4 5h8l-1-15z"/><path d="M20 40c0-11 7-15 13-15 9 0 14 6 14 14 0 9-7 13-15 13-7 0-12-5-12-12z"/><path d="M24 34c-7-6-8-14-6-20l8-2c-2 8 0 14 6 18z"/><path d="M26 14c-1-7-6-8-10-8L6 8 1 12l3 2h9l10 5z"/><path d="M22 19l-10-1-9 4 3 1.5h8l9 .5z"/><path d="M22 8l6-7-2 8zM20 7l3-7-1 8z"/><path class="k" d="M13 9l4 .9-.4 1.3-3.6-.8zM28 34h10v1.4H28zM28 38h10v1.4H28zM29 42h8v1.4h-8z"/>`,
+});
+
+/* ---------- Стойка: front-facing, imposing, weapon at the ready ---------- */
+const SET_STAND = {
+  peasant:`<path d="M52 5c-12-5-26-2-34 8 12-4 22-4 34-1z"/><rect x="51" y="4" width="3.2" height="58"/><path d="M32 3c-8 0-12 6-12 13l-2 10h28l-2-10c0-7-4-13-12-13z"/><path class="k" d="M26 12h12v9l-6 4-6-4z"/><path d="M27 15l4 1.6-.4 1.2-3.6-1.3zM37 15l-4 1.6.4 1.2 3.6-1.3z"/><path d="M18 26h28l4 36H14z"/><path class="k" d="M31 32h2v30h-2z"/>`,
+  archer:`<path d="M42 28l8-22 2 .8-8 22zM46 28l10-18 1.6 1-10 18z"/><path d="M49 6l4-5 1 7zM55 9l5-3-1 6z"/><path d="M8 4c9 9 9 47 0 56l2 1c10-10 10-48 0-58z"/><rect x="7.6" y="5" width="1" height="54"/><path d="M32 2L21 16l-1 11h24l-1-11z"/><path class="k" d="M26 15h12v9l-6 3-6-3z"/><path d="M27 17.4l4 1.4-.4 1.2-3.6-1.2zM37 17.4l-4 1.4.4 1.2 3.6-1.2z"/><path d="M20 27h24l5 35H15z"/><path class="k" d="M31 33h2v29h-2z"/><path d="M20 30l-10 6 1.4 2.4L22 34z"/>`,
+  footman:`<rect x="54" y="8" width="3" height="54"/><path d="M55.5 0l3.6 9h-7.2z"/><path d="M22 14c0-8 4-12 10-12s10 4 10 12v6H22z"/><path class="k" d="M24 10h16v3H24zM31 13h2v7h-2z"/><path d="M24 56h6v8h-6zM34 56h6v8h-6z"/><path d="M13 20h38v26c0 8-8 14-19 16-11-2-19-8-19-16z"/><path class="k" d="M30 25h4v32h-4zM19 33h26v4H19z"/>`,
+  griffin:`<path d="M28 30L6 2c0 10-2 16-6 22 6 0 8 4 6 10 6-2 10 0 12 6zM36 30L58 2c0 10 2 16 6 22-6 0-8 4-6 10-6-2-10 0-12 6z"/><path d="M24 28c0-8 4-14 8-14s8 6 8 14v14l-8 8-8-8z"/><path d="M27 11l-4-8 6 5zM37 11l4-8-6 5z"/><path d="M26 18c0-6 3-10 6-10s6 4 6 10l-3 4h-6z"/><path class="k" d="M26.6 14l3.4 1.4-.4 1.1-3-1.2zM37.4 14l-3.4 1.4.4 1.1 3-1.2zM31.3 19h1.4v5h-1.4z"/><path d="M24 44l-6 12h4l-2 6 5-6 1 6 2-6-1-10zM40 44l6 12h-4l2 6-5-6-1 6-2-6 1-10z"/>`,
+  priest:`<rect x="6" y="14" width="3" height="48"/><circle cx="7.5" cy="9" r="6"/><circle class="k" cx="7.5" cy="9" r="2.8"/><path d="M32 3c-8 0-12 7-12 14v6h24v-6c0-7-4-14-12-14z"/><path class="k" d="M26 12h12v10l-6 3-6-3z"/><path d="M27 15l4 1.4-.4 1.2-3.6-1.2zM37 15l-4 1.4.4 1.2 3.6-1.2z"/><path d="M18 23h28l6 39H12z"/><path class="k" d="M27 23h2v39h-2zM35 23h2v39h-2z"/><path d="M18 26L9 30l1 2.6 9-3z"/>`,
+  cavalier:`<path d="M50 0l2.5 8v50h-5V8z"/><path d="M52.5 8h10l-3 4 3 4h-10z"/><path d="M24 10c0-6 3-9 8-9s8 3 8 9v10H24z"/><path class="k" d="M26 10h12v2.4H26zM31 12.4h2V20h-2z"/><path d="M32 1c4-3 10-1 12 5-4-2-8-2-12-1z"/><path d="M20 22h24l-2 16H22z"/><path d="M8 22h12v10c0 6-3 9-6 10-3-1-6-4-6-10z"/><path class="k" d="M13 25h2v14h-2z"/><path d="M10 40h14l2 14H12zM54 40H40l-2 14h14z"/><path d="M24 36h16l2 10-4 16H26l-4-16z"/><path d="M25 36l-2-6 5 4zM39 36l2-6-5 4z"/><path class="k" d="M26 41l4 1.4-.4 1.2-3.6-1.2zM38 41l-4 1.4.4 1.2 3.6-1.2zM31 44h2v12h-2z"/>`,
+  angel:`<path d="M26 22C16 8 6 6 0 8c4 4 4 8 2 12 4 0 6 4 4 8 4-2 8 0 8 4 4-4 8-4 12-2zM38 22c10-14 20-16 26-14-4 4-4 8-2 12-4 0-6 4-4 8-4-2-8 0-8 4-4-4-8-4-12-2z"/><path d="M24 4l3 3 2-5 3 4 3-4 2 5 3-3-1 5H25z"/><circle cx="32" cy="12" r="5"/><path class="k" d="M28.4 11l3 1.2-.4 1-2.6-.9zM35.6 11l-3 1.2.4 1 2.6-.9z"/><path d="M24 18h16l6 44H18z"/><path class="k" d="M30.5 26h3v28l-1.5 4-1.5-4zM26 23h12v2.6H26z"/>`,
+  imp:`<path d="M22 24L4 6l4 12-6 2 8 6-4 6 12-4zM42 24L60 6l-4 12 6 2-8 6 4 6-12-4z"/><path d="M24 12L20 0l8 9zM40 12l4-12-8 9z"/><path d="M22 18l-8-4 7 8zM42 18l8-4-7 8z"/><path d="M22 20c0-6 4-10 10-10s10 4 10 10c0 6-4 10-10 10s-10-4-10-10z"/><path class="k" d="M24 17l6 2.4-.5 1.5-5.5-2zM40 17l-6 2.4.5 1.5 5.5-2zM27 24h10v1.8H27z"/><path d="M36 50c8 4 14 2 16-4l4 2-2 2c-4 6-10 8-18 4z"/><path d="M22 44l-6 10 4 8h6l-4-8 6-6zM42 44l6 10-4 8h-6l4-8-6-6z"/><path d="M24 30h16l2 16-4 4H26l-4-4z"/><path d="M24 32L12 26l-2-6 4 4v-6l3 6 3-4-1 6 6 4zM40 32l12-6 2-6-4 4v-6l-3 6-3-4 1 6-6 4z"/>`,
+  demon:`<path d="M24 8C16 2 8 6 8 14c2-4 6-6 10-4-2 2-2 6 2 8l4-4zM40 8c8-6 16-2 16 6-2-4-6-6-10-4 2 2 2 6-2 8l-4-4z"/><path d="M10 22c6-6 14-8 22-8s16 2 22 8l-4 26H14z"/><path d="M24 14c0-6 3-10 8-10s8 4 8 10v6l-8 4-8-4z"/><path class="k" d="M25 11l5 2-.5 1.5-4.5-1.7zM39 11l-5 2 .5 1.5 4.5-1.7zM28 18h8v1.6h-8zM31 27h2v16h-2zM21 31l9 4v2l-9-4zM43 31l-9 4v2l9-4z"/><path d="M10 22L4 42l4 6 6-2-2-6 4-14zM54 22l6 20-4 6-6-2 2-6-4-14z"/><circle cx="8" cy="48" r="5"/><circle cx="56" cy="48" r="5"/><path d="M18 48l-2 16h10l2-12h8l2 12h10l-2-16z"/>`,
+  hound:`<path d="M14 32h36l-2 16H16z"/><path d="M18 46l-2 16h6l2-14zM46 46l2 16h-6l-2-14zM27 48v14h5V48zM37 48v14h-5V48z"/><g transform="translate(12 26)"><path d="M-8-4c0-6 4-9 8-9s8 3 8 9l-2 6-3 7h-6l-3-7z"/><path d="M-8-6l-4-8 7 4zM8-6l4-8-7 4z"/><path class="k" d="M-6-3l4 1.6-.4 1.2-3.8-1.2zM6-3l-4 1.6.4 1.2 3.8-1.2zM-3 4h6l-1 3.4h-4z"/></g><g transform="translate(32 20) scale(1.15)"><path d="M-8-4c0-6 4-9 8-9s8 3 8 9l-2 6-3 7h-6l-3-7z"/><path d="M-8-6l-4-8 7 4zM8-6l4-8-7 4z"/><path class="k" d="M-6-3l4 1.6-.4 1.2-3.8-1.2zM6-3l-4 1.6.4 1.2 3.8-1.2zM-3 4h6l-1 3.4h-4z"/></g><g transform="translate(52 26)"><path d="M-8-4c0-6 4-9 8-9s8 3 8 9l-2 6-3 7h-6l-3-7z"/><path d="M-8-6l-4-8 7 4zM8-6l4-8-7 4z"/><path class="k" d="M-6-3l4 1.6-.4 1.2-3.8-1.2zM6-3l-4 1.6.4 1.2 3.8-1.2zM-3 4h6l-1 3.4h-4z"/></g>`,
+  succubus:`<path d="M26 22L4 4l4 12-6 2 8 6-4 6 14-6zM38 22L60 4l-4 12 6 2-8 6 4 6-14-6z"/><path d="M28 6l-4-6 6 4zM36 6l4-6-6 4z"/><path d="M26 10c0-6 3-9 6-9s6 3 6 9l2 12-4-2-1-8h-6l-1 8-4 2z"/><path d="M27 10c0-4 2-6 5-6s5 2 5 6v4l-5 4-5-4z"/><path class="k" d="M28.4 9l3 1.2-.4 1-2.6-.9zM35.6 9l-3 1.2.4 1 2.6-.9z"/><path d="M27 18h10l-1 10 4 10-4 2 2 22h-5l-1-18-1 18h-5l2-22-4-2 4-10z"/><path d="M27 20l-12 6 1 2 12-5zM37 20l12 6-1 2-12-5z"/><circle cx="13" cy="29" r="4.4"/><circle cx="51" cy="29" r="4.4"/><circle class="k" cx="13" cy="29" r="2"/><circle class="k" cx="51" cy="29" r="2"/>`,
+  charger:`<path d="M10 26C4 24 2 18 4 12c1 4 3 5 5 5-1-4 1-8 4-10-1 5 1 9 2 13z"/><path d="M14 36l-2 26h5l3-22zM24 38l-1 24h5l1-22zM40 38l2 24h5l-1-24zM48 34l4 28h5l-3-28z"/><path d="M10 28c0-5 5-8 12-8h18l8-8 6 1 6 9-2 3-5-2-5 8v5l-3 2H16c-4 0-6-4-6-10z"/><path d="M44 12c-2-6 2-10 6-12-1 4 1 6 3 6 0-3 2-5 4-6-1 4 0 7-3 11z"/><path class="k" d="M53 13l4.4 1.4-.4 1.2-4-1.2z"/>`,
+  fiend:`<path d="M22 20L2 2l3 10-5 1 6 7-4 6 16-4zM42 20L62 2l-3 10 5 1-6 7 4 6-16-4z"/><path d="M24 8C16 2 10 6 10 12c3-3 6-4 9-2-1 3 1 5 4 5zM40 8c8-6 14-2 14 4-3-3-6-4-9-2 1 3-1 5-4 5z"/><path d="M24 12c0-6 4-9 8-9s8 3 8 9l-1 6-7 4-7-4z"/><path class="k" d="M26 10l4 1.6-.4 1.2-3.6-1.3zM38 10l-4 1.6.4 1.2 3.6-1.3z"/><path d="M16 22c5-3 10-4 16-4s11 1 16 4l-4 22H20z"/><path class="k" d="M31 26h2v12h-2zM24 30l7 3v2l-7-3zM40 30l-7 3v2l7-3z"/><path d="M16 22l-6 18 6 4 4-8zM48 22l6 12 4-2-6-12z"/><path d="M20 44l-4 20h9l3-14h8l3 14h9l-4-20z"/><path d="M56 10h3v54h-3z"/><path d="M59 12c6 2 6 14 0 16zM56 12c-6 2-6 14 0 16z"/>`,
+  devil:`<path d="M20 18L2 62h60L44 18z"/><path class="k" d="M22 26l-5 34h2l5-32zM42 26l5 34h-2l-5-32z"/><path d="M27 6c-5-2-7-6-6-10 2 4 4 5 7 6zM37 6c5-2 7-6 6-10-2 4-4 5-7 6z"/><path d="M27 10c0-4 2-7 5-7s5 3 5 7v5l-5 6-5-6z"/><path class="k" d="M27.6 9l3.2 1.2-.4 1-2.8-.9zM36.4 9l-3.2 1.2.4 1 2.8-.9z"/><path d="M24 22h16l-1 20H25z"/><path class="k" d="M24 30h16v2H24z"/><path d="M24 22l-6 10 3 2 5-8zM40 22l12 6-1 2.6-12-5z"/><rect x="52" y="10" width="3" height="54"/><path d="M46 4l2-4 1 6c1 3 3 4 4.5 4S57 9 58 6l1-6 2 4-1 5c-1 4-4 6-6.5 6S48 13 47 9z"/><path d="M52 6l1.5-6L55 6v6h-3z"/>`,
+  pixie:`<path d="M26 12c-2-6-2-10 2-12 0 4 2 5 4 5s4-1 4-5c4 2 4 6 2 12z"/><circle cx="32" cy="13" r="5.4"/><path d="M27 12l-9-5 8 8zM37 12l9-5-8 8z"/><path class="k" d="M28.4 12l3 1.2-.4 1-2.6-.9zM35.6 12l-3 1.2.4 1 2.6-.9z"/><path d="M29 19h6l1 14-4 4-4-4z"/><path d="M29 35l-3 14 3 12 2-12 1-8 1 8 2 12 3-12-3-14z"/><path d="M29 21L14 16l-4-4 2 5H7l6 3 16 4zM35 21l15-5 4-4-2 5h5l-6 3-16 4z"/><circle cx="6" cy="11" r="1.8"/><circle cx="58" cy="11" r="1.8"/><circle cx="20" cy="54" r="1.2"/><circle cx="44" cy="56" r="1.4"/><circle cx="32" cy="63" r="1"/>`,
+  dancer:`<path d="M26 24C20 16 12 8 2 0c6 9 12 17 20 26zM38 24c6-8 14-16 24-24-6 9-12 17-20 26z"/><path d="M26 12c0-6 3-9 6-9s6 3 6 9v4H26z"/><path class="k" d="M27 10h10v3H27z"/><path d="M28 10.8h3v1.4h-3zM33 10.8h3v1.4h-3z"/><path d="M24 17h16l-1 20H25z"/><path class="k" d="M24 27h16v2H24z"/><path d="M25 36l-6 26h6l7-18 7 18h6l-6-26z"/><path d="M24 18l-4 8 3 1.6 4-7zM40 18l4 8-3 1.6-4-7z"/>`,
+  hunter:`<path d="M6 6c8 8 8 44 0 52l2 1c9-9 9-45 0-54z"/><rect x="6" y="7" width="1" height="50"/><path d="M44 26l6-20 2 .6-6 20z"/><path d="M50 6c2-4 6-5 8-4-1 3-4 5-8 4z"/><path d="M22 14l-10-6 9 10zM42 14l10-6-9 10z"/><path d="M32 3l-10 12-1 10h22l-1-10z"/><path class="k" d="M26 14h12v8l-6 3-6-3z"/><path d="M27 16.4l4 1.4-.4 1.2-3.6-1.2zM37 16.4l-4 1.4.4 1.2 3.6-1.2z"/><path d="M20 25h24l5 37-6-4-5 4-6-4-6 4-6-4-5 4z"/><path d="M20 28L8 32l1 2.6 12-3z"/>`,
+  druid:`<path d="M24 10c-6-2-9-6-8-10 2 3 4 4 6 4-1-2 0-4 1-5 1 3 3 6 5 8zM40 10c6-2 9-6 8-10-2 3-4 4-6 4 1-2 0-4-1-5-1 3-3 6-5 8z"/><path d="M32 6c-7 0-11 6-11 13v5h22v-5c0-7-4-13-11-13z"/><path class="k" d="M26 13h12v10H26z"/><path d="M27 15.4l4 1.4-.4 1.2-3.6-1.2zM37 15.4l-4 1.4.4 1.2 3.6-1.2zM27 20h10l-2 9-3 4-3-4z"/><path d="M20 24h24l6 38H14z"/><path class="k" d="M31 34h2v28h-2z"/><path d="M20 26L8 34l2 3 12-6zM44 26l12 8-2 3-12-6z"/><rect x="56" y="10" width="3" height="52"/><path d="M57.5 0l4 5-4 6-4-6z"/><path d="M14 62c-4-2-8-2-12 2h14zM50 62c4-2 8-2 12 2H48z"/>`,
+  unicorn:`<path d="M6 26C0 28-2 36 0 44c2-6 4-8 6-10z"/><path d="M10 36l-2 26h5l3-22zM20 38l-1 24h5l1-22zM36 38l2 24h5l-1-24zM42 36l6 10-3 16h5l3-17-6-11z"/><path d="M6 28c0-6 5-9 12-9h20l6 3 10 8 6 4-2 3-8-1-8-4-4 8v4l-3 2H12c-4 0-6-6-6-12z"/><path d="M40 20c-2-6 0-10 4-12 0 4 2 5 4 5-1-3 1-6 4-7-1 5-1 8-3 12z"/><path d="M56 34l8 .6-8 2.4z"/><path class="k" d="M49 29l3.6 1.2-.4 1-3.2-1z"/>`,
+  treant:`<path d="M14 22L8 12l7 2-1-9 8 5 3-8 5 6 6-8 4 8 6-6 1 9 7-3-2 9 6 2-8 8H20z"/><path d="M22 28L10 18 6 6l2 8-6-4 6 8-4 2 8 2 8 10zM42 28l12-10 4-12-2 8 6-4-6 8 4 2-8 2-8 10z"/><path d="M22 22h20l-1 22 3 18H20l3-18z"/><path class="k" d="M24 28l7 3-.6 1.6-6.4-2.6zM40 28l-7 3 .6 1.6 6.4-2.6zM26 38h12l-1 6-2-2-3 3-3-3-2 2zM26 48l1 14h1.4l-1-14zM37 48l-1 14h-1.4l1-14z"/><path d="M20 60l-10 4h12zM44 60l10 4H42z"/>`,
+  gdragon:`<path d="M26 26L4 4l3 10H1l6 8-6 4 8 2-4 6 20-4zM38 26L60 4l-3 10h6l-6 8 6 4-8 2 4 6-20-4z"/><path d="M36 54c6 2 12 0 16-6l2 3c-4 7-12 10-18 8z"/><path d="M22 46l-6 14h8l4-8zM42 46l6 14h-8l-4-8z"/><path d="M22 28c0-4 4-6 10-6s10 2 10 6l-2 20-8 8-8-8z"/><path class="k" d="M28 32h8v1.4h-8zM28 36h8v1.4h-8zM29 40h6v1.4h-6z"/><path d="M26 6L20 0l7 3zM38 6l6-6-7 3z"/><path d="M26 10c0-5 3-8 6-8s6 3 6 8l-1 10-5 4-5-4z"/><path class="k" d="M27 10l4 1.4-.4 1.2-3.6-1.2zM37 10l-4 1.4.4 1.2 3.6-1.2z"/>`,
+};
+
+/* ---------- Профиль: side view in motion, facing the enemy ---------- */
+const SET_SIDE = {
+  peasant:`<path d="M28 6c2-4 8-5 12-2l2 10-4 4H28l-2-6z"/><path class="k" d="M27 11l4.4-.6.4 1.2-4.4.8z"/><path d="M26 20h14l2 20H26z"/><path d="M28 40l-6 22h6l5-16 5 16h6l-6-22z"/><path d="M28 24l-10 6 2 3 10-5zM38 24l-6 8 2 2 7-8z"/><rect x="6" y="30" width="40" height="2.6"/><path d="M8 25h2v12H8z"/><path d="M0 25h9v2H0zM0 30.3h9v2H0zM0 35h9v2H0z"/>`,
+  archer:`<path d="M44 12l4-10 2 1-4 10zM48 14l6-8 1.6 1-6 8z"/><path d="M36 6c4 0 7 3 7 8l-1 6h-9l-2-8c0-4 2-6 5-6z"/><path class="k" d="M31 12l4 .8-.2 1.2-4-.6z"/><path d="M32 20h12l2 22H32z"/><path d="M34 42l-4 20h6l3-14 3 14h6l-4-20z"/><path d="M12 6C2 16 2 44 12 54l2-1C5 44 5 17 14 7z"/><path d="M13 7l23 17-1 1.4L12 8.6zM13 53l23-27-1-1.2L12 51.4z"/><path d="M5 24.4h32v2H5z"/><path d="M0 25.4l6-3.4v6.8z"/><path d="M34 22l-22 2v3l22-1z"/>`,
+  footman:`<path d="M42 22l10-10 3 3-10 10z"/><path d="M52 13L62 0l2 2-12 14z"/><path d="M30 4c6 0 10 4 10 10v6H26v-8c0-5 2-8 4-8z"/><path class="k" d="M26 11h9v2.4h-9z"/><path d="M26 20h16l2 22H28z"/><path d="M30 42l-6 20h6l4-14 4 14h6l-4-20z"/><path d="M4 18h22v18c0 12-6 20-11 22C10 56 4 48 4 36z"/><path class="k" d="M13 22h4v30h-4zM8 30h14v3.6H8z"/>`,
+  griffin:`<path d="M34 24L46 2l2 8 6-6-1 9 8-4-4 9h8l-8 7z"/><path d="M44 40c8 2 12 8 12 14l4 2-4 2c-2-6-6-10-12-12z"/><path d="M30 46l-4 16h6l2-10zM40 44l4 18h6l-6-18z"/><path d="M24 28c0-8 4-12 10-12s10 6 10 14v12l-6 6H28z"/><path d="M22 22l-12 2-4 4 4-1-2 4 4-3 1 4 2-5 9-2zM26 32l-12 4-2 4 3-2v4l3-4 2 3 1-5 7-1z"/><path d="M20 8c2-5 8-7 12-4l2 8-4 6h-6l-4 2-6-2 4-4z"/><path d="M14 11l-7 2 6 3z"/><path d="M26 5l2-5 3 6z"/><path class="k" d="M19 9l4.4 1-.4 1.2-4-.8z"/>`,
+  priest:`<rect x="12" y="10" width="3" height="52"/><circle cx="13.5" cy="7" r="5.4"/><circle class="k" cx="13.5" cy="7" r="2.4"/><path d="M34 4c5 0 8 4 8 9v7H28l-2-6c0-6 4-10 8-10z"/><path class="k" d="M27 10h7v6h-6z"/><path d="M28 12l3.4.6-.2 1.2-3.2-.5z"/><path d="M28 20h16l6 42H22z"/><path class="k" d="M37 20h2v42h-2z"/><path d="M28 26l-13 3 1 3 13-2z"/>`,
+  cavalier:`<path d="M52 34c6 0 10 4 12 10-4-3-8-4-12-4z"/><path d="M16 40L6 50l2 3 12-9zM26 42l-2 20h5l2-18zM42 42l4 20h5l-3-20zM48 38l10 8-2 3-10-6z"/><path d="M18 28h24c6 0 10 4 10 10l-2 4H18c-4 0-6-4-6-8s2-6 6-6z"/><path d="M20 30L10 16l-8 2-2 6 4 2 6-2 6 10z"/><path d="M10 16l1-5 3 5z"/><path class="k" d="M5 18.4l3.4.4v1.2l-3.4-.2z"/><path d="M28 12h10l1 16H27z"/><path d="M28 4c0-3 2-4 5-4s5 1 5 4v8H28z"/><path class="k" d="M28 5h6v2h-6z"/><path d="M38 1c6-2 10 2 10 8-2-4-6-6-10-5z"/><path d="M0 6l32 8-.6 2.6L0 8.4z"/>`,
+  angel:`<path d="M36 22C40 10 50 2 62 0c-4 4-4 8-2 10-4 0-6 2-4 6-4 0-6 2-6 6-4-2-8-2-12 2zM40 26c6-8 16-12 24-10-4 3-4 6-2 8-4 0-6 2-4 5-6-2-10 0-14 3z"/><path d="M28 4l2-4 2 4 2-3 1 5h-8z"/><circle cx="30" cy="12" r="5"/><path class="k" d="M25.6 11l3.6.6-.2 1.2-3.4-.5z"/><path d="M26 18h12l6 30-6 14H22l2-14z"/><path d="M28 22L16 32l2 2 12-8z"/><path d="M17 33L2 58l3 1 14-24z"/><path d="M13 30l7 6-1.6 1.6-7-6z"/>`,
+  imp:`<path d="M34 22L42 2l2 8 5-6v8l6-3-3 7 6 1-8 6z"/><path d="M38 36c8 0 14 4 18 10l4-2v6l-6-2c-4-6-8-8-16-8z"/><path d="M24 40l-8 10-8 2 2 3 9-2 9-9zM34 40l6 12-2 10h5l3-11-6-11z"/><path d="M22 24h14l2 14-6 4H22z"/><path d="M22 26L8 30l-4-2 2 3-4 2h5l1 3 2-3 12-3z"/><path d="M22 9l-2-9 6 7zM28 9l2-9 1 9z"/><path d="M14 18c0-6 4-10 10-10 5 0 8 4 8 9l-2 6-8 2z"/><path d="M30 14l8-4-6 8z"/><path class="k" d="M16 14l4.4 1.2-.4 1.3-4-1z"/>`,
+  demon:`<path d="M50 30c6 0 10 4 10 10l-4-2c-2-3-4-4-6-4z"/><path d="M26 44l-6 18h8l4-14zM42 44l2 18h8l-4-18z"/><path d="M16 22c2-8 10-12 20-12 10 0 16 6 16 14l-2 20H22l-6-10z"/><path d="M22 26L10 36l-4 6 4 4 6-4-2-4 10-8z"/><circle cx="8" cy="42" r="5"/><path d="M10 14C2 12 0 4 4 0c0 6 4 8 8 8zM18 12c-2-6 2-10 6-12-1 4 0 7 3 10z"/><path d="M10 20c0-6 3-9 8-9s8 3 8 9l-2 6-6 2-6-2z"/><path class="k" d="M11 17l4.4 1.2-.4 1.3-4-1zM28 20l6 8 12-2-1 2-11 2z"/>`,
+  hound:`<path d="M58 30c4-2 6-8 6-14 2 6 0 14-6 18z"/><path d="M30 22c-2-6 0-10 4-12 0 4 2 5 3 4 0-5 3-8 6-9-1 5 0 8 2 10 1-4 3-6 6-7-1 5-1 10-3 14z"/><path d="M26 40l-10 12-6 2 2 3 8-2 12-10zM52 40l2 22h5l-1-22zM38 42l-2 20h5l2-18z"/><path d="M22 30c2-6 8-8 16-8h12c6 0 10 4 10 10l-2 10H26l-6-4z"/><path d="M24 24c-2-5-8-7-14-5L2 22v3h12l10 2z"/><path d="M24 30H14L2 33l2 3 10-1 10-1z"/><path d="M18 20l2-8 4 7z"/><path class="k" d="M12 20l4.4.8-.3 1.3-4-.7z"/><path d="M4 25l1.4 2.4L7 25zM9 25l1.4 2.4L12 25zM5 33l1.4-2.4L8 33z"/>`,
+  succubus:`<path d="M34 20L48 2v8l6-6-1 9 8-3-4 8 7 2-10 4z"/><path d="M38 34c8 2 12 8 14 14h4l-2 4-3-3c-3-6-7-10-13-12z"/><path d="M34 4c4 0 8 4 8 10l2 10-6-2-2-8z"/><path d="M30 3l-5-3 6 .4z"/><path d="M28 6c0-4 3-6 6-6s5 2 5 6v4l-4 3h-5z"/><path class="k" d="M27.6 6l3.6.6-.2 1.2-3.4-.5z"/><path d="M29 14h8l-1 10 3 8-4 2 3 26h-5l-3-20-3 20h-5l3-26-3-2 4-8z"/><path d="M30 16l-10 6 1.6 2 10-5z"/><path d="M20 22c-8 4-14 10-14 18 0 6-4 10-6 12l1 1c3-2 7-7 7-13 0-7 5-13 13-16z"/>`,
+  charger:`<path d="M52 24c6-4 10-10 10-16 2 6 2 12-2 16 4 0 4 4 2 8-2-4-6-6-10-6z"/><path d="M20 34L10 44H4v3h8l12-10zM28 36l-4 14 2 12h5l-2-12 4-12zM44 36l4 14-6 12h5l6-12-4-14zM52 32l10 6-2 3-10-4z"/><path d="M16 26c0-4 4-8 10-8h16c6 0 10 4 12 10l-2 8H20c-3 0-4-4-4-10z"/><path d="M18 26L8 12H0l-2 5 6 2h4l6 10z"/><path d="M8 12V6l4 5z"/><path d="M18 22C12 18 10 10 14 4c0 5 2 6 4 6-1-4 1-8 4-9-1 5 1 8 2 12z"/><path class="k" d="M2 14l3.6.8-.2 1.2-3.4-.6z"/>`,
+  fiend:`<path d="M36 22L50 4v8l6-6v9l8-2-5 8 6 3-12 4z"/><path d="M46 40c6 2 10 6 12 12h4l-3 4c-2-6-6-10-13-12z"/><path d="M24 44l-6 18h8l4-12zM38 44l2 18h8l-4-18z"/><path d="M22 18h18c4 0 6 4 6 8l-2 18H22z"/><path d="M24 20L14 10l2-3 12 10z"/><path d="M1 1h12l2 8-4 4H3z"/><path d="M12 9l4 4-1.6 1.6-4-4z"/><path d="M26 4c-4-6 4-6 8-2zM22 6c-6-4-10 0-10 4 2-2 5-2 8 0z"/><path d="M18 12c0-6 4-10 10-10 5 0 8 4 8 9l-2 7H22z"/><path class="k" d="M20 9l4.4 1-.4 1.2-4-.8z"/>`,
+  devil:`<path d="M36 18L52 2v8l7-5-2 9 7-1-6 8 6 4-16 2z"/><path d="M34 20c8 4 14 14 16 42H30z"/><path d="M27 40l-3 22h6l3-16 3 16h6l-3-22z"/><path d="M26 18h12l1 22H26z"/><path d="M31 3c2-4 6-4 8-2-3 0-5 1-6 3z"/><path d="M24 6c0-4 3-6 6-6s5 2 5 6v6l-4 4-2 4-3-4z"/><path class="k" d="M24.6 5l4 .8-.3 1.2-3.7-.6z"/><path d="M28 22L14 26l1 3 14-3z"/><path d="M6 27.6h34V30H6z"/><path d="M0 22.6h8v1.8H0zM-2 27.8h10v1.8H-2zM0 33h8v1.8H0zM6 22.6h2v12.2H6z"/>`,
+  pixie:`<path d="M24 14c6-4 16-4 28-2-6 2-8 4-8 6-6-2-12-1-16 2z"/><circle cx="22" cy="18" r="5"/><path d="M25 18l10-3-9 6z"/><path class="k" d="M17.6 17l3.6.8-.3 1.2-3.3-.7z"/><path d="M22 23h6l8 14-2 3-8-6z"/><path d="M34 38l12 6 8 10-2 1-8-8-12-4zM30 38l10 12 4 12h-2l-4-10-9-10z"/><path d="M24 26L12 30l1 2 12-3z"/><path d="M0 32L40 22l.6 2L.6 34z"/><path d="M2 31l-4 2 4 1z"/><circle cx="56" cy="58" r="1.4"/><circle cx="50" cy="62" r="1"/><circle cx="60" cy="50" r="1"/>`,
+  dancer:`<path d="M45 12C48 6 54 2 62 0c-4 4-8 8-15 14z"/><path d="M17 29C10 30 4 34 0 40c6-2 12-6 18-8z"/><path d="M32 10c6-2 12 0 14 6-4-2-8-2-12 0z"/><circle cx="30" cy="14" r="5"/><path class="k" d="M25.6 13l3.6.8-.3 1.2-3.3-.7z"/><path d="M26 20h10l2 18H26z"/><path d="M28 38l-12 8-8-2v3l9 2 13-7zM34 38l6 12-2 12h5l3-13-7-11z"/><path d="M34 22l10-10 2 2-10 10zM26 24l-10 4 1 2.6 10-4z"/>`,
+  hunter:`<path d="M44 24c8 6 12 16 12 30l-8 4c2-12 0-22-4-28z"/><path d="M40 14l10-6-8 9z"/><path d="M36 10c4 0 7 3 7 8l-1 6h-9l-2-8c0-4 2-6 5-6z"/><path class="k" d="M31 15l4 .8-.2 1.2-4-.6z"/><path d="M32 24h12l2 18H32z"/><path d="M34 42l-8 10 2 10h5l-2-8 8-6zM44 42l8 10-2 10h5l2-12-9-8z"/><path d="M12 8C2 18 2 46 12 56l2-1C5 46 5 19 14 9z"/><path d="M13 9l22 19-1 1.4L12 10.6zM13 55l22-25-1-1.2L12 53.4z"/><path d="M4 27.4h32v2H4zM6 32h30v2H6z"/><path d="M0 28.4l6-3v6zM2 33l6-3v6z"/><path d="M34 26l-20 2v3l20-1z"/>`,
+  druid:`<path d="M38 6c-2-4 0-6 2-6 0 3 2 4 4 4-1-2 0-4 2-4 0 3-1 6-4 8zM34 6c-2-4-5-5-7-4 2 1 3 3 3 5z"/><path d="M36 6c5 0 8 4 8 9v7H30l-2-6c0-6 4-10 8-10z"/><path class="k" d="M29 12h7v6h-6z"/><path d="M30 13.4l3.4.6-.2 1.2-3.2-.5zM30 17h5l-2 8z"/><path d="M30 22h16l8 40H26z"/><path d="M30 26l-14-4-1 3 14 5z"/><path d="M11 5h3l2 57h-3z"/><path d="M11 0l4 4-3 5-4-4z"/><path d="M26 62c-6-2-12 0-16 2h18z"/>`,
+  unicorn:`<path d="M52 22c6 2 10 8 10 16-2-4-5-6-8-6 2 4 2 8 0 10-1-6-3-10-6-12z"/><path d="M36 42l-4 20h5l3-16zM46 38l6 24h5l-6-26z"/><path d="M24 34c-2-8 2-14 10-18l10-4c6-2 10 2 10 8l-2 8c-4 6-10 10-16 12-6 2-10 0-12-6z"/><path d="M26 22H16l-4 6 3 1 3-4 8 2zM30 28l-10 6-2 6h3l2-4 9-3z"/><path d="M28 18L22 6l-8-2-4 4 4 3 6-1 4 10z"/><path d="M13 5L0 0l12 8z"/><path d="M20 5l2-5 2 5z"/><path d="M24 8c4 0 8 4 8 10-2-2-4-2-6-2 2 3 2 6 0 8-2-4-4-6-6-6z"/><path class="k" d="M13.6 7l3.4.8-.3 1.2-3.1-.6z"/>`,
+  treant:`<path d="M22 20L14 12l6-1-4-8 8 4 2-7 5 7 6-6 2 8 7-3-2 8h8l-6 6z"/><path d="M26 26L12 22l-8 4 2 2-4 4 6-2v4l4-4 14 4zM40 28l14 8 2 8h-2l-2-6-12-6z"/><path d="M24 20h18l-2 24 4 18H22l4-18z"/><path class="k" d="M25 28l6 2-.5 1.6-5.5-1.8zM24 36h8l-2 4-2-2-2 2zM30 46l1 16h1.4l-1-16zM36 46l-1 16h-1.4l1-16z"/><path d="M22 60l-10 4h12zM44 60l10 4H42z"/>`,
+  gdragon:`<path d="M34 24L40 0l4 8 5-6 1 9 7-4-2 9 8-1-6 8 6 4-18 2z"/><path d="M50 44c6 2 10 8 10 14l4 2-4 2c-2-6-6-10-11-12z"/><path d="M34 50l-4 12h7l3-8zM46 48l4 14h7l-5-16z"/><path d="M28 26c0-6 4-8 10-8 8 0 12 6 12 14l-2 12-8 6h-8l-6-8z"/><path class="k" d="M34 30h10v1.2H34zM34 35h10v1.2H34zM35 40h8v1.2h-8z"/><path d="M28 34l-10-2-4 4 3 1 3-2 8 4zM30 42l-10 2-2 4h3l2-2 8-1z"/><path d="M30 22c-4-6-4-12 0-16l6-2c-2 5-2 10 2 14z"/><path d="M34 6c-2-4-6-6-12-5L12 2 6 6l4 2h10l10 3z"/><path d="M28 10l-10 1-8 4 2 2 8-1 10-2z"/><path d="M30 3l4-3v5zM34 5l6-3-3 6z"/><path d="M8 11c-4 0-6 2-8 1 2 2 0 5-2 6 4 0 7-2 10-4z"/><path class="k" d="M19.6 3.6l3.6.6-.3 1.2-3.3-.6z"/>`,
+};
+
+/* ---------- Руны: angular, all straight edges and spikes ---------- */
+const SET_RUNE = {
+  peasant:`<path d="M32 2L22 20h20z"/><path class="k" d="M27 14h10l-5 5z"/><path d="M22 22h20l6 40H16z"/><path class="k" d="M31 28h2v34h-2z"/><path d="M52 12h3v52h-3z"/><path d="M46 14V4l2-4 2 4v6h2V2l1.5-3L55 2v8h2V4l2-4 2 4v10z"/>`,
+  archer:`<path d="M32 2L22 20h20z"/><path class="k" d="M27 14h10l-5 5z"/><path d="M22 22h20l6 40H16z"/><path class="k" d="M31 28h2v34h-2z"/><path d="M4 4l12 28L4 60h3l12-28L7 4z"/><path d="M5 4h1.4v56H5z"/><path d="M6 31h46v2H6z"/><path d="M60 32l-9-4.4v8.8z"/><path d="M6 28l5 4-5 4z"/>`,
+  footman:`<path d="M50 2l3 6v34h-6V8z"/><path d="M44 42h12v3H44zM48.5 45h3v8h-3z"/><path d="M24 4h16v12l-8 4-8-4z"/><path class="k" d="M26 9h12v2.4H26z"/><path d="M22 20h20l2 24H20z"/><path d="M24 44l-2 20h7l3-14 3 14h7l-2-20z"/><path d="M6 18h22v20L17 52 6 38z"/><path class="k" d="M16 22h2v24h-2zM10 28h14v2H10z"/>`,
+  griffin:`<path d="M28 28L2 6l6 8-6 2 8 6-6 4 10 2zM36 28L62 6l-6 8 6 2-8 6 6 4-10 2z"/><path d="M26 10l-4-8 6 5zM38 10l4-8-6 5z"/><path d="M24 22l8-14 8 14-2 22-6 6-6-6z"/><path class="k" d="M26 17l4.4 2-1 1.6-3.4-1.4zM38 17l-4.4 2 1 1.6 3.4-1.4zM30 22h4l-2 6z"/><path d="M24 44l-6 16 4-2v6l4-6 2 4V50zM40 44l6 16-4-2v6l-4-6-2 4V50z"/>`,
+  priest:`<path d="M52 14h3v50h-3z"/><path d="M53.5 0l6 7-6 7-6-7z"/><path class="k" d="M53.5 4l3 3-3 3-3-3z"/><path d="M32 2l-9 16h18z"/><path class="k" d="M28 12h8l-4 5z"/><path d="M32 18l16 44H16z"/><path class="k" d="M31 26h2v36h-2zM26 34h12v2H26z"/>`,
+  cavalier:`<path d="M14 62V42l6-14 12-12 4-10 4 8 10 10-4 8-8-2-4 6 4 12v14z"/><path class="k" d="M33 19l5 1.6-.8 1.6-4.6-1.4zM20 44h24v2H20z"/><path d="M2 36L60 4l2 3L4 39z"/><path d="M60 4l4-4-1 6z"/>`,
+  angel:`<path d="M28 26L2 6l4 12-4 2 8 4-4 4 16-2zM36 26L62 6l-4 12 4 2-8 4 4 4-16-2z"/><path d="M26 2l2 3 4-5 4 5 2-3v5H26z"/><path d="M32 8l6 6-6 6-6-6z"/><path class="k" d="M28.6 13l2.4 1-1 1.2-1.8-1zM35.4 13l-2.4 1 1 1.2 1.8-1z"/><path d="M26 22h12l8 40H18z"/><path class="k" d="M31 26h2v30l-1 3-1-3zM27 29h10v2H27z"/>`,
+  imp:`<path d="M26 30L8 16l4 12-6 2 20 6zM38 30l18-14-4 12 6 2-20 6z"/><path d="M40 44l10 6 6-4 2 6-8-2-10-4z"/><path d="M24 48l-8 14h7l5-10zM40 48l8 14h-7l-5-10z"/><path d="M26 30h12l4 16-4 4H26l-4-4z"/><path d="M24 12L18 0l8 8zM40 12l6-12-8 8z"/><path d="M32 6l10 8-2 12-8 4-8-4-2-12z"/><path class="k" d="M25 15l5 2-1 1.6-4-1.4zM39 15l-5 2 1 1.6 4-1.4zM28 23h8v1.6h-8z"/>`,
+  demon:`<path d="M24 8L12 0l-2 12 6-2zM40 8l12-8 2 12-6-2z"/><path d="M10 20l22-6 22 6-4 28H14z"/><path d="M10 20L2 44l6 4 4-4-2-6 6-14zM54 20l8 24-6 4-4-4 2-6-6-14z"/><path d="M16 48l-2 16h11l3-10h8l3 10h11l-2-16z"/><path d="M24 4h16l2 12-10 6-10-6z"/><path class="k" d="M25 9l5 2-1 1.6-4-1.4zM39 9l-5 2 1 1.6 4-1.4zM28 16h8v1.6h-8zM31 24h2v18h-2zM20 28l10 6-1 1.6-10-6zM44 28l-10 6 1 1.6 10-6z"/>`,
+  hound:`<path d="M8 32h48l-4 14H12z"/><path d="M14 44l-2 18h6l2-16zM46 44l2 18h-6l-2-16zM26 46v16h5V46zM38 46v16h-5V46z"/><path d="M10 16L8 6l5 8zM28 8l-2-8 5 6zM36 8l2-8-5 6zM54 16l2-10-5 8z"/><path d="M2 32L12 14l10 12-6 8z"/><path d="M22 24L32 6l10 18-10 8z"/><path d="M42 26l10-12 10 18-14 2z"/><path class="k" d="M9 22l4.4 1.6-.8 1.4-3.6-1.4zM28 15l4 1.6-.8 1.4-3.2-1.4zM36 15l-4 1.6.8 1.4 3.2-1.4zM55 22l-4.4 1.6.8 1.4 3.6-1.4z"/>`,
+  succubus:`<path d="M28 22L4 4l6 14-6 2 20 8zM36 22L60 4l-6 14 6 2-20 8z"/><path d="M28 5l-5-5 6 3zM36 5l5-5-6 3z"/><path d="M32 4l5 5-1 7-4 3-4-3-1-7z"/><path class="k" d="M28.6 9l3 1.4-.8 1.2-2.4-1zM35.4 9l-3 1.4.8 1.2 2.4-1z"/><path d="M26 20h12l-4 12 6 30h-6l-2-16-2 16h-6l6-30z"/><path d="M38 22l12-8 1.6 2L40 26z"/><path d="M54 6l5 6-5 6-5-6z"/><path class="k" d="M54 9l2 3-2 3-2-3z"/>`,
+  charger:`<path d="M22 28L6 20l8-2-10-8 12 4-6-12 12 10 2-10 6 14z"/><path d="M16 62V42l6-14 12-12 4-10 4 8 10 10-4 8-8-2-4 6 4 12v14z"/><path class="k" d="M35 19l5 1.6-.8 1.6-4.6-1.4z"/><path d="M52 34l6-2-2 6 6 0-6 4z"/>`,
+  fiend:`<path d="M24 20L2 0l4 14-6 2 8 6-4 6 20-6zM40 20L62 0l-4 14 6 2-8 6 4 6-20-6z"/><path d="M24 8L14 0v10zM40 8L50 0v10z"/><path d="M24 6h16l2 10-10 6-10-6z"/><path class="k" d="M26 10l5 2-1 1.6-4-1.4zM38 10l-5 2 1 1.6 4-1.4zM28 16h8v1.6h-8z"/><path d="M16 22l16-2 16 2-4 22H20z"/><path d="M20 44l-4 20h9l3-12h8l3 12h9l-4-20z"/><path d="M48 22l8 8-2 2-8-6z"/><path d="M56 12h3v52h-3z"/><path d="M59 14l5 4v10l-5 4zM56 14l-5 4v10l5 4z"/>`,
+  devil:`<path d="M20 20L4 62h56L44 20z"/><path class="k" d="M31 26h2v36h-2zM22 40h20v2H22z"/><path d="M26 8L20 0l8 4zM38 8l6-8-8 4z"/><path d="M26 6h12l1 10-7 8-7-8z"/><path class="k" d="M27 10l4 1.6-.8 1.4-3.4-1.2zM37 10l-4 1.6.8 1.4 3.4-1.2z"/><path d="M54 10h3v54h-3z"/><path d="M48 2l2 8h4V0h3v10h4l2-8 1 12H47z"/>`,
+  pixie:`<path d="M32 4l-4-4 3 3 1-4 1 4 3-3z"/><path d="M27 8L16 2l8 9zM37 8l11-6-8 9z"/><path d="M32 4l6 6-6 6-6-6z"/><path class="k" d="M28.6 9l2.4 1-.6 1-1.8-.8zM35.4 9l-2.4 1 .6 1 1.8-.8z"/><path d="M28 18h8l-2 16h-4z"/><path d="M30 34l-2 18 2 10 2-12 2 12 2-10-2-18z"/><path d="M28 20L16 28l1 2 12-6zM36 20l12 8-1 2-12-6z"/><path d="M8 62L58 4l2 2L10 64z"/><path d="M58 4l6-4-2 7z"/>`,
+  dancer:`<path d="M28 20L4 2l3 6 19 16zM36 20L60 2l-3 6-19 16z"/><path d="M32 4l5 6-5 6-5-6z"/><path class="k" d="M28 9h8v2h-8z"/><path d="M27 18h10l-1 16h-8z"/><path d="M28 34l-8 28h6l6-18 6 18h6l-8-28z"/>`,
+  hunter:`<path d="M22 14L10 8l10 10zM42 14l12-6-10 10z"/><path d="M32 2L22 20h20z"/><path class="k" d="M27 14h10l-5 5z"/><path d="M22 22h20l6 40-8-4-8 4-8-4-8 4z"/><path d="M4 4l10 28L4 60h3l10-28L7 4z"/><path d="M5 4h1.4v56H5z"/><path d="M6 28h44v2H6zM6 34h42v2H6z"/><path d="M58 29l-8-4v8zM56 35l-8-4v8z"/>`,
+  druid:`<path d="M22 12L14 0l2 8-6-4 8 10zM42 12l8-12-2 8 6-4-8 10z"/><path d="M32 4L22 20h20z"/><path class="k" d="M27 14h10v5H27z"/><path d="M28 19h8l-4 10z"/><path d="M22 22h20l6 40H16z"/><path class="k" d="M31 30h2v32h-2z"/><path d="M52 12h3v52h-3z"/><path d="M53.5 0l5 6-5 6-5-6z"/><path d="M16 62L6 64h12zM48 62l10 2H46z"/>`,
+  unicorn:`<path d="M26 16L14 30l4-12-8 4 8-10z"/><path d="M14 62V42l6-14 12-12 4-10 4 8 10 10-4 8-8-2-4 6 4 12v14z"/><path d="M38 12L62 0 42 18z"/><path class="k" d="M33 19l5 1.6-.8 1.6-4.6-1.4z"/>`,
+  treant:`<path d="M8 26L32 0l24 26-8-2 2 6-10-4-8 4-8-4-10 4 2-6z"/><path d="M22 30L4 22l6 8-6 2 16 4zM42 30l18-8-6 8 6 2-16 4z"/><path d="M22 24h20l-2 20 4 18H20l4-18z"/><path class="k" d="M24 30l7 3-1 1.6-6-2.4zM40 30l-7 3 1 1.6 6-2.4zM26 40h12l-2 4-2-2-2 3-2-3-2 2z"/><path d="M20 60l-10 4h12zM44 60l10 4H42z"/>`,
+  gdragon:`<path d="M26 24L2 2l4 12-4 4 8 4-4 6 18-2zM38 24L62 2l-4 12 4 4-8 4 4 6-18-2z"/><path d="M36 52l14 4 6-6 2 6-8 4-14-4z"/><path d="M24 46l-8 16h7l5-10zM40 46l8 16h-7l-5-10z"/><path d="M24 26h16l-2 22-6 6-6-6z"/><path class="k" d="M28 30h8l-1 2h-6zM28 36h8l-1 2h-6zM29 42h6l-1 2h-4z"/><path d="M26 6L20 0l6 3zM38 6l6-6-6 3z"/><path d="M32 2l7 6-2 12-5 4-5-4-2-12z"/><path class="k" d="M27 10l4 1.6-1 1.4-3.2-1.2zM37 10l-4 1.6 1 1.4 3.2-1.2z"/>`,
+};
+
+/* ---------- Натиск: the dynamic poses drawn in one colour (100-unit canvas) ---------- */
+const FLAT_K = new Set(['void', 'eye', 'eyeR', 'magic']), EYES_LIT = new Set(['peasant', 'archer', 'footman', 'cavalier', 'hunter', 'druid', 'dancer', 'priest']);
+const flatArt = key => (ART[key] || []).map(([s, m]) => FLAT_K.has(m) && !(m !== 'void' && EYES_LIT.has(key)) ? s.replace(/<(path|rect|circle|ellipse|polygon)\b/g, '<$1 class="k"') : s.replace(/<(path|rect|circle|ellipse|polygon)\b/g, '<$1 class="sep"')).join('');
+
+const VARIANTS = [
+  {id:'fig', name:'Фигура', note:'исправлена: злее, без улыбок'},
+  {id:'strike', name:'Натиск', note:'удар в движении'},
+  {id:'stand', name:'Стойка', note:'анфас, оружие наготове'},
+  {id:'side', name:'Профиль', note:'в профиль, на врага'},
+  {id:'rune', name:'Руны', note:'острые прямые грани'},
+];
+let ICON_VAR = 'fig';
+try { const v = localStorage.getItem('fieldDarkIcon2'); if (VARIANTS.some(x => x.id === v)) ICON_VAR = v; } catch (e) {}
+function ico(key, v = ICON_VAR){
+  if (v === 'strike' && ART[key]) return `<svg class="ico" viewBox="-2 -2 104 104" aria-hidden="true">${flatArt(key)}</svg>`;
+  const set = v === 'stand' ? SET_STAND : v === 'side' ? SET_SIDE : v === 'rune' ? SET_RUNE : ICONS;
+  return `<svg class="ico" viewBox="0 0 64 64" aria-hidden="true">${set[key] || ICONS[key] || ''}</svg>`;
+}
+
+const SWORD = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1.5L15 1l-.5 1.5L7 10l-1-1zM4 9l3 3-1 1-1-1-2 2-1-1 2-2-1-1z"/></svg>`;
+const HEART = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.5S1 10 1 5.5A3.5 3.5 0 0 1 8 4a3.5 3.5 0 0 1 7 1.5C15 10 8 14.5 8 14.5z"/></svg>`;
+const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
+
+const FAC = {
+  haven:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', castle:'Haven', col:'#8fb0d6', units:[
+    {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
+    {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
+    {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
+    {key:'griffin', name:'Грифон', atk:4, hp:11, diag:true, ab:'Если в колонке пусто, бьёт по соседней', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
+    {key:'priest', name:'Монах', atk:5, hp:20, ranged:true, bolt:'orb', ab:'Стреляет через своих', homm:'Монах', hs:'Атк 12 · Защ 12 · 9–12 · ХП 54'},
+    {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
+    {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
+  ]},
+  inferno:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', castle:'Inferno', col:'#c8483a', units:[
+    {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
+    {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
+    {key:'hound', name:'Адский пёс', atk:2, hp:7, splash:true, ab:'Три головы: задевает соседей цели на 1', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
+    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', ab:'Стреляет огнём через своих', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
+    {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'Два удара за ход', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
+    {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
+    {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
+  ]},
+  sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#7fae5a', units:[
+    {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', ab:'Пыльца: бьёт через своих', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
+    {key:'dancer', name:'Танцор клинков', atk:1, hp:6, double:true, ab:'Два удара за ход', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
+    {key:'hunter', name:'Охотник', atk:1, hp:6, ranged:true, double:true, bolt:'arrow', ab:'Два выстрела через своих', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
+    {key:'druid', name:'Друид', atk:3, hp:12, ranged:true, bolt:'leaf', heal:2, ab:'Стреляет; в начале хода лечит соседей на 2', homm:'Друид', hs:'Атк 7 · Защ 7 · 7–9 · ХП 34'},
+    {key:'unicorn', name:'Единорог', atk:5, hp:20, blind:true, ab:'Ослепляет: выживший пропускает свой удар', homm:'Единорог', hs:'Атк 12 · Защ 12 · 10–20 · ХП 57'},
+    {key:'treant', name:'Энт', atk:6, hp:36, armor:2, ab:'Кора: каждый удар по нему слабее на 2', homm:'Энт', hs:'Атк 19 · Защ 27 · 7–17 · ХП 175'},
+    {key:'gdragon', name:'Зелёный дракон', atk:11, hp:50, breath:3, ab:'Дыхание: все враги за целью в колонке получают 3', homm:'Зелёный дракон', hs:'Атк 27 · Защ 25 · 30–50 · ХП 200'},
+  ]},
+};
+/* Each side picks a race; the side (colour, rows) stays, the faction behind it changes. */
+const RACE = {p:'haven', e:'inferno'};
+try { const r = JSON.parse(localStorage.getItem('fieldRaces') || 'null'); if (r && FAC[r.p] && FAC[r.e]) Object.assign(RACE, r); } catch (e) {}
+const F = {get p(){ return FAC[RACE.p]; }, get e(){ return FAC[RACE.e]; }};
+const MODES = {
+  col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'860px',
+    desc:'Поле 5×4, в руке I и II тир. Выставили третьего такого же юнита вплотную к паре (не по диагонали) — можно сразу слить тройку в него нажатием. Не слили сразу — позже нельзя. Карта прямо на юнита из пары улучшает сразу.',
+    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Золотая клетка достраивает тройку; сразу после выставления над новым юнитом стрелка ↑ — нажмите на него, чтобы слить тройку, или продолжайте ход. Золотой юнит под выбранной картой — улучшение сразу.'},
+  unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.6, .28, .12], unlock:true, bw:'860px',
+    desc:'Как «Колонны», но сначала в руку приходит только I тир. Собрали юнита II тира — в колоде появляются карты II тира. Собрали III — появляется III.',
+    howto:'Собирайте тройки, чтобы открыть карты старших тиров. Открытые тиры показаны рядом с вашей маной.'},
+  camp:{name:'Лагерь', tag:'4×4 · лагерь · наложение', cols:4, camp:true, upgrade:'stack', odds:[.55, .30, .15], bw:'900px',
+    desc:'Поле 4×4 и лагерь на три места сбоку. В руке I–III тир. Такой же юнит, положенный поверх другого (картой или из лагеря), даёт юнита тиром выше.',
+    howto:'Перетащите карту на пустую клетку, в лагерь справа или на такого же юнита (он подсвечен золотом). Юнита из лагеря перетащите на поле или на такого же юнита.'},
+};
+const TC = ['#8b93a1','#7d9a4a','#4f7bb8','#8065b3','#c08a2e','#b8423a','#d8d2c4'];
+const RO = ['I','II','III','IV','V','VI','VII'];
+const ROWS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1}, BACK = {p:3, e:0}, FRONT = {p:2, e:1};
+const HERO_HP = 30, HAND_MAX = 9, MANA_MAX = 10;
+let MODE_ID = 'col';
+try { const m = localStorage.getItem('fieldMode'); if (MODES[m]) MODE_ID = m; } catch (e) {}
+const M = () => MODES[MODE_ID];
+const U = u => F[u.side].units[u.type];
+const svg = k => ico(k);
+const $ = s => document.querySelector(s);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const D = ms => RM ? Math.round(ms * 0.2) : ms;
+const wait = ms => new Promise(r => setTimeout(r, D(ms)));
+
+/* ---------- sound: heavier, darker synthesis ---------- */
+const ACLASS = {peasant:'light', imp:'light', pixie:'light', archer:'bow', hunter:'bow', footman:'blade', dancer:'blade', griffin:'beast', hound:'beast', unicorn:'beast',
+  priest:'magic', succubus:'magic', angel:'magic', druid:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy', treant:'heavy', gdragon:'heavy'};
+const AVAR = {light:['Фирменный','Тычок','Взмах','Удар с плеча','Колющий'], blade:['Фирменный','Рубящий','Двойной взмах','Тяжёлый замах','Выпад'],
+  beast:['Фирменный','Рык','Укус','Бросок','Когти'], bow:['Фирменный','Тетива','Свист стрелы','Арбалет','Стрела в цель'],
+  magic:['Фирменный','Тёмная волна','Вспышка','Гул','Удар силы'], heavy:['Фирменный','Сокрушение','Замах','Топот','Рёв и удар']};
+const CATS = {
+  draw:{name:'Вытягивание карты', vars:['Пергамент','Кожаный переплёт','Шорох плаща','Карта на сукно','Тихий шелест']},
+  place:{name:'Выставление', vars:['Тяжёлый шаг','Щит о землю','Боевой барабан','Сапоги по камню','Глухой гул']},
+  hurt:{name:'Получение урона', vars:['Удар по плоти','Рассечение','Пробитый доспех','Тупой удар','Хруст']},
+  die:{name:'Гибель', vars:['Предсмертный стон','Падение тела','Хруст костей','Последний выдох','Прах']},
+  hero:{name:'Удар по герою', vars:['Таран в ворота','Раскат грома','Землетрясение','Военный барабан','Обвал']},
+  up:{name:'Улучшение', vars:['Боевой рог','Рог и барабаны','Низкий хор','Тёмный ритуал','Клятва']},
+};
+let SEL_SND = {draw:0, place:0, hurt:0, die:0, hero:0, up:0, atk:{}};
+try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
+const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds', JSON.stringify(SEL_SND)); } catch (e) {} };
+const Sfx = {
+  ctx:null, on:true, out:null, verb:null, nb:null,
+  ensure(){
+    try {
+      if (!this.ctx){
+        const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const lim = c.createDynamicsCompressor(); lim.threshold.value = -14; lim.ratio.value = 8; lim.attack.value = .003; lim.release.value = .2;
+        const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 7000;
+        const sat = c.createWaveShaper(), k = 2.2, curve = new Float32Array(1024);
+        for (let i = 0; i < 1024; i++){ const x = i / 511.5 - 1; curve[i] = Math.tanh(k * x) / Math.tanh(k); }
+        sat.curve = curve;
+        const master = c.createGain(); master.gain.value = .8;
+        master.connect(sat).connect(tone).connect(lim).connect(c.destination);
+        const len = Math.floor(c.sampleRate * 2.6), ir = c.createBuffer(2, len, c.sampleRate);
+        for (let ch = 0; ch < 2; ch++){ const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++){ lp += ((Math.random() * 2 - 1) - lp) * .07; d[i] = lp * 2.6 * Math.pow(1 - i / len, 3); } }
+        const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = .3; conv.connect(wet).connect(master);
+        const nl = c.sampleRate * 2, nb = c.createBuffer(1, nl, c.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
+        this.out = master; this.verb = conv; this.nb = nb;
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) {}
+  },
+  env(g, t, a, dur, vol){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); },
+  route(node, wet){ node.connect(this.out); if (wet) node.connect(this.verb); },
+  /* filtered noise with sweep: whooshes, cloth, crackle, rumble */
+  burst(dur, {vol = .1, type = 'lowpass', f = 1000, f2 = null, q = .7, a = .005, delay = 0, wet = false} = {}){
+    const c = this.ctx, t = c.currentTime + delay, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.nb; s.loop = true; fl.type = type; fl.Q.value = q; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    this.env(g, t, a, dur, vol); s.connect(fl).connect(g); this.route(g, wet); s.start(t, Math.random()); s.stop(t + dur + .05);
+  },
+  osc(f, dur, {type = 'sine', vol = .15, a = .005, f2 = null, delay = 0, wet = false, lp = null, q = .7} = {}){
+    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * .8);
+    this.env(g, t, a, dur, vol);
+    if (lp){ const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = lp; fl.Q.value = q; o.connect(fl).connect(g); } else o.connect(g);
+    this.route(g, wet); o.start(t); o.stop(t + dur + .05);
+  },
+  /* body impact: sub drop + dull click + short body noise */
+  impact(f = 70, {vol = .5, delay = 0, wet = false, dur = .28} = {}){
+    this.osc(f * 2.2, dur, {vol, a:.002, f2:f * .55, delay, wet});
+    this.burst(.02, {vol:vol * .25, type:'bandpass', f:2400, q:.8, delay});
+    this.burst(dur * .6, {vol:vol * .3, f:500, f2:150, delay});
+  },
+  whoosh(dur = .22, {vol = .12, f = 600, f2 = 2400, delay = 0} = {}){ this.burst(dur, {vol, type:'bandpass', f, f2, q:1.4, a:dur * .6, delay}); },
+  flesh(vol = .3, delay = 0){ this.burst(.07, {vol:vol * .5, type:'bandpass', f:900, q:1.2, delay}); this.impact(55, {vol, delay, dur:.2}); },
+  /* growl: sawtooth amplitude-modulated by a fast square LFO, through a formant band */
+  growl(dur = .5, {f = 70, vol = .12, delay = 0, rate = 28, band = 520} = {}){
+    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), am = c.createGain(), bp = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * .8, t + dur);
+    lfo.type = 'square'; lfo.frequency.value = rate; lg.gain.value = .5; am.gain.value = .5; lfo.connect(lg).connect(am.gain);
+    bp.type = 'bandpass'; bp.frequency.value = band; bp.Q.value = 1.6;
+    this.env(g, t, .06, dur, vol); o.connect(am).connect(bp).connect(g); this.route(g, true);
+    o.start(t); lfo.start(t); o.stop(t + dur + .05); lfo.stop(t + dur + .05);
+    this.burst(dur, {vol:vol * .35, type:'bandpass', f:band * 1.4, q:2, a:.05, delay});
+  },
+  /* brass: filtered saws with an opening filter and slow vibrato */
+  horn(f, dur, {vol = .1, delay = 0, f2 = null} = {}){
+    const c = this.ctx, t = c.currentTime + delay, g = c.createGain(), lp = c.createBiquadFilter(), vib = c.createOscillator(), vg = c.createGain();
+    lp.type = 'lowpass'; lp.Q.value = 2; lp.frequency.setValueAtTime(220, t); lp.frequency.linearRampToValueAtTime(1300, t + dur * .35); lp.frequency.linearRampToValueAtTime(600, t + dur);
+    vib.frequency.value = 5; vg.gain.value = f * .012; vib.connect(vg);
+    [0, 7, -6].forEach((det, i) => { const o = c.createOscillator(); o.type = i ? 'sawtooth' : 'square'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.linearRampToValueAtTime(f2, t + dur * .9); o.detune.value = det; vg.connect(o.frequency); o.connect(lp); o.start(t); o.stop(t + dur + .1); });
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .12); g.gain.setValueAtTime(vol, t + dur * .7); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    lp.connect(g); this.route(g, true); vib.start(t); vib.stop(t + dur + .1);
+  },
+  drum(f = 58, {vol = .55, delay = 0} = {}){ this.osc(f * 1.8, .7, {vol, a:.003, f2:f, delay, wet:true}); this.burst(.12, {vol:vol * .35, f:900, f2:200, delay, wet:true}); },
+  choir(freqs, dur, {vol = .05, delay = 0} = {}){ freqs.forEach(f => [-8, 8].forEach(d => this.osc(f * Math.pow(2, d / 1200), dur, {type:'sawtooth', vol, a:dur * .4, delay, wet:true, lp:700, q:4}))); },
+  groan(dur = .8, {f = 110, vol = .08, delay = 0} = {}){ this.osc(f, dur, {type:'sawtooth', vol, a:.08, f2:f * .6, delay, wet:true, lp:600, q:5}); this.osc(f * 1.01, dur, {type:'sawtooth', vol:vol * .6, a:.1, f2:f * .58, delay, lp:1100, q:6}); },
+  crackle(dur = .4, {vol = .06, delay = 0} = {}){ for (let i = 0; i < 8; i++) this.burst(.012, {vol:vol * (0.5 + Math.random()), type:'highpass', f:1800, delay:delay + Math.random() * dur}); this.burst(dur, {vol:vol * .6, f:700, a:.05, delay}); },
+  cat(name, i){
+    const R = {
+      draw:[() => { this.burst(.18, {vol:.05, type:'bandpass', f:2600, f2:1400, q:.9, a:.04}); this.burst(.05, {vol:.05, f:400, delay:.14}); },
+        () => { this.burst(.05, {vol:.08, f:600}); this.impact(90, {vol:.12, dur:.1}); },
+        () => this.whoosh(.3, {vol:.06, f:300, f2:900}),
+        () => { this.burst(.08, {vol:.05, type:'bandpass', f:1800, q:.8}); this.impact(70, {vol:.14, dur:.12, delay:.07}); },
+        () => this.burst(.28, {vol:.035, type:'bandpass', f:3000, f2:1800, q:.6, a:.1})],
+      place:[() => { this.impact(48, {vol:.55}); this.burst(.1, {vol:.05, f:300}); },
+        () => { this.impact(42, {vol:.6, wet:true}); this.burst(.3, {vol:.06, f:250, delay:.02}); },
+        () => this.drum(52, {vol:.6}),
+        () => { this.impact(80, {vol:.25, dur:.12}); this.impact(75, {vol:.3, dur:.12, delay:.13}); this.burst(.05, {vol:.05, type:'bandpass', f:1500, delay:.13}); },
+        () => { this.osc(40, .7, {vol:.3, a:.01, f2:32, wet:true}); this.burst(.5, {vol:.05, f:180}); }],
+      hurt:[() => this.flesh(.35), () => { this.whoosh(.08, {vol:.07, f:1500, f2:3000}); this.flesh(.3, .05); },
+        () => { this.burst(.03, {vol:.12, type:'bandpass', f:1100, q:3}); this.impact(60, {vol:.45, dur:.22}); },
+        () => this.impact(40, {vol:.6, dur:.3}), () => { this.crackle(.08, {vol:.12}); this.impact(55, {vol:.3, dur:.15}); }],
+      die:[() => { this.groan(.9, {f:98}); this.impact(40, {vol:.35, delay:.4}); },
+        () => { this.impact(38, {vol:.6, dur:.4}); this.burst(.4, {vol:.08, f:400, f2:120, delay:.03}); },
+        () => { this.crackle(.25, {vol:.14}); this.impact(45, {vol:.4, delay:.12}); },
+        () => { this.burst(.9, {vol:.06, type:'bandpass', f:700, f2:250, q:1.5, a:.08, wet:true}); this.osc(80, .8, {vol:.08, f2:45, wet:true}); },
+        () => { this.burst(1.2, {vol:.07, f:1500, f2:120, a:.05, wet:true}); this.osc(55, 1, {vol:.12, f2:30, a:.1, wet:true}); }],
+      hero:[() => { this.impact(34, {vol:.8, dur:.6, wet:true}); this.burst(.5, {vol:.1, f:300, f2:80}); },
+        () => { this.burst(1.6, {vol:.18, f:260, f2:60, a:.02, wet:true}); this.impact(30, {vol:.7, dur:.8}); },
+        () => { this.burst(1.4, {vol:.2, f:120, a:.2}); this.osc(28, 1.2, {vol:.5, a:.1, wet:true}); },
+        () => { this.drum(48, {vol:.7}); this.drum(40, {vol:.8, delay:.22}); },
+        () => { this.crackle(.8, {vol:.12}); this.impact(32, {vol:.7, dur:.9, wet:true}); this.burst(1, {vol:.12, f:400, f2:90, delay:.1}); }],
+      up:[() => { this.horn(73, 1.1); this.impact(40, {vol:.35}); },
+        () => { this.horn(98, .9, {delay:.2}); [0, .18, .36].forEach((d, k) => this.drum(50 + k * 2, {vol:.4 + k * .1, delay:d})); },
+        () => { this.choir([110, 131, 165], 1.4, {vol:.035}); this.drum(44, {vol:.5}); },
+        () => { this.osc(36, 1.4, {vol:.4, a:.5, wet:true}); this.burst(1.2, {vol:.07, type:'bandpass', f:300, f2:1400, q:2, a:.8, wet:true}); this.impact(34, {vol:.6, delay:1.1, wet:true}); },
+        () => { this.choir([82, 123], 1, {vol:.04}); this.horn(55, 1.2, {vol:.08}); }],
+    };
+    (R[name][i] || R[name][0])();
+  },
+  signature(key){
+    switch (key){
+      case 'peasant': this.whoosh(.16, {vol:.08, f:400, f2:1200}); this.flesh(.25, .12); break;
+      case 'archer': this.osc(82, .22, {type:'triangle', vol:.2, a:.002, f2:70, lp:600}); this.whoosh(.3, {vol:.06, f:2500, f2:700, delay:.04}); break;
+      case 'footman': this.whoosh(.2, {vol:.1, f:500, f2:2200}); this.burst(.03, {vol:.1, type:'bandpass', f:1000, q:2, delay:.17}); this.impact(55, {vol:.45, delay:.17}); break;
+      case 'griffin': this.growl(.35, {f:150, band:1100, rate:40, vol:.08}); this.whoosh(.3, {vol:.1, f:200, f2:700}); this.flesh(.35, .25); break;
+      case 'priest': this.choir([147, 220], .7, {vol:.035}); this.impact(45, {vol:.4, delay:.45, wet:true}); break;
+      case 'cavalier': [0, .1, .2].forEach(d => this.impact(70, {vol:.25, dur:.1, delay:d})); this.impact(35, {vol:.7, delay:.32, wet:true}); break;
+      case 'angel': this.whoosh(.5, {vol:.12, f:150, f2:600}); this.choir([110, 165, 220], .9, {vol:.03}); this.impact(38, {vol:.6, delay:.4, wet:true}); break;
+      case 'imp': this.growl(.25, {f:180, band:1400, rate:45, vol:.07}); this.whoosh(.1, {vol:.07, f:1500, f2:3000, delay:.08}); this.flesh(.2, .15); break;
+      case 'demon': this.growl(.4, {f:55, band:350, vol:.12}); this.impact(40, {vol:.6, delay:.2}); break;
+      case 'hound': this.growl(.35, {f:90, band:700, rate:32, vol:.11}); this.crackle(.1, {vol:.1, delay:.25}); this.flesh(.3, .28); break;
+      case 'succubus': this.burst(.5, {vol:.1, f:200, f2:2500, a:.3, wet:true}); this.crackle(.4, {vol:.06, delay:.1}); this.impact(50, {vol:.35, delay:.45}); break;
+      case 'charger': this.growl(.3, {f:120, band:900, rate:22, vol:.07}); this.impact(60, {vol:.4, dur:.14}); this.impact(55, {vol:.45, dur:.14, delay:.12}); this.crackle(.3, {vol:.06}); break;
+      case 'fiend': this.growl(.6, {f:45, band:280, rate:24, vol:.15}); this.whoosh(.3, {vol:.12, f:150, f2:600, delay:.2}); this.impact(30, {vol:.8, delay:.45, wet:true}); break;
+      case 'devil': this.choir([55, 58], 1, {vol:.04}); this.growl(.5, {f:50, band:300, vol:.1, delay:.1}); this.impact(32, {vol:.7, delay:.55, wet:true}); break;
+      case 'pixie': this.burst(.2, {vol:.05, type:'bandpass', f:3500, f2:6000, q:3, a:.05}); this.whoosh(.12, {vol:.06, f:2000, f2:4000, delay:.1}); this.flesh(.15, .2); break;
+      case 'dancer': this.whoosh(.12, {vol:.1, f:800, f2:3200}); this.whoosh(.12, {vol:.1, f:900, f2:3400, delay:.13}); this.flesh(.28, .22); break;
+      case 'hunter': this.osc(90, .18, {type:'triangle', vol:.18, a:.002, f2:75, lp:700}); this.whoosh(.25, {vol:.07, f:2600, f2:800, delay:.03}); this.whoosh(.25, {vol:.05, f:2400, f2:700, delay:.12}); break;
+      case 'druid': this.burst(.8, {vol:.08, type:'bandpass', f:180, f2:900, q:1.2, a:.4, wet:true}); this.osc(65, .8, {vol:.15, a:.3, wet:true}); this.impact(42, {vol:.4, delay:.6}); break;
+      case 'unicorn': [0, .09].forEach(d => this.impact(80, {vol:.25, dur:.1, delay:d})); this.whoosh(.25, {vol:.1, f:500, f2:2800, delay:.15}); this.flesh(.35, .35); break;
+      case 'treant': this.osc(36, .9, {type:'sawtooth', vol:.06, a:.2, lp:180, q:6}); this.crackle(.5, {vol:.08}); this.impact(28, {vol:.8, delay:.5, wet:true}); break;
+      case 'gdragon': this.growl(.9, {f:40, band:240, rate:20, vol:.16}); this.burst(.9, {vol:.14, f:300, f2:2200, a:.2, wet:true, delay:.3}); this.crackle(.6, {vol:.08, delay:.4}); break;
+    }
+  },
+  attack(key, i){
+    if (!i) return this.signature(key);
+    const cls = ACLASS[key], tier = Math.max(0, Object.values(FAC).map(f => f.units.findIndex(u => u.key === key)).find(x => x >= 0) ?? 0), f = 70 - tier * 6;
+    const V = {
+      light:[, () => { this.burst(.05, {vol:.06, f:800}); this.flesh(.3, .03); }, () => { this.whoosh(.18); this.flesh(.3, .15); }, () => { this.whoosh(.3, {vol:.12, f:250, f2:1000}); this.impact(f * .7, {vol:.55, delay:.25}); }, () => { this.whoosh(.08, {vol:.08, f:1800, f2:3500}); this.flesh(.25, .07); }],
+      blade:[, () => { this.whoosh(.16, {vol:.1, f:700, f2:2800}); this.burst(.05, {vol:.1, type:'bandpass', f:1300, q:1.5, delay:.14}); this.impact(f, {vol:.4, delay:.14}); }, () => { this.whoosh(.12, {vol:.1}); this.whoosh(.12, {vol:.1, delay:.14}); this.flesh(.3, .26); }, () => { this.whoosh(.4, {vol:.13, f:200, f2:1200}); this.impact(f * .6, {vol:.65, delay:.36}); }, () => { this.whoosh(.1, {vol:.1, f:1500, f2:3500}); this.flesh(.35, .08); }],
+      beast:[, () => this.growl(.55, {f:f, band:500, vol:.12}), () => { this.crackle(.06, {vol:.14}); this.impact(f, {vol:.4, dur:.14}); }, () => { this.whoosh(.25, {vol:.1, f:200, f2:800}); this.impact(f * .7, {vol:.5, delay:.2}); this.growl(.25, {f:f, vol:.08, delay:.2}); }, () => [0, .06, .12].forEach(d => this.burst(.05, {vol:.1, type:'bandpass', f:1600, q:1.5, delay:d}))],
+      bow:[, () => this.osc(85, .22, {type:'triangle', vol:.2, a:.002, f2:70, lp:600}), () => this.whoosh(.35, {vol:.08, f:3000, f2:700}), () => { this.burst(.02, {vol:.12, type:'bandpass', f:1500, q:2}); this.impact(90, {vol:.25, dur:.1, delay:.02}); this.whoosh(.2, {vol:.06, f:2500, f2:900, delay:.03}); }, () => { this.osc(85, .2, {type:'triangle', vol:.16, a:.002, f2:70, lp:600}); this.flesh(.3, .3); }],
+      magic:[, () => { this.burst(.6, {vol:.08, f:150, f2:1500, a:.35, wet:true}); this.osc(f * .8, .6, {vol:.14, a:.3, wet:true}); }, () => { this.burst(.4, {vol:.07, f:300, f2:3000, a:.3}); this.impact(f * .6, {vol:.5, delay:.35, wet:true}); }, () => this.choir([f * 2, f * 3], .8, {vol:.035}), () => { this.osc(f * 1.5, .5, {vol:.4, a:.005, f2:f * .4, wet:true}); this.burst(.4, {vol:.08, f:600, f2:100}); }],
+    };
+    V.heavy = [, () => { this.whoosh(.2, {vol:.1, f:200, f2:900}); this.impact(f * .55, {vol:.7, delay:.18, wet:true}); }, () => { this.whoosh(.45, {vol:.13, f:150, f2:900}); this.impact(f * .5, {vol:.7, delay:.4}); }, () => [0, .14, .28].forEach((d, k) => this.impact(f * .6, {vol:.3 + k * .15, dur:.18, delay:d})), () => { this.growl(.4, {f:f * .7, band:320, vol:.12}); this.impact(f * .5, {vol:.7, delay:.3, wet:true}); }];
+    (V[cls][i] || (() => this.signature(key)))();
+  },
+  play(name){
+    if (!this.on || !this.ctx) return;
+    try {
+      if (CATS[name]) return this.cat(name, SEL_SND[name] || 0);
+      if (ACLASS[name]) return this.attack(name, SEL_SND.atk[name] || 0);
+      switch (name){
+        case 'pick': this.burst(.08, {vol:.03, type:'bandpass', f:1400, q:.8, a:.02}); break;
+        case 'fly': this.whoosh(.35, {vol:.05, f:250, f2:800}); break;
+        case 'camp': this.impact(70, {vol:.3, dur:.15}); break;
+        case 'move': this.impact(80, {vol:.2, dur:.1}); this.impact(75, {vol:.2, dur:.1, delay:.14}); break;
+        case 'spill': this.impact(36, {vol:.55, dur:.35}); break;
+        case 'turn': this.drum(50, {vol:.35}); break;
+        case 'offer': this.osc(55, .5, {vol:.18, a:.08, wet:true}); this.burst(.3, {vol:.03, type:'bandpass', f:500, q:2, a:.1}); break;
+        case 'win': this.horn(73, .7); this.horn(98, 1.2, {delay:.55}); [0, .2, .4, .55].forEach(d => this.drum(48, {vol:.45, delay:d})); break;
+        case 'lose': this.horn(73, 1.6, {f2:49}); this.groan(1.2, {f:82, delay:.5}); this.impact(30, {vol:.6, delay:1.2, wet:true}); break;
+      }
+    } catch (e) {}
+  },
+};
+document.addEventListener('pointerdown', () => Sfx.ensure(), {capture:true});
+
+/* ---------- state ---------- */
+let S, SHOW_ARROWS = true, uid = 1;
+const CELLS = [], CAMP = {p:[], e:[]}, TILES = new Map();
+const COLS = () => M().cols;
+const other = s => s === 'p' ? 'e' : 'p';
+const fieldAt = (r, c) => S.units.find(u => u.where === 'f' && u.r === r && u.c === c);
+const campAt = (side, i) => S.units.find(u => u.where === 'c' && u.side === side && u.i === i);
+const alive = u => S.units.includes(u);
+const onField = side => S.units.filter(u => u.side === side && u.where === 'f');
+/* Trios count only orthogonal neighbours: no diagonals. */
+const adj = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
+function rollType(side){
+  const o = M().odds.slice(), max = M().unlock ? S.unlocked[side] : 2;
+  for (let i = max + 1; i < 3; i++) o[i] = 0;
+  const sum = o.reduce((a, b) => a + b, 0); let x = Math.random() * sum;
+  for (let i = 0; i < 3; i++){ if ((x -= o[i]) < 0) return i; } return 0;
+}
+const newCard = side => ({uid:uid++, type:rollType(side)});
+const who = side => side === 'p' ? 'Вы' : F.e.name;
+function note(){}
+
+function plan(u, ignoreSleep){
+  if (!u || u.where !== 'f' || (u.sleep && !ignoreSleep)) return null;
+  const A = U(u), d = FWD[u.side];
+  for (let r = u.r + d; r >= 0 && r < ROWS; r += d){
+    const v = fieldAt(r, u.c); if (!v) continue;
+    if (v.side !== u.side) return {kind:'hit', t:v};
+    if (!A.ranged) return null;
+  }
+  const enemyInCol = S.units.some(v => v.where === 'f' && v.side !== u.side && v.c === u.c);
+  if (!enemyInCol && A.diag) for (const dc of [-1, 1]) for (let r = u.r + d; r >= 0 && r < ROWS; r += d){ const v = fieldAt(r, u.c + dc); if (v && v.side !== u.side) return {kind:'hit', t:v}; }
+  return enemyInCol ? null : {kind:'hero'};
+}
+/* Trio by placement: a card completes a trio if the target cell touches a pair (or joins a chain of two). */
+function completionAt(side, type, cell, excl){
+  if (type >= 6) return null;
+  const fr = onField(side).filter(u => u.type === type && !(u.r === cell.r && u.c === cell.c) && !(excl && excl.has(u)));
+  for (const v of fr) for (const w of fr){
+    if (v.id >= w.id) continue;
+    if ((adj(cell, v) && (adj(cell, w) || adj(v, w))) || (adj(cell, w) && adj(v, w))) return [v, w];
+  }
+  return null;
+}
+const partnerOf = u => u.type < 6 ? onField(u.side).find(w => w !== u && w.type === u.type && adj(u, w)) : null;
+/* The trio offer belongs to the unit just placed (or just upgraded) and lapses with the next action. */
+const trioOf = u => u && alive(u) && u.where === 'f' && M().upgrade === 'trio' && u.type < 6 ? completionAt(u.side, u.type, u) : null;
+const offerUnit = () => S && S.offer ? S.units.find(u => u.id === S.offer && u.side === 'p') : null;
+function readyTrios(){
+  const set = new Set(); if (!S || S.side !== 'p' || S.busy || S.over) return set;
+  const u = offerUnit(), pair = trioOf(u);
+  if (pair){ set.add(u.id); pair.forEach(v => set.add(v.id)); }
+  return set;
+}
+function setOffer(u){
+  S.offer = u && u.side === 'p' && trioOf(u) ? u.id : null;
+  if (S.offer) Sfx.play('offer');
+}
+function cardUpgradeInfo(side, type){
+  const cells = [], units = [];
+  if (M().upgrade !== 'trio' || type >= 6) return {cells, units};
+  ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c) && completionAt(side, type, {r, c})) cells.push({r, c}); });
+  onField(side).filter(u => u.type === type && partnerOf(u)).forEach(u => units.push(u));
+  return {cells, units};
+}
+
+/* ---------- board DOM ---------- */
+function buildBoard(){
+  const g = $('#grid'), m = M(); g.innerHTML = ''; CELLS.length = 0; CAMP.p = []; CAMP.e = []; TILES.clear();
+  document.documentElement.style.setProperty('--bw', m.bw);
+  g.style.gridTemplateColumns = m.camp ? '1fr 4px repeat(4,1fr) 4px 1fr' : `repeat(${m.cols},1fr)`;
+  const off = m.camp ? 3 : 1;
+  const add = (cls, col, row, data) => { const el = document.createElement('div'); el.className = 'cell ' + cls; el.style.gridColumn = col; el.style.gridRow = row; Object.assign(el.dataset, data); g.appendChild(el); return el; };
+  for (let r = 0; r < ROWS; r++){ CELLS[r] = []; for (let c = 0; c < m.cols; c++) CELLS[r][c] = add(ZONE.p.includes(r) ? 'zp' : 'ze', c + off, r + 1, {r, c}); }
+  if (m.camp){
+    for (let i = 0; i < CAMP_N; i++){ CAMP.e[i] = add('camp ce', 1, i + 1, {camp:'e', i}); CAMP.p[i] = add('camp cp', 8, i + 2, {camp:'p', i}); }
+    g.insertAdjacentHTML('beforeend', `<span class="camplabel" style="grid-column:1;grid-row:4;color:var(--te)">лагерь<br>${F.e.name}</span><span class="camplabel" style="grid-column:8;grid-row:1;color:var(--tp)">ваш<br>лагерь</span>`);
+  }
+  g.insertAdjacentHTML('beforeend', `<div class="frontline" style="grid-column:${off} / ${off + m.cols};grid-row:2 / 4"></div><div class="units" id="units"></div><svg class="overlay" id="overlay"></svg>`);
+}
+const slotEl = u => u.where === 'c' ? CAMP[u.side][u.i] : CELLS[u.r][u.c];
+const box = el => ({x:el.offsetLeft, y:el.offsetTop, w:el.offsetWidth, h:el.offsetHeight});
+const mid = el => { const b = box(el); return {x:b.x + b.w / 2, y:b.y + b.h / 2}; };
+function tileInner(u, extra = ''){
+  const A = U(u), d = u.hp < A.hp;
+  return `<span class="tr">${RO[u.type]}</span>${u.sleep ? `<span class="zz" title="спит">${ZZZ}</span>` : ''}<div class="ic">${ico(A.key)}</div>`
+    + `<span class="st a">${SWORD}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
+}
+function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
+/* Pairs that some affordable card in hand would upgrade. */
+function hintPairs(){
+  const set = new Set(); if (S.side !== 'p' || S.busy || M().upgrade !== 'trio') return set;
+  const types = new Set(S.hand.p.filter(c => c.type + 1 <= S.mana.p).map(c => c.type));
+  onField('p').forEach(u => { if (types.has(u.type)){ const w = partnerOf(u); if (w){ set.add(u.id); set.add(w.id); } } });
+  return set;
+}
+function syncUnits(dropId){
+  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), pairs = hintPairs(), trios = readyTrios();
+  for (const u of S.units){
+    let el = TILES.get(u.id);
+    if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
+      if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
+    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id, tri = !mg && trios.has(u.id);
+    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${!mg && !tri && pairs.has(u.id) ? ' pair' : ''}${keep}`;
+    el.style.setProperty('--t', TC[u.type]);
+    const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
+    const offer = tri && u.id === S.offer;
+    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${offer ? `\nНажмите сейчас: тройка сольётся сюда → ${next}` : ''}`;
+    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : offer ? `<span class="mgl tri">↑ ${next}</span>` : '');
+    placeTile(el, u); seen.add(u.id);
+  }
+  for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
+  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); });
+  renderOverlay();
+}
+function renderOverlay(){
+  const ov = $('#overlay'); if (!ov) return;
+  if (!SHOW_ARROWS || S.over || S.busy){ ov.innerHTML = ''; return; }
+  const g = $('#grid'), W = g.offsetWidth, H = g.offsetHeight; let s = '';
+  const line = (a, b, col, dash, op) => {
+    const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 9, Wd = 5, bx = b.x - Math.cos(ang) * L, by = b.y - Math.sin(ang) * L, px = -Math.sin(ang), py = Math.cos(ang);
+    return `<g opacity="${op}"><line x1="${a.x}" y1="${a.y}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="3" stroke-linecap="round"${dash ? ' stroke-dasharray="6 5"' : ''}/><polygon points="${b.x},${b.y} ${bx + px * Wd},${by + py * Wd} ${bx - px * Wd},${by - py * Wd}" fill="${col}"/></g>`;
+  };
+  const top = CELLS[0][0].offsetTop, bottom = CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight;
+  for (const u of S.units.filter(v => v.where === 'f')){
+    const p = plan(u, u.side === 'e'); if (!p) continue;
+    const a = mid(CELLS[u.r][u.c]), op = u.side === 'p' ? .85 : .3, off = (u.side === 'p' ? -1 : 1) * 16, from = {x:a.x, y:a.y + off};
+    if (p.kind === 'hit'){ const b = mid(CELLS[p.t.r][p.t.c]); s += line(from, {x:b.x, y:b.y - off}, '#d0473b', false, op); }
+    else s += line(from, {x:a.x, y:u.side === 'p' ? top - 4 : bottom + 4}, '#d2a247', true, op);
+  }
+  ov.setAttribute('viewBox', `0 0 ${W} ${H}`); ov.innerHTML = s;
+}
+new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
+
+function targetsFor(sel){
+  const out = {cells:[], ups:[], upCells:[]};
+  if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
+  let type, src = null;
+  if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
+  else { src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p' || src.where !== 'c') return out; type = src.type; }
+  ZONE.p.forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) out.cells.push(CELLS[r][c]); });
+  if (sel.card != null && M().camp) for (let i = 0; i < CAMP_N; i++) if (!campAt('p', i)) out.cells.push(CAMP.p[i]);
+  if (M().upgrade === 'stack' && type < 6) out.ups = S.units.filter(u => u.side === 'p' && u !== src && u.type === type);
+  if (M().upgrade === 'trio' && sel.card != null){ const info = cardUpgradeInfo('p', type); out.ups = info.units; out.upCells = info.cells.map(x => CELLS[x.r][x.c]); }
+  return out;
+}
+
+/* ---------- bars, hand ---------- */
+function heroHTML(side){
+  const hp = S.hero[side];
+  return `<div class="hero" id="hero-${side}" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(F[side].heroIcon)}</div><div><b>${F[side].hero}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><span class="hv">${hp}</span></div>`;
+}
+function manaHTML(side){
+  const cap = Math.min(S.turn, MANA_MAX), m = S.mana[side];
+  return `<div class="mana" title="Мана ${m} из ${cap}"><b>${m}/${cap}</b><span class="gems">${Array.from({length:MANA_MAX}, (_, i) => `<i class="${i < m ? 'on' : i < cap ? 'cap' : ''}"></i>`).join('')}</span></div>`;
+}
+function renderBars(){
+  const me = S.side === 'p' && !S.busy && !S.over;
+  const unl = side => M().unlock ? `<span class="chip unl">Карты до <b>${RO[S.unlocked[side]]}</b> тира</span>` : '';
+  $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + unl('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
+    + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
+  $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
+  $('#end').disabled = !me;
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? 'Выберите подсвеченную цель: золото — улучшение.'
+    : readyTrios().size ? 'Тройка собрана: нажмите на только что выставленного юнита (↑), чтобы слить её в него. Любое другое действие — и шанс пропадёт.' : 'Выставьте карты, потом «Конец хода».';
+}
+function cardFace(t, side = 'p'){
+  const A = F[side].units[t];
+  return `<div class="face" style="--t:${TC[t]}"><span class="cost">${t + 1}</span><span class="tr">${RO[t]}</span><div class="art">${ico(A.key)}</div><span class="nm">${A.name}</span><span class="ab">${A.ab}</span><div class="sts"><span class="a">${SWORD}${A.atk}</span><span class="h">${HEART}${A.hp}</span></div></div>`;
+}
+function cardEl(card){
+  const el = document.createElement('div');
+  el.className = 'card'; el.dataset.uid = card.uid; el.tabIndex = 0; el.setAttribute('role', 'button'); el.draggable = false;
+  el.setAttribute('aria-label', `${F.p.units[card.type].name}, стоит ${card.type + 1}`);
+  el.innerHTML = `<div class="in">${cardFace(card.type)}<div class="backf"></div></div>`;
+  return el;
+}
+function layoutHand(){
+  const hb = $('#hand'); if (!hb || !S) return;
+  const cards = [...hb.querySelectorAll('.card')], n = cards.length, W = 108, avail = hb.clientWidth - 90;
+  const step = n > 1 ? Math.min(W + 10, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2;
+  cards.forEach((el, i) => {
+    const k = i - (n - 1) / 2;
+    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${k * k * 3}px`); el.style.setProperty('--a', `${k * 3.5}deg`);
+    el.style.zIndex = i + 1;
+    const c = S.hand.p.find(h => h.uid === +el.dataset.uid), poor = !!c && c.type + 1 > S.mana.p;
+    el.classList.toggle('poor', poor);
+    el.classList.toggle('sel', !!(S.sel && S.sel.card === +el.dataset.uid));
+    const info = c && !poor && S.side === 'p' && !S.busy ? cardUpgradeInfo('p', c.type) : {cells:[], units:[]};
+    el.classList.toggle('canup', info.cells.length + info.units.length > 0);
+  });
+}
+function rerenderHandFaces(){ document.querySelectorAll('#hand .card').forEach(el => { const c = S.hand.p.find(h => h.uid === +el.dataset.uid); if (c) el.querySelector('.in').innerHTML = `${cardFace(c.type)}<div class="backf"></div>`; }); }
+function renderAll(dropId){ renderBars(); syncUnits(dropId); layoutHand(); }
+
+/* ---------- animation helpers ---------- */
+function floatAt(x, y, text, cls = ''){
+  const el = document.createElement('div'); el.className = 'float ' + cls; el.textContent = text; el.style.left = x + 'px'; el.style.top = y + 'px';
+  $('#units').appendChild(el);
+  el.animate([{transform:'translateY(6px)', opacity:0}, {transform:'translateY(-4px)', opacity:1, offset:.18}, {transform:'translateY(-8px)', opacity:1, offset:.6}, {transform:'translateY(-22px)', opacity:0}], {duration:D(850), easing:'ease-out'}).finished.then(() => el.remove());
+}
+function ringAt(el, color){
+  const b = box(el), r = document.createElement('div'); r.className = 'ring';
+  Object.assign(r.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px', boxShadow:`0 0 0 2px ${color}, 0 0 12px ${color}`});
+  $('#units').appendChild(r);
+  r.animate([{transform:'scale(.94)', opacity:1}, {transform:'scale(1.18)', opacity:0}], {duration:D(420), easing:'ease-out'}).finished.then(() => r.remove());
+}
+function flashHP(badge){
+  if (!badge) return;
+  badge.animate([{background:'#0b0d10'}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fff, 0 0 16px #ef4444', offset:.15}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fca5a5, 0 0 10px #ef4444', offset:.5}, {background:'#0b0d10'}], {duration:D(650), easing:'ease-out'});
+}
+async function flyTo(html, from, toEl, spin){
+  const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
+  const to = toEl.getBoundingClientRect(), s = to.width / 108;
+  const x0 = from.left + from.width / 2 - 54, y0 = from.top + from.height / 2 - 77;
+  const x1 = to.left + to.width / 2 - 54 * s, y1 = to.top + to.height / 2 - 77 * s;
+  const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 60;
+  Sfx.play('fly');
+  await fly.animate([
+    {transform:`translate(${x0}px,${y0}px) rotate(${spin ? 0 : -6}deg) scale(${spin ? .5 : 1})`},
+    {transform:`translate(${mx}px,${my}px) rotate(${spin ? 180 : 3}deg) scale(1.08)`, offset:.55},
+    {transform:`translate(${x1}px,${y1}px) rotate(0deg) scale(${s})`},
+  ], {duration:D(420), easing:'cubic-bezier(.35,.1,.25,1)'}).finished;
+  fly.remove();
+}
+
+/* ---------- actions ---------- */
+async function drawCards(side, k, animate){
+  for (let i = 0; i < k && S.hand[side].length < HAND_MAX; i++){
+    const card = newCard(side); S.hand[side].push(card);
+    if (side !== 'p') continue;
+    const el = cardEl(card), deck = $('#deck');
+    if (animate){ el.classList.add('back'); el.style.setProperty('--x', `${deck.offsetLeft}px`); el.style.setProperty('--y', '10px'); el.style.setProperty('--a', '8deg'); }
+    $('#hand').appendChild(el); void el.offsetWidth;
+    if (animate){ Sfx.play('draw'); layoutHand(); renderBars(); setTimeout(() => el.classList.remove('back'), D(110)); await wait(140); }
+  }
+  if (side === 'p') layoutHand();
+  renderBars();
+}
+function spendCard(side, cardUid){
+  const i = S.hand[side].findIndex(h => h.uid === cardUid); if (i < 0) return null;
+  const card = S.hand[side][i]; if (S.mana[side] < card.type + 1) return null;
+  S.hand[side].splice(i, 1); S.mana[side] -= card.type + 1; return card;
+}
+function sourceRect(side, card, fromRect){
+  if (side === 'p'){ const el = $(`#hand .card[data-uid="${card.uid}"]`); const r = fromRect || (el && el.getBoundingClientRect()); if (el) el.remove(); layoutHand(); return r; }
+  return ($('#ehand') || $('#topbar')).getBoundingClientRect();
+}
+async function absorb(into, list){
+  const tb = box(slotEl(into));
+  await Promise.all(list.map(v => { const el = TILES.get(v.id), b = box(slotEl(v)); return el ? el.animate([{transform:'translate(0,0)', opacity:1}, {transform:`translate(${tb.x - b.x}px,${tb.y - b.y}px) scale(.55)`, opacity:0}], {duration:D(300), easing:'cubic-bezier(.5,0,.5,1)'}).finished : null; }));
+  S.units = S.units.filter(x => !list.includes(x)); syncUnits();
+}
+async function promote(target, fromDesc){
+  const side = target.side, next = F[side].units[target.type + 1];
+  note(side, `${U(target).name} + ${fromDesc} → ${next.name}`);
+  Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
+  if (M().unlock) S.unlocked[side] = Math.max(S.unlocked[side], Math.min(target.type, 2));
+  Sfx.play('up'); syncUnits(); layoutHand(); renderBars();
+  const el = TILES.get(target.id);
+  ringAt(slotEl(target), '#d2a247');
+  if (el) el.animate([{filter:'brightness(1.9)'}, {filter:'none'}], {duration:D(420)});
+  if (next.summon && target.where === 'f'){
+    const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = target.r + dr, c = target.c + dc; if ((dr || dc) && ZONE[side].includes(r) && c >= 0 && c < COLS() && !fieldAt(r, c)) spots.push({r, c}); }
+    if (spots.length){ const s = spots[0], imp = {id:uid++, side, type:0, hp:F[side].units[0].hp, where:'f', r:s.r, c:s.c, sleep:false}; S.units.push(imp); syncUnits(imp.id); }
+  }
+  await wait(260);
+}
+/* Optional trio upgrade: the two neighbours merge into the chosen unit. */
+async function trioUpgrade(u){
+  const pair = trioOf(u); if (!pair) return false;
+  await absorb(u, pair); await promote(u, 'тройка'); setOffer(u); return true;
+}
+async function deployCard(side, cardUid, dest, fromRect){
+  const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
+  if (dest.camp && !M().camp) return false;
+  const toEl = dest.camp ? CAMP[side][dest.i] : CELLS[dest.r][dest.c];
+  if (dest.camp ? campAt(side, dest.i) : (fieldAt(dest.r, dest.c) || !ZONE[side].includes(dest.r))) return false;
+  if (!spendCard(side, cardUid)) return false;
+  S.sel = null;
+  const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
+  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
+  const A = F[side].units[card.type];
+  const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick};
+  S.units.push(u);
+  Sfx.play(dest.camp ? 'camp' : 'place'); if (side === 'p') setOffer(u);
+  syncUnits(u.id); renderBars(); ringAt(toEl, side === 'p' ? '#7fb2c4' : '#c8483a');
+  await wait(120);
+  return u;
+}
+async function upgradeWithCard(side, cardUid, target, fromRect){
+  const card = S.hand[side].find(h => h.uid === cardUid);
+  if (!card || !alive(target) || target.side !== side || target.type !== card.type || target.type >= 6) return false;
+  const partner = M().upgrade === 'trio' ? partnerOf(target) : null;
+  if (M().upgrade === 'trio' && !partner) return false;
+  if (!spendCard(side, cardUid)) return false;
+  S.sel = null; const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
+  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, TILES.get(target.id) || slotEl(target), side === 'e');
+  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); if (side === 'p') setOffer(target); }
+  else await promote(target, 'карта');
+  return target;
+}
+async function fromCamp(u, dest){
+  if (!alive(u) || u.where !== 'c') return false;
+  if (dest.unit){
+    const t = dest.unit; if (!alive(t) || t === u || t.side !== u.side || t.type !== u.type || t.type >= 6) return false;
+    const el = TILES.get(u.id), a = box(slotEl(u)), b = box(slotEl(t));
+    if (el) await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${b.x - a.x}px,${b.y - a.y}px) scale(.8)`, opacity:.3}], {duration:D(320), easing:'cubic-bezier(.5,0,.5,1)'}).finished;
+    S.units = S.units.filter(x => x !== u); S.sel = null; syncUnits();
+    await promote(t, 'юнит из лагеря'); return true;
+  }
+  if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r)) return false;
+  Object.assign(u, {where:'f', r:dest.r, c:dest.c}); delete u.i; S.sel = null;
+  Sfx.play('move'); syncUnits();
+  await wait(320); return true;
+}
+async function kill(v){
+  const el = TILES.get(v.id); Sfx.play('die');
+  if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
+  S.units = S.units.filter(x => x !== v); syncUnits();
+}
+const eff = (t, dmg) => U(t).armor ? Math.max(1, dmg - U(t).armor) : dmg;
+async function damage(t, raw){
+  const dmg = eff(t, raw);
+  t.hp -= dmg; const el = TILES.get(t.id);
+  Sfx.play('hurt');
+  if (el){
+    el.animate([{filter:'brightness(2)'}, {filter:'none'}], {duration:D(220)});
+    const hb = el.querySelector('.st.h'); if (hb){ hb.querySelector('b').textContent = Math.max(0, t.hp); hb.classList.add('d'); flashHP(hb); }
+    const b = box(el); floatAt(b.x + b.w * .78, b.y + b.h * .56, `−${dmg}`);
+  }
+  await wait(360);
+  if (t.hp <= 0) await kill(t);
+}
+async function strikeFx(u, targetPt){
+  const A = U(u), el = TILES.get(u.id), a = mid(slotEl(u));
+  if (el) el.classList.add('acting');
+  Sfx.play(A.key);
+  await wait(120);
+  if (A.ranged){
+    const bo = document.createElement('div'); bo.className = 'bolt ' + (A.bolt || 'arrow'); $('#units').appendChild(bo);
+    const ang = Math.atan2(targetPt.y - a.y, targetPt.x - a.x);
+    await bo.animate([{transform:`translate(${a.x}px,${a.y}px) rotate(${ang}rad)`, opacity:.3}, {transform:`translate(${targetPt.x}px,${targetPt.y}px) rotate(${ang}rad)`, opacity:1}], {duration:D(300), easing:'cubic-bezier(.4,0,.8,1)'}).finished;
+    bo.remove();
+  } else if (el){
+    await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(targetPt.x - a.x) * .4}px,${(targetPt.y - a.y) * .4}px) scale(1.05)`, offset:.55}, {transform:'translate(0,0)'}], {duration:D(300), easing:'cubic-bezier(.5,0,.3,1)'}).finished;
+  }
+}
+async function travel(from, to){
+  const bo = document.createElement('div'); bo.className = 'bolt spill'; $('#units').appendChild(bo);
+  await bo.animate([{transform:`translate(${from.x}px,${from.y}px)`}, {transform:`translate(${to.x}px,${to.y}px)`}], {duration:D(240), easing:'ease-in'}).finished; bo.remove();
+}
+/* Excess damage continues down the column: next enemy behind the killed one, then the hero. */
+async function carry(u, r, c, amount){
+  const d = FWD[u.side]; let from = mid(CELLS[r][c]);
+  for (let rr = r + d; rr >= 0 && rr < ROWS && amount > 0; rr += d){
+    const v = fieldAt(rr, c); if (!v || v.side === u.side) continue;
+    await travel(from, mid(CELLS[rr][c]));
+    const excess = eff(v, amount) - v.hp; await damage(v, amount);
+    if (excess <= 0 || S.over) return;
+    amount = excess; from = mid(CELLS[rr][c]);
+  }
+  if (amount <= 0) return;
+  const o = other(u.side), edge = u.side === 'p' ? CELLS[0][0].offsetTop - 18 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 18;
+  await travel(from, {x:from.x, y:edge});
+  S.hero[o] = Math.max(0, S.hero[o] - amount); Sfx.play('spill'); renderBars();
+  const h2 = $('#hero-' + o); if (h2) flashHP(h2.querySelector('.hv'));
+  floatAt(from.x, edge + (u.side === 'p' ? 16 : -16), `−${amount}`, 'g');
+  await wait(220);
+}
+async function hit(u, t){
+  const A = U(u), tr = t.r, tc = t.c;
+  await strikeFx(u, mid(slotEl(t)));
+  let dmg = A.atk; if (A.ranged && U(t).shield) dmg = Math.ceil(dmg / 2);
+  const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
+  const sides = A.splash ? [-1, 1].map(dc => fieldAt(t.r, t.c + dc)).filter(v => v && v.side !== u.side) : [];
+  const flame = A.breath ? S.units.filter(v => v.where === 'f' && v.side !== u.side && v.c === tc && (v.r - tr) * FWD[u.side] > 0) : [];
+  const excess = eff(t, dmg) - t.hp;
+  await damage(t, dmg);
+  TILES.get(u.id)?.classList.remove('acting');
+  if (A.blind && alive(t)){ t.stun = true; const b = box(TILES.get(t.id) || slotEl(t)); floatAt(b.x + b.w / 2, b.y + b.h * .3, 'ослеп', 'g'); syncUnits(); }
+  if (excess > 0 && !S.over) await carry(u, tr, tc, excess);
+  if (behind && behind.side !== u.side && alive(behind)) await damage(behind, Math.max(1, Math.floor(dmg / 2)));
+  for (const v of sides) if (alive(v)) await damage(v, 1);
+  for (const v of flame) if (alive(v) && !S.over) await damage(v, A.breath);
+}
+async function heroHit(u){
+  const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
+  const edge = u.side === 'p' ? CELLS[0][0].offsetTop - 20 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 20;
+  await strikeFx(u, {x:a.x, y:edge});
+  S.hero[o] = Math.max(0, S.hero[o] - dmg);
+  Sfx.play('hero'); renderBars();
+  const hEl = $('#hero-' + o); if (hEl) flashHP(hEl.querySelector('.hv'));
+  floatAt(a.x, edge + (u.side === 'p' ? 18 : -18), `−${dmg}`, 'g');
+  TILES.get(u.id)?.classList.remove('acting');
+  await wait(260);
+}
+async function resolve(side){
+  const order = onField(side).sort((a, b) => ((a.r - b.r) * -FWD[side]) || (a.c - b.c));
+  for (const u of order){
+    if (!alive(u) || u.sleep) continue;
+    for (let k = 0; k < (U(u).double ? 2 : 1); k++){
+      const p = plan(u); if (!p) break;
+      if (p.kind === 'hit') await hit(u, p.t); else await heroHit(u);
+      if (!alive(u) || checkOver()) break;
+      await wait(90);
+    }
+    if (checkOver()) return;
+  }
+}
+function checkOver(){
+  if (S.over) return true;
+  if (S.hero.e <= 0) S.over = 'win'; else if (S.hero.p <= 0) S.over = 'lose';
+  if (S.over){
+    Sfx.play(S.over);
+    $('#bwrap').insertAdjacentHTML('beforeend', `<div class="over"><b>${S.over === 'win' ? 'Победа' : 'Поражение'}</b><button class="btn" type="button" id="again">Ещё бой</button></div>`);
+    $('#again').onclick = newGame;
+    renderAll();
+  }
+  return !!S.over;
+}
+async function startTurn(side, first){
+  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; } });
+  S.mana[side] = Math.min(S.turn, MANA_MAX);
+  for (const u of onField(side).filter(v => U(v).heal)){
+    onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); });
+  }
+  renderAll();
+  if (!first) await drawCards(side, 3, side === 'p');
+}
+
+/* ---------- opponent AI ---------- */
+function rowFit(side, type, r){
+  const A = F[side].units[type];
+  if (A.ranged) return r === BACK[side] ? 4 : -6;
+  return r === FRONT[side] ? 3 : .5;
+}
+function cellScore(side, type, r, c){
+  const A = F[side].units[type];
+  let s = A.ranged ? (r === BACK[side] ? 4 : -6) : (r === FRONT[side] ? 3 : (fieldAt(FRONT[side], c) && fieldAt(FRONT[side], c).side === side ? -1 : .5));
+  const foes = S.units.filter(u => u.where === 'f' && u.side !== side && u.c === c);
+  if (!foes.length) s += 1.5 + A.atk * .4;
+  else {
+    const threat = foes.reduce((a, u) => a + U(u).atk, 0), weakest = Math.min(...foes.map(u => u.hp));
+    s += 1 + (A.atk >= weakest ? 1.2 : 0);
+    if (!A.ranged && threat >= A.hp) s -= 1.2;
+  }
+  /* cover own ranged: melee in front of an archer or succubus */
+  const behind = fieldAt(BACK[side], c);
+  if (!A.ranged && r === FRONT[side] && behind && behind.side === side && U(behind).ranged) s += 2.8;
+  if (A.ranged && r === BACK[side]){ const fr = fieldAt(FRONT[side], c); if (fr && fr.side === side) s += 1; }
+  return s + Math.random() * .3;
+}
+const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
+/* A short, uneven pause before each move, as if the opponent is thinking. */
+const think = (a = 160, b = 420) => new Promise(r => setTimeout(r, RM ? 0 : a + Math.random() * b));
+/* The AI takes the trio offer at once, and only if the next tier suits this row. */
+async function aiOffer(u){
+  while (u && trioOf(u) && !S.over && rowFit(u.side, u.type + 1, u.r) >= 0){ await think(120, 260); await trioUpgrade(u); }
+}
+async function aiTurn(){
+  const side = 'e', mine = () => S.units.filter(u => u.side === side);
+  const freeCells = () => { const f = []; ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) f.push({r, c}); }); return f; };
+  await think(300, 600);
+  if (M().camp){
+    for (const u of mine().filter(v => v.where === 'c')){
+      await think();
+      const tgt = mine().filter(v => v !== u && v.type === u.type && v.type < 6).map(v => ({v, s:fitNext(side, v.type, v.r, v.where)})).sort((a, b) => b.s - a.s)[0];
+      if (tgt && tgt.s >= 0){ await fromCamp(u, {unit:tgt.v}); continue; }
+      const cell = freeCells().map(f => ({...f, s:cellScore(side, u.type, f.r, f.c)})).sort((a, b) => b.s - a.s)[0];
+      if (cell && cell.s > 1.5 && !u.sleep) await fromCamp(u, cell);
+    }
+  }
+  for (let guard = 0; guard < 14 && !S.over; guard++){
+    const aff = S.hand[side].filter(c => c.type + 1 <= S.mana[side]);
+    if (!aff.length) break;
+    const opts = [];
+    for (const card of aff){
+      for (const f of freeCells()){
+        const pair = M().upgrade === 'trio' ? completionAt(side, card.type, f) : null;
+        let s = cellScore(side, card.type, f.r, f.c) + card.type * .5;
+        if (pair){ const fit = rowFit(side, card.type + 1, f.r); if (fit >= 0) s = Math.max(s, 3 + fit + card.type + 1); }
+        opts.push({card, kind:'cell', f, s});
+      }
+      if (M().upgrade === 'trio') onField(side).filter(u => u.type === card.type && partnerOf(u)).forEach(u => { const fit = rowFit(side, u.type + 1, u.r); opts.push({card, kind:'onto', u, s:3 + (fit < 0 ? -12 : fit) + u.type + 1}); });
+      if (M().upgrade === 'stack') mine().filter(u => u.type === card.type && u.type < 6).forEach(u => opts.push({card, kind:'onto', u, s:2 + fitNext(side, u.type, u.r, u.where)}));
+      if (M().camp){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null) opts.push({card, kind:'camp', i, s:(F[side].units[card.type + 1]?.ranged ? 1.5 : .2)}); }
+    }
+    const best = opts.sort((a, b) => b.s - a.s)[0];
+    if (!best || best.s < -1) break;
+    await think();
+    let placed;
+    if (best.kind === 'cell') placed = await deployCard(side, best.card.uid, {r:best.f.r, c:best.f.c});
+    else if (best.kind === 'onto') placed = await upgradeWithCard(side, best.card.uid, best.u);
+    else placed = await deployCard(side, best.card.uid, {camp:true, i:best.i});
+    if (placed && placed.where === 'f' && M().upgrade === 'trio') await aiOffer(placed);
+    renderBars();
+  }
+}
+
+/* ---------- turn flow ---------- */
+async function endTurn(){
+  if (S.side !== 'p' || S.busy || S.over) return;
+  S.busy = true; S.sel = null; S.offer = null; renderAll();
+  await resolve('p');
+  if (S.over){ S.busy = false; return; }
+  S.side = 'e'; Sfx.play('turn');
+  await startTurn('e', S.turn === 1); await wait(180);
+  await aiTurn(); await wait(180);
+  await resolve('e');
+  if (S.over){ S.busy = false; return; }
+  S.turn++; S.side = 'p'; Sfx.play('turn');
+  S.busy = false;
+  await startTurn('p', false);
+  renderAll();
+}
+async function newGame(){
+  $('#bwrap .over')?.remove();
+  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, offer:null, unlocked:{p:0, e:0}};
+  $('#hand').querySelectorAll('.card').forEach(c => c.remove());
+  buildBoard(); renderModes();
+  for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
+  await startTurn('p', true);
+  await drawCards('p', 6, true);
+  S.busy = false; renderAll();
+}
+
+/* ---------- input ---------- */
+let drag = null;
+function dropAt(x, y){
+  const el = document.elementFromPoint(x, y); if (!el) return null;
+  const t = el.closest('#units .tile'); if (t) return {unit:S.units.find(u => u.id === +t.dataset.id), el:t};
+  const c = el.closest('.cell'); if (!c) return null;
+  if (c.dataset.camp) return c.dataset.camp === 'p' ? {camp:true, i:+c.dataset.i, el:c} : null;
+  return {r:+c.dataset.r, c:+c.dataset.c, el:c};
+}
+async function perform(sel, dest, fromRect){
+  if (!sel || !dest) return false;
+  const T = targetsFor(sel);
+  if (dest.unit){ if (!T.ups.includes(dest.unit)) return false; }
+  else if (!T.cells.includes(dest.el)) return false;
+  S.busy = true; S.offer = null; renderBars(); let ok;
+  if (sel.card != null) ok = dest.unit ? await upgradeWithCard('p', sel.card, dest.unit, fromRect) : await deployCard('p', sel.card, dest, fromRect);
+  else ok = await fromCamp(S.units.find(u => u.id === sel.unit), dest.unit ? {unit:dest.unit} : dest);
+  S.busy = false; S.sel = null; renderAll(); return ok;
+}
+document.addEventListener('pointerdown', e => {
+  if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
+  const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
+  const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
+  if (!card && !campUnit) return;
+  e.preventDefault();
+  if (campUnit && S.sel && targetsFor(S.sel).ups.includes(campUnit)) return;
+  drag = {sel:card ? {card:+card.dataset.uid} : {unit:campUnit.id}, src:card || tile, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6){
+    drag.on = true; S.sel = drag.sel; renderAll(); Sfx.play('pick');
+    const g = document.createElement('div'); g.className = 'fly';
+    if (drag.sel.card != null){ const c = S.hand.p.find(h => h.uid === drag.sel.card); g.innerHTML = cardFace(c.type); }
+    else { const u = S.units.find(v => v.id === drag.sel.unit), b = drag.src.getBoundingClientRect(); g.classList.add('tilefly'); g.innerHTML = `<div class="tile p" style="position:relative;width:${b.width}px;height:${b.height}px;--t:${TC[u.type]}">${tileInner(u)}</div>`; }
+    document.body.appendChild(g); drag.ghost = g; drag.src.classList.add('ghosted'); drag.src.style.opacity = '.25';
+  }
+  if (drag.on){
+    const w = drag.ghost.offsetWidth || 108, h = drag.ghost.offsetHeight || 154;
+    drag.ghost.style.transform = `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
+    document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+    const d = dropAt(e.clientX, e.clientY); if (d && d.el && (d.el.classList.contains('drop') || d.el.classList.contains('mg'))) d.el.classList.add('hov');
+    e.preventDefault();
+  }
+}, {passive:false});
+document.addEventListener('pointerup', async e => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+  if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); renderAll(); return; }
+  const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
+  const dest = dropAt(e.clientX, e.clientY);
+  if (!(await perform(d.sel, dest, d.sel.card != null ? rect : null))){ S.sel = null; renderAll(); }
+});
+document.addEventListener('pointercancel', () => { if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
+document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
+$('#hand').addEventListener('keydown', e => { const card = e.target.closest('.card'); if (card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (S.side === 'p' && !S.busy){ S.sel = {card:+card.dataset.uid}; renderAll(); } } });
+$('#bwrap').addEventListener('click', async e => {
+  if (!S || S.side !== 'p' || S.busy || S.over) return;
+  const dest = dropAt(e.clientX, e.clientY);
+  if (S.sel && dest){
+    if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
+    if (await perform(S.sel, dest)) return;
+  }
+  if (dest && dest.unit && dest.unit.side === 'p' && dest.unit.id === S.offer && trioOf(dest.unit)){
+    S.sel = null; S.busy = true; renderAll();
+    await trioUpgrade(dest.unit);
+    S.busy = false; renderAll(); return;
+  }
+  if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
+});
+$('#end').onclick = endTurn;
+$('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
+$('#snd').onclick = e => { Sfx.on = !Sfx.on; e.currentTarget.setAttribute('aria-pressed', Sfx.on); e.currentTarget.textContent = Sfx.on ? 'Звук' : 'Без звука'; };
+$('#arr').onclick = e => { SHOW_ARROWS = !SHOW_ARROWS; e.currentTarget.setAttribute('aria-pressed', SHOW_ARROWS); renderOverlay(); };
+
+function renderModes(){
+  $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
+  $('#modes').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if (S && S.busy && !S.over) return; MODE_ID = b.dataset.m; try { localStorage.setItem('fieldMode', MODE_ID); } catch (e) {} newGame(); });
+  $('#mdesc').textContent = M().desc; $('#howto').textContent = M().howto;
+  $('#eyebrow').textContent = `${M().name} · ${F.p.name} против ${F.e.name}`;
+  $('#races').innerHTML = [['p', 'Вы'], ['e', 'Противник']].map(([side, label]) => `<div class="rgroup" role="group" aria-label="${label}: раса"><span class="label">${label}</span>`
+    + Object.entries(FAC).map(([k, f]) => `<button class="rbtn" type="button" data-side="${side}" data-race="${k}" aria-pressed="${RACE[side] === k}" style="--rc:${f.col}"><i>${svg(f.heroIcon)}</i>${f.name}</button>`).join('') + `</div>`).join('');
+  $('#races').querySelectorAll('[data-race]').forEach(b => b.onclick = () => {
+    if (S && S.busy && !S.over) return;
+    RACE[b.dataset.side] = b.dataset.race; try { localStorage.setItem('fieldRaces', JSON.stringify(RACE)); } catch (e) {}
+    newGame();
+  });
+}
+
+/* ---------- sound lab ---------- */
+function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
+function renderSoundLab(){
+  $('#sndcats').innerHTML = `<h3>События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
+  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${AVAR[ACLASS[u.key]].map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
+  Sfx.ensure(); const i = +b.dataset.i;
+  if (b.dataset.cat){ SEL_SND[b.dataset.cat] = i; Sfx.cat(b.dataset.cat, i); } else { SEL_SND.atk[b.dataset.atk] = i; Sfx.attack(b.dataset.atk, i); }
+  saveSnd(); renderSoundLab();
+  const nb = document.querySelector(b.dataset.cat ? `[data-cat="${b.dataset.cat}"][data-i="${i}"]` : `[data-atk="${b.dataset.atk}"][data-i="${i}"]`); if (nb){ flashBtn(nb); nb.focus(); }
+});
+
+/* ---------- icon gallery and roster ---------- */
+function renderIcons(){
+  $('#icons').innerHTML = `<table><thead><tr><th>Юнит</th>${VARIANTS.map(x => `<th style="text-align:center"><button class="ihead" type="button" data-var="${x.id}" aria-pressed="${x.id === ICON_VAR}">${x.name}<small>${x.note}</small></button></th>`).join('')}</tr></thead><tbody>`
+    + Object.values(FAC).map(f => `<tr class="frow"><td colspan="${VARIANTS.length + 1}" style="color:${f.col}">${f.name} <span class="muted" style="font:500 12px var(--fb)">· герой ${f.hero}</span></td></tr>`
+      + f.units.map((u, i) => `<tr><td>${u.name} <span class="muted" style="font:500 11px var(--fm)">${RO[i]}</span></td>${VARIANTS.map(x => `<td><span class="ibox" style="--t:${TC[i]}">${ico(u.key, x.id)}</span></td>`).join('')}</tr>`).join('')).join('')
+    + `</tbody></table>`;
+  $('#icons').querySelectorAll('[data-var]').forEach(b => b.onclick = () => {
+    ICON_VAR = b.dataset.var; try { localStorage.setItem('fieldDarkIcon2', ICON_VAR); } catch (e) {}
+    renderIcons(); renderRoster(); renderModes(); if (S){ rerenderHandFaces(); syncUnits(); renderBars(); }
+  });
+}
+function renderRoster(){
+  $('#rosters').innerHTML = Object.values(FAC).map(f => {
+    const us = f.units;
+    return `<div class="fac"><i style="background:${f.col}"></i><b>${f.name}</b><span class="muted" style="font-size:13px">замок ${f.castle} в «Героях 5» · герой ${f.hero}</span></div>`
+      + `<div class="panel tbl"><table><thead><tr><th>Тир</th><th>Юнит</th><th>Цена</th><th>Урон</th><th>ХП</th><th>Особенность</th><th>В «Героях 5» (по памяти)</th></tr></thead><tbody>`
+      + us.map((u, i) => `<tr><td class="num" style="color:${TC[i]}">${RO[i]}</td><td><span class="tic" style="--t:${TC[i]};background:color-mix(in srgb,${TC[i]} 16%,#16130f)">${ico(u.key)}</span>${u.name}</td><td class="num">${i < 3 ? i + 1 : 'улучшение'}</td><td class="num">${u.atk}</td><td class="num">${u.hp}</td><td class="w">${u.ab}</td><td class="muted">${u.homm}: <span style="font:500 12px var(--fm)">${u.hs}</span></td></tr>`).join('')
+      + `</tbody></table></div>`;
+  }).join('');
+}
+renderSoundLab(); renderIcons(); renderRoster();
+newGame();
+</script>
