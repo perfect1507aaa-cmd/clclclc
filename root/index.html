@@ -1791,7 +1791,8 @@ function updateVision() {
       if (connectable(A, p, budget)) { seen = true; break; }
     }
     p.seen = seen;
-    if (p.vis) p.lastOwner = p.owner;
+    // you always know when a node stops being yours, even out of sight: it is never remembered as yours after that
+    if (p.vis || (p.lastOwner === 1 && p.owner !== 1)) p.lastOwner = p.owner;
     if (p.seen) p.lastV = p.v;
   }
   G.visC = C;
