@@ -1,0 +1,954 @@
+<meta charset="utf-8">
+<title>Стили карточной битвы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Alegreya:wght@400;700&family=Cormorant+SC:wght@600;700&family=Cormorant+Garamond:wght@500;700&family=Russo+One&family=JetBrains+Mono:wght@400;800&family=Press+Start+2P&family=Pixelify+Sans:wght@400;700&family=Amatic+SC:wght@700&family=Neucha&family=Ruslan+Display&family=Kurale&family=Playfair+Display+SC:wght@700;900&family=Old+Standard+TT:wght@400;700&family=Prata&family=PT+Serif:wght@400;700&family=Rubik:wght@500;800;900&family=Unbounded:wght@500;700&family=Manrope:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&text=%E4%B8%80%E4%BA%8C%E4%B8%89%E5%9B%9B%E4%BA%94%E5%85%AD%E4%B8%83&display=swap">
+<style>
+/* ---------- Chrome (page around the scene) ---------- */
+:root{
+  --c-bg:#eceef2; --c-surface:#ffffff; --c-ink:#15171c; --c-muted:#5b616d; --c-line:#d6dae1;
+  --c-accent:#15171c; --c-accent-ink:#ffffff; --c-star:#c98a00;
+  --c-font:"IBM Plex Sans",system-ui,sans-serif; --c-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --c-bg:#111317; --c-surface:#1a1d23; --c-ink:#e8eaee; --c-muted:#9aa0ab; --c-line:#2a2f37;
+    --c-accent:#e8eaee; --c-accent-ink:#111317; --c-star:#f2c14e;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --c-bg:#111317; --c-surface:#1a1d23; --c-ink:#e8eaee; --c-muted:#9aa0ab; --c-line:#2a2f37;
+  --c-accent:#e8eaee; --c-accent-ink:#111317; --c-star:#f2c14e;
+}
+html,body{background:var(--c-bg);}
+body{color:var(--c-ink); font:15px/1.5 var(--c-font);}
+.wrap{max-width:1320px; margin:0 auto; padding-inline:16px; padding-block:28px 48px; display:grid; gap:18px;}
+.eyebrow{margin:0; font:500 12px/1.4 var(--c-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--c-muted);}
+.top h1{margin:4px 0 6px; font:600 clamp(26px,4vw,38px)/1.1 var(--c-font); letter-spacing:-.01em; text-wrap:balance;}
+.top .lede{margin:0; max-width:68ch; color:var(--c-muted);}
+
+.tabs{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px;}
+.tab{all:unset; box-sizing:border-box; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; grid-template-rows:auto auto; column-gap:10px; align-items:center;
+  padding:10px 12px; border-radius:10px; background:var(--c-surface); border:1px solid var(--c-line); min-width:0;}
+.tab:hover{border-color:var(--c-muted);}
+.tab:focus-visible{outline:2px solid var(--c-ink); outline-offset:2px;}
+.tab[aria-selected="true"]{background:var(--c-accent); color:var(--c-accent-ink); border-color:var(--c-accent);}
+.tab .key{grid-row:1/3; font:500 12px/1 var(--c-mono); width:22px; height:22px; display:grid; place-items:center; border-radius:6px; border:1px solid currentColor; opacity:.6;}
+.tab .nm{font-size:15px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tab .sub{grid-column:2; font-size:12px; opacity:.7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tab .sw{grid-row:1/3; grid-column:3; display:flex; gap:2px;}
+.tab .sw i{width:8px; height:26px; border-radius:2px;}
+.tab .fav{color:var(--c-star); margin-left:4px;}
+.tab[aria-selected="true"] .fav{color:inherit;}
+
+.stage{position:relative; width:100%; overflow:hidden; border-radius:12px; background:#000; aspect-ratio:1280/900; max-width:100%;}
+
+.info{display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:18px; align-items:start;}
+.panel{background:var(--c-surface); border:1px solid var(--c-line); border-radius:12px; padding:20px 22px;}
+.about h2{margin:4px 0 2px; font-size:34px; line-height:1.1; font-weight:700;}
+.about .tagline{margin:0 0 12px; color:var(--c-muted);}
+.about .desc{margin:0 0 16px; max-width:65ch;}
+.meta{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px; margin:0 0 16px;}
+.meta dt{font:500 11px/1.4 var(--c-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--c-muted);}
+.meta dd{margin:2px 0 0;}
+.meter{display:inline-flex; gap:3px; vertical-align:middle; margin-right:8px;}
+.meter i{width:16px; height:8px; border-radius:2px; background:var(--c-line);}
+.meter i.on{background:var(--c-ink);}
+.swatches{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;}
+.swatches span{display:inline-flex; align-items:center; gap:6px; font:500 12px var(--c-mono); color:var(--c-muted);}
+.swatches i{width:22px; height:22px; border-radius:5px; border:1px solid var(--c-line);}
+.btn{all:unset; cursor:pointer; box-sizing:border-box; display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:8px; font-weight:600;
+  background:var(--c-accent); color:var(--c-accent-ink);}
+.btn.on{background:transparent; color:var(--c-ink); box-shadow:inset 0 0 0 1.5px var(--c-star);}
+.btn:focus-visible{outline:2px solid var(--c-ink); outline-offset:2px;}
+.btn .star{color:var(--c-star);}
+.btn:not(.on) .star{color:inherit;}
+.picks h3{margin:0 0 8px; font-size:16px;}
+.picks ul{list-style:none; margin:0 0 12px; padding:0; display:grid; gap:6px;}
+.picks li button{all:unset; cursor:pointer; color:var(--c-ink); text-decoration:underline; text-underline-offset:3px;}
+.picks li button:focus-visible{outline:2px solid var(--c-ink);}
+.picks p{margin:0 0 10px; color:var(--c-muted); font-size:14px;}
+.keys{font:500 12px var(--c-mono); color:var(--c-muted);}
+kbd{font:inherit; border:1px solid var(--c-line); border-radius:4px; padding:0 5px; color:var(--c-ink);}
+
+@media (max-width:900px){
+  .tabs{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .info{grid-template-columns:1fr;}
+  .meta{grid-template-columns:1fr;}
+}
+
+/* ---------- Scene engine (layout only, all looks come from --tokens) ---------- */
+.sk{
+  --bg:#222; --ink:#fff; --fd:serif; --fb:serif;
+  --board:#444; --board-border:none; --board-radius:40px; --board-shadow:none; --board-filter:none;
+  --divider:rgba(255,255,255,.25); --divider-h:2px;
+  --clip:none; --radius:0; --fw:4px;
+  --card-bg:#eee; --card-ink:#222; --card-radius:12px; --card-bw:3px; --card-shadow:0 8px 20px rgba(0,0,0,.4);
+  --ribbon-bg:#333; --ribbon-ink:#fff; --ribbon-radius:3px; --ribbon-border:none;
+  --name-size:12.5px; --name-weight:700; --name-tt:none; --name-ls:0; --name-stroke:0;
+  --txt-size:11px;
+  --stat-font:var(--fd); --stat-size:20px; --stat-weight:700; --stat-ink:#fff; --stat-shadow:0 0 3px #000,0 1px 0 #000; --stat-stroke:0;
+  --stat-border:none; --stat-w:34px; --stat-h:var(--stat-w);
+  --atk-bg:#e0a82e; --hp-bg:#c2352b; --atk-ink:var(--stat-ink); --hp-ink:var(--stat-ink); --atk-r:50%; --hp-r:50%; --atk-clip:none; --hp-clip:none; --dmg:#ffb4a8;
+  --armor-bg:linear-gradient(#c8d0d8,#7d8894);
+  --cost-bg:#2f6fd6; --cost-ink:#fff; --cost-r:50%; --cost-clip:none; --cost-border:none;
+  --mana-on:#2f6fd6; --mana-off:rgba(0,0,0,.4); --gem-r:50%; --gem-clip:none;
+  --btn-bg:#e0a82e; --btn-ink:#222; --btn-border:none; --btn-r:10px; --btn-shadow:none; --btn-font:var(--fd); --btn-size:16px; --btn-stroke:0;
+  --back:#533; --back-border:3px solid #cc9; --back-r:8px;
+  --arrow:#ff4040; --arrow-edge:rgba(0,0,0,.45); --arrow-dash:none;
+  --sel:drop-shadow(0 0 4px #7CFC00) drop-shadow(0 0 12px #7CFC00);
+  --play:drop-shadow(0 0 3px #36e05a) drop-shadow(0 0 8px #36e05a);
+  --plate-bg:rgba(0,0,0,.45); --plate-ink:#fff; --plate-border:none; --plate-r:8px;
+  --taunt-bg:linear-gradient(#b8c0c8,#6b7580); --shield-c:rgba(255,230,120,.85);
+  --power-r:50%; --power-clip:none;
+  --overlay:none;
+  font-family:var(--fb); color:var(--ink);
+}
+.sk :is(.unit,.card,.hero,.power){
+  --fbg:var(--t); --pbg:#333; --if:#fff; --is:none; --isw:0; --ik:#000; --ifilter:none; --cb:var(--t);
+}
+.scene{position:absolute; left:0; top:0; width:1280px; height:900px; transform-origin:0 0; overflow:hidden; background:var(--bg); transition:opacity .18s ease;}
+.scene.swap{opacity:0;}
+.scene::after{content:""; position:absolute; inset:0; pointer-events:none; background:var(--overlay); z-index:60;}
+
+.board{position:absolute; left:124px; right:140px; top:172px; height:380px;}
+.board::before{content:""; position:absolute; inset:0; background:var(--board); border:var(--board-border); border-radius:var(--board-radius); box-shadow:var(--board-shadow); filter:var(--board-filter);}
+.divider{position:absolute; left:30px; right:30px; top:50%; height:var(--divider-h); margin-top:calc(var(--divider-h) / -2); background:var(--divider);}
+.row{position:absolute; left:0; right:0; display:flex; justify-content:center; gap:22px;}
+.row.e{top:16px;} .row.p{bottom:16px;}
+
+.unit{position:relative; width:108px; height:150px; flex:none; isolation:isolate; transition:translate .2s ease;}
+.unit .frame,.unit .art{position:absolute; clip-path:var(--clip); border-radius:var(--radius);}
+.unit .frame{inset:10px 0 12px; background:var(--fbg);}
+.unit .art{inset:calc(10px + var(--fw)) var(--fw) calc(12px + var(--fw)); background:var(--pbg); display:grid; place-items:center; overflow:hidden;}
+.unit.sel{filter:var(--sel); translate:0 -8px;}
+.unit.taunt::before{content:""; position:absolute; inset:2px -12px 0; z-index:-1; background:var(--taunt-bg);
+  clip-path:polygon(50% 0,100% 10%,97% 66%,50% 100%,3% 66%,0 10%);}
+.unit.shield::after{content:""; position:absolute; inset:4px -8px 6px; border-radius:50%; pointer-events:none; z-index:2;
+  background:radial-gradient(ellipse at 50% 45%, transparent 58%, var(--shield-c) 72%, transparent 76%);
+  animation:shimmer 2.4s ease-in-out infinite;}
+@keyframes shimmer{50%{opacity:.55;}}
+
+.art svg{width:74%; height:auto; overflow:visible; filter:var(--ifilter);}
+.art svg *{fill:var(--if); stroke:var(--is); stroke-width:var(--isw); stroke-linejoin:round; paint-order:stroke;}
+.art svg .k{fill:var(--ik);}
+.art canvas{width:80%; image-rendering:pixelated; image-rendering:crisp-edges;}
+
+.stat{position:absolute; bottom:0; width:var(--stat-w); height:var(--stat-h); display:grid; place-items:center; z-index:3;
+  font:var(--stat-weight) var(--stat-size)/1 var(--stat-font); text-shadow:var(--stat-shadow); border:var(--stat-border);
+  -webkit-text-stroke:var(--stat-stroke); paint-order:stroke fill; font-variant-numeric:tabular-nums; box-sizing:border-box;}
+.atk{left:-4px; background:var(--atk-bg); color:var(--atk-ink); border-radius:var(--atk-r); clip-path:var(--atk-clip);}
+.hp{right:-4px; background:var(--hp-bg); color:var(--hp-ink); border-radius:var(--hp-r); clip-path:var(--hp-clip);}
+.hp.dmg{color:var(--dmg);}
+
+.tier{position:absolute; top:0; left:50%; translate:-50% 0; z-index:4; min-width:26px; height:24px; padding:0 6px; box-sizing:border-box;
+  display:flex; align-items:center; justify-content:center; gap:2px; font:700 12px/1 var(--fd); white-space:nowrap;}
+.tier-shield{height:28px; min-width:30px; color:#fff; text-shadow:0 1px 2px #000; font-size:13px; padding-bottom:4px;
+  background:radial-gradient(circle at 50% 25%, color-mix(in srgb,var(--t) 45%,#fff), var(--t) 55%, color-mix(in srgb,var(--t) 55%,#000));
+  clip-path:polygon(0 0,100% 0,100% 58%,50% 100%,0 58%);}
+.tier-diamond{min-width:38px; height:26px; color:#f3ead6; text-shadow:0 1px 2px #000; font-size:13px;
+  background:linear-gradient(color-mix(in srgb,var(--t) 70%,#fff),color-mix(in srgb,var(--t) 70%,#000)); clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
+.tier-tag{height:20px; font:800 11px/1 "JetBrains Mono",monospace; color:var(--t); background:#07060f; border:1px solid var(--t); transform:skewX(-14deg); box-shadow:0 0 8px color-mix(in srgb,var(--t) 60%,transparent);}
+.tier-pips{height:auto; padding:3px; gap:2px; background:#0b0714; min-width:0;}
+.tier-pips i{width:5px; height:5px; background:var(--t);}
+.tier-blob{min-width:28px; height:28px; font:700 20px/1 "Amatic SC",cursive; color:#fffdf6; background:color-mix(in srgb,var(--t) 90%,#5b4636); border-radius:52% 48% 45% 55% / 48% 55% 45% 52%;}
+.tier-titlo{width:30px; height:30px; padding:4px 0 0; border-radius:50%; background:#120605; border:2px solid #d9a52b; color:#f0c64a; font:700 15px/1 "Kurale",serif;}
+.tier-titlo b{position:relative; font-weight:700;}
+.tier-titlo b::before{content:""; position:absolute; left:-2px; right:-2px; top:-4px; height:3px; border:1.5px solid currentColor; border-bottom:none;}
+.tier-gauge{width:32px; height:32px; padding:0; top:-2px; border-radius:50%; color:#2a1a08; font:900 12px/1 "Playfair Display SC",serif;
+  background:radial-gradient(circle, #f3e3b8 0 52%, transparent 53%),
+    conic-gradient(from 225deg, var(--t) 0 calc(var(--p) * 270deg), #4a3014 0 270deg, #3a2410 0);
+  box-shadow:0 0 0 2px #b5893b, 0 0 0 3px #3a2410;}
+.tier-seal{width:26px; height:26px; padding:0; top:2px; border-radius:3px; background:#b3261e; color:#f7f2e6; font:700 15px/1 "Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif; rotate:-5deg; box-shadow:0 0 0 1px rgba(179,38,30,.4);}
+.tier-coin{width:30px; height:30px; padding:0; border-radius:50%; background:var(--t); border:3px solid #1b1b3a; color:#fff; font:900 15px/1 "Rubik",sans-serif; -webkit-text-stroke:3px #1b1b3a; paint-order:stroke fill; box-shadow:0 3px 0 #1b1b3a;}
+.tier-dots{height:auto; padding:5px 7px; gap:3px; background:#fff; border-radius:999px; box-shadow:0 1px 3px rgba(17,24,39,.15);}
+.tier-dots i{width:5px; height:5px; border-radius:50%; background:#d5dae0;}
+.tier-dots i.on{background:var(--t);}
+
+/* hand */
+.hand{position:absolute; left:0; right:0; bottom:0; height:0;}
+.card{position:absolute; left:calc(640px + var(--x) - 64px); bottom:-16px; width:128px; height:184px; box-sizing:border-box;
+  transform:translateY(var(--y)) rotate(var(--r)); transform-origin:50% 130%; transition:transform .18s ease;
+  background:var(--card-bg); color:var(--card-ink); border:var(--card-bw) solid var(--cb); border-radius:var(--card-radius); box-shadow:var(--card-shadow);}
+.card:hover{transform:translateY(-150px) rotate(0deg) scale(1.4); z-index:40 !important;}
+.card.playable{filter:var(--play);}
+.card .cost{position:absolute; left:-10px; top:-10px; width:34px; height:34px; z-index:4; display:grid; place-items:center; box-sizing:border-box;
+  background:var(--cost-bg); color:var(--cost-ink); border-radius:var(--cost-r); clip-path:var(--cost-clip); border:var(--cost-border);
+  font:var(--stat-weight) 19px/1 var(--stat-font); text-shadow:var(--stat-shadow); -webkit-text-stroke:var(--stat-stroke); paint-order:stroke fill;}
+.c-art{position:absolute; left:10px; right:10px; top:10px; height:78px;}
+.c-art .frame,.c-art .art{position:absolute; clip-path:var(--clip); border-radius:var(--radius);}
+.c-art .frame{inset:0; background:var(--fbg);}
+.c-art .art{inset:var(--fw); background:var(--pbg); display:grid; place-items:center; overflow:hidden;}
+.c-art .art svg{width:58%;}
+.c-art .art canvas{width:56%;}
+.card .tier{left:auto; right:-8px; top:-8px; translate:none;}
+.card .name{position:absolute; left:4px; right:4px; top:92px; padding:4px; text-align:center; background:var(--ribbon-bg); color:var(--ribbon-ink);
+  border-radius:var(--ribbon-radius); border-block:var(--ribbon-border); font:var(--name-weight) var(--name-size)/1.15 var(--fd);
+  text-transform:var(--name-tt); letter-spacing:var(--name-ls); -webkit-text-stroke:var(--name-stroke); paint-order:stroke fill;}
+.card .txt{position:absolute; left:9px; right:9px; top:122px; bottom:24px; display:grid; place-items:center; text-align:center; font:var(--txt-size)/1.2 var(--fb);}
+.card .stat{bottom:-8px;}
+.card .atk{left:-8px;} .card .hp{right:-8px;}
+
+/* heroes */
+.hero{position:absolute; left:50%; width:132px; height:150px; margin-left:-66px;}
+.hero.e{top:12px;} .hero.p{top:566px;}
+.hero .frame,.hero .art{position:absolute; clip-path:var(--clip); border-radius:var(--radius);}
+.hero .frame{inset:0; background:var(--fbg);}
+.hero .art{inset:var(--fw); background:var(--pbg); display:grid; place-items:center; overflow:hidden;}
+.hero .art svg{width:66%;}
+.hero .art canvas{width:70%;}
+.hero .stat{right:-10px; left:auto; bottom:-4px; width:42px; height:42px; --stat-w:42px; font-size:calc(var(--stat-size) + 2px);}
+.hero .armor{bottom:38px; background:var(--armor-bg); color:#fff; border-radius:8px 8px 50% 50%; clip-path:none;}
+.plate{background:var(--plate-bg); color:var(--plate-ink); border:var(--plate-border); border-radius:var(--plate-r); font:700 13px/1.2 var(--fd); box-sizing:border-box;}
+.h-name{position:absolute; top:50%; right:100%; translate:-14px -50%; white-space:nowrap; padding:5px 12px;}
+.power{position:absolute; left:calc(50% + 92px); width:66px; height:66px;}
+.power.e{top:52px;} .power.p{top:606px;}
+.power .frame,.power .art{position:absolute; border-radius:var(--power-r); clip-path:var(--power-clip);}
+.power .frame{inset:0; background:var(--fbg);}
+.power .art{inset:4px; background:var(--pbg); display:grid; place-items:center; overflow:hidden;}
+.power .art svg{width:60%;}
+.power .art canvas{width:62%;}
+.power .cost{position:absolute; left:50%; top:-12px; translate:-50% 0; width:26px; height:26px; font-size:14px; display:grid; place-items:center; box-sizing:border-box;
+  background:var(--cost-bg); color:var(--cost-ink); border-radius:var(--cost-r); clip-path:var(--cost-clip); border:var(--cost-border);
+  font:var(--stat-weight) 14px/1 var(--stat-font); text-shadow:var(--stat-shadow); -webkit-text-stroke:var(--stat-stroke); paint-order:stroke fill; z-index:2;}
+
+/* backs, decks, mana, controls */
+.back{position:absolute; width:70px; height:98px; box-sizing:border-box; background:var(--back); border:var(--back-border); border-radius:var(--back-r); box-shadow:0 6px 12px rgba(0,0,0,.35);}
+.ehand{position:absolute; top:-50px; left:410px;}
+.ehand .back{transform-origin:50% -40%;}
+.deck{position:absolute; right:26px; width:76px; height:104px;}
+.deck .back{width:70px; height:98px;}
+.deck.e{top:196px;} .deck.p{top:420px;}
+.deck .count{position:absolute; left:50%; bottom:-14px; translate:-50% 0; padding:3px 9px; font-size:12px; white-space:nowrap; z-index:2;}
+.mana{position:absolute; right:24px; display:flex; align-items:center; gap:10px;}
+.mana.e{top:18px;} .mana.p{bottom:22px;}
+.mana .num{padding:4px 10px; font-size:15px; font-variant-numeric:tabular-nums;}
+.gems{display:flex; gap:4px;}
+.gems i{width:20px; height:24px; background:var(--mana-off); border-radius:var(--gem-r); clip-path:var(--gem-clip);}
+.gems i.on{background:var(--mana-on);}
+.mana.e .gems i{width:14px; height:18px;}
+.endturn{position:absolute; right:16px; top:337px; width:120px; height:50px; box-sizing:border-box; display:grid; place-items:center; cursor:pointer;
+  background:var(--btn-bg); color:var(--btn-ink); border:var(--btn-border); border-radius:var(--btn-r); box-shadow:var(--btn-shadow);
+  font:700 var(--btn-size)/1.1 var(--btn-font); text-align:center; -webkit-text-stroke:var(--btn-stroke); paint-order:stroke fill;}
+.turn{position:absolute; left:14px; top:318px; width:98px; padding:10px 8px; text-align:center; display:grid; gap:4px;}
+.turn b{font-size:18px; font-weight:700;}
+.turn span{font:12px/1.2 var(--fb); opacity:.85;}
+.timer{height:5px; background:rgba(127,127,127,.35); border-radius:3px; overflow:hidden;}
+.timer i{display:block; height:100%; width:64%; background:var(--arrow);}
+
+.arrow{position:absolute; left:0; top:0; width:1280px; height:900px; pointer-events:none; z-index:20; overflow:visible;}
+.arrow .edge{fill:none; stroke:var(--arrow-edge); stroke-width:17; stroke-linecap:round;}
+.arrow .line{fill:none; stroke:var(--arrow); stroke-width:10; stroke-linecap:round; stroke-dasharray:var(--arrow-dash); animation:flow 1.2s linear infinite;}
+.arrow .head{fill:var(--arrow); stroke:var(--arrow-edge); stroke-width:3; stroke-linejoin:round;}
+.arrow .ring{fill:none; stroke:var(--arrow); stroke-width:4; stroke-dasharray:14 10; transform-box:fill-box; transform-origin:center; animation:spin 6s linear infinite;}
+@keyframes flow{to{stroke-dashoffset:-40;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.strip{border-radius:12px; padding:22px 16px 26px; background:var(--bg); display:flex; flex-wrap:wrap; justify-content:center; gap:20px 22px; overflow:hidden; position:relative;}
+.strip::after{content:""; position:absolute; inset:0; pointer-events:none; background:var(--overlay);}
+.lg{display:grid; justify-items:center; gap:8px;}
+.lg .cap{padding:4px 10px; font-size:12px; white-space:nowrap;}
+
+@media (prefers-reduced-motion: reduce){
+  .scene,.card,.unit{transition:none;}
+  .arrow .line,.arrow .ring,.unit.shield::after{animation:none;}
+}
+
+/* ---------- 1. Таверна ---------- */
+.sk[data-style="tavern"]{
+  --fd:"Alegreya SC",Georgia,serif; --fb:"Alegreya",Georgia,serif;
+  --bg:repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 2px, transparent 2px 46px), radial-gradient(ellipse 75% 65% at 50% 45%, #74502d, #3d2616 60%, #1a1008);
+  --ink:#f3e3c0;
+  --board:radial-gradient(ellipse at 50% 50%, #dcc08a, #b89660 60%, #8e6d3d);
+  --board-border:5px solid #5e3d18; --board-radius:150px / 120px;
+  --board-shadow:0 0 0 3px #e2bb62, 0 24px 60px rgba(0,0,0,.65), inset 0 0 70px rgba(80,50,15,.55);
+  --divider:linear-gradient(90deg, transparent, rgba(94,61,24,.6), transparent);
+  --radius:50%; --fw:5px;
+  --card-bg:radial-gradient(ellipse at 50% 70%, #f6e9c9, #e2c994); --card-ink:#3b2a17; --card-radius:14px; --card-shadow:0 10px 24px rgba(0,0,0,.55);
+  --ribbon-bg:linear-gradient(#8a5a2b,#5e3a1a); --ribbon-ink:#fbeccb;
+  --stat-size:21px;
+  --atk-bg:radial-gradient(circle at 35% 30%, #ffe8a0, #e0a42a 55%, #7a4c0a);
+  --hp-bg:radial-gradient(circle at 40% 30%, #ff8a7a, #c62b20 55%, #5e0d08); --hp-r:50% 50% 50% 50% / 40% 40% 60% 60%; --dmg:#ffd24a;
+  --cost-bg:radial-gradient(circle at 35% 30%, #a8d0ff, #2f6fd6 55%, #122f73); --cost-clip:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  --mana-on:radial-gradient(circle at 35% 30%, #a8d0ff, #2f6fd6 55%, #122f73); --mana-off:#2a1d10; --gem-clip:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+  --btn-bg:linear-gradient(#ffe391,#e0a82e 60%,#a8711a); --btn-ink:#3b2a17; --btn-border:3px solid #6b4412; --btn-r:14px; --btn-shadow:0 6px 0 #4a2e0c, 0 10px 20px rgba(0,0,0,.5);
+  --back:radial-gradient(circle at 50% 50%, #e2bb62 0 9px, #3a2060 10px 12px, transparent 13px), repeating-linear-gradient(45deg,#4a2c7a 0 6px,#3a2060 6px 12px); --back-border:3px solid #d8b25a;
+  --arrow:#e8483a;
+  --plate-bg:linear-gradient(#5e3a1a,#3d2410); --plate-ink:#f3e3c0; --plate-border:2px solid #c9993f;
+  --taunt-bg:linear-gradient(#d0d4d8,#7d858d);
+}
+.sk[data-style="tavern"] :is(.unit,.card,.hero,.power){
+  --fbg:linear-gradient(160deg, color-mix(in srgb,var(--t) 45%,#fff3c4), #c99a3a 45%, color-mix(in srgb,var(--t) 45%,#4a300a));
+  --pbg:radial-gradient(circle at 50% 38%, color-mix(in srgb,var(--t) 50%,#fff5dc), color-mix(in srgb,var(--t) 70%,#3b2a17) 85%);
+  --if:#2a1a0c; --ik:color-mix(in srgb,var(--t) 45%,#fff5dc); --cb:color-mix(in srgb,var(--t) 50%,#b8862f);
+}
+
+/* ---------- 2. Готика ---------- */
+.sk[data-style="gothic"]{
+  --fd:"Cormorant SC",Georgia,serif; --fb:"Cormorant Garamond",Georgia,serif;
+  --bg:radial-gradient(ellipse 60% 50% at 50% 48%, rgba(130,12,12,.35), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 128px), linear-gradient(#0e0b0c,#060505);
+  --ink:#e8dcc4;
+  --board:linear-gradient(#1d1819,#141112); --board-border:2px solid #4a3c36; --board-radius:6px;
+  --board-shadow:0 0 0 6px #0a0808, 0 0 0 7px #3a2e2a, inset 0 0 90px rgba(0,0,0,.9);
+  --divider:linear-gradient(90deg, transparent, #8a1a1a, transparent);
+  --clip:polygon(50% 0,68% 5%,83% 15%,94% 30%,100% 46%,100% 100%,0 100%,0 46%,6% 30%,17% 15%,32% 5%); --fw:4px;
+  --card-bg:linear-gradient(#1c1514,#0f0b0a); --card-ink:#d9ccb2; --card-radius:3px; --card-bw:2px; --card-shadow:0 12px 30px rgba(0,0,0,.8);
+  --ribbon-bg:transparent; --ribbon-ink:#e8dcc4; --ribbon-border:1px solid #7a1a1a; --name-size:14px; --txt-size:12.5px;
+  --stat-size:23px; --stat-shadow:none;
+  --atk-bg:radial-gradient(circle at 40% 35%, #f3ead6, #b9a98a); --atk-ink:#1a1210;
+  --hp-bg:radial-gradient(circle at 40% 35%, #b3201c, #4a0706); --hp-ink:#f3ead6; --hp-clip:polygon(50% 0,100% 50%,50% 100%,0 50%); --hp-r:0; --dmg:#ff9a7a;
+  --cost-bg:radial-gradient(circle at 40% 35%, #4a3a3a, #0e0a0a); --cost-ink:#e8dcc4; --cost-clip:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  --mana-on:linear-gradient(#e0413a,#7a0d0b); --mana-off:#2a2020; --gem-clip:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  --btn-bg:linear-gradient(#3a0c0b,#1a0605); --btn-ink:#e8dcc4; --btn-border:1px solid #8a1a1a; --btn-r:2px; --btn-shadow:0 0 22px rgba(160,20,20,.45);
+  --back:radial-gradient(circle at 50% 45%, #7a1a1a 0 10px, transparent 11px), repeating-linear-gradient(135deg,#1a1212 0 4px,#120c0c 4px 8px); --back-border:2px solid #4a3c36; --back-r:3px;
+  --arrow:#c21d1d; --arrow-edge:rgba(0,0,0,.8);
+  --sel:drop-shadow(0 0 2px #e8dcc4) drop-shadow(0 0 14px rgba(210,30,30,.9));
+  --play:drop-shadow(0 0 3px #c21d1d) drop-shadow(0 0 10px rgba(200,30,30,.8));
+  --plate-bg:#0e0a0a; --plate-ink:#e8dcc4; --plate-border:1px solid #4a3c36; --plate-r:2px;
+  --taunt-bg:linear-gradient(#5a4a44,#241c1a); --shield-c:rgba(232,220,196,.7);
+  --power-clip:polygon(50% 0,100% 50%,50% 100%,0 50%); --power-r:0;
+  --overlay:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.7));
+}
+.sk[data-style="gothic"] :is(.unit,.card,.hero,.power){
+  --fbg:linear-gradient(#6a5a52, color-mix(in srgb,var(--t) 60%,#1a1210));
+  --pbg:radial-gradient(circle at 50% 30%, color-mix(in srgb,var(--t) 45%,#241b19), #0d0908 80%);
+  --if:#e8dcc4; --ik:#140e0d; --cb:color-mix(in srgb,var(--t) 70%,#3a2e2a);
+}
+
+/* ---------- 3. Неон ---------- */
+.sk[data-style="cyber"]{
+  --fd:"Russo One",system-ui,sans-serif; --fb:"JetBrains Mono",ui-monospace,monospace;
+  --bg:repeating-linear-gradient(0deg, rgba(34,211,255,.09) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, rgba(34,211,255,.09) 0 1px, transparent 1px 40px),
+    radial-gradient(ellipse 80% 60% at 50% 115%, rgba(255,46,136,.4), transparent 60%), radial-gradient(ellipse 60% 50% at 50% -15%, rgba(34,211,255,.28), transparent 60%), #07060f;
+  --ink:#d8f7ff;
+  --board:linear-gradient(rgba(12,10,32,.85),rgba(12,10,32,.85)); --board-border:1px solid rgba(34,211,255,.7); --board-radius:0;
+  --board-shadow:0 0 26px rgba(34,211,255,.25), inset 0 0 40px rgba(34,211,255,.08);
+  --divider:linear-gradient(90deg, transparent, #ff2e88, transparent);
+  --clip:polygon(16% 0,84% 0,100% 12%,100% 88%,84% 100%,16% 100%,0 88%,0 12%); --fw:2px;
+  --card-bg:linear-gradient(160deg, rgba(22,18,52,.97), rgba(8,6,20,.97)); --card-ink:#bfefff; --card-radius:0; --card-bw:1.5px;
+  --ribbon-bg:linear-gradient(90deg, transparent, rgba(34,211,255,.2), transparent); --ribbon-ink:#fff; --name-size:10.5px; --name-weight:400; --name-tt:uppercase; --name-ls:.04em; --txt-size:10px;
+  --stat-font:"JetBrains Mono",monospace; --stat-size:17px; --stat-weight:800; --stat-shadow:none; --stat-w:40px; --stat-h:26px;
+  --atk-bg:#ffe14d; --hp-bg:#ff2e88; --atk-ink:#07060f; --hp-ink:#07060f; --dmg:#fff;
+  --atk-clip:polygon(22% 0,100% 0,78% 100%,0 100%); --hp-clip:polygon(22% 0,100% 0,78% 100%,0 100%); --atk-r:0; --hp-r:0;
+  --cost-bg:#22d3ff; --cost-ink:#07060f; --cost-clip:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  --mana-on:#22d3ff; --mana-off:rgba(34,211,255,.15); --gem-clip:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);
+  --btn-bg:rgba(255,225,77,.06); --btn-ink:#ffe14d; --btn-border:1.5px solid #ffe14d; --btn-r:0; --btn-size:14px;
+  --btn-shadow:0 0 16px rgba(255,225,77,.5), inset 0 0 12px rgba(255,225,77,.25);
+  --back:repeating-linear-gradient(90deg, rgba(255,46,136,.45) 0 1px, transparent 1px 8px), linear-gradient(160deg,#1a0b2e,#07060f); --back-border:1.5px solid #ff2e88; --back-r:0;
+  --arrow:#ff2e88; --arrow-edge:rgba(255,46,136,.25); --arrow-dash:18 10;
+  --sel:drop-shadow(0 0 3px #39ff88) drop-shadow(0 0 12px #39ff88);
+  --play:drop-shadow(0 0 3px #22d3ff) drop-shadow(0 0 8px #22d3ff);
+  --plate-bg:rgba(7,6,15,.85); --plate-ink:#22d3ff; --plate-border:1px solid #22d3ff; --plate-r:0;
+  --taunt-bg:linear-gradient(rgba(34,211,255,.55),rgba(34,211,255,.15)); --shield-c:rgba(255,225,77,.9);
+  --power-clip:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); --power-r:0;
+  --armor-bg:#7d8aa3;
+  --overlay:repeating-linear-gradient(0deg, rgba(0,0,0,.2) 0 1px, transparent 1px 3px);
+}
+.sk[data-style="cyber"] :is(.unit,.card,.hero,.power){
+  --fbg:var(--t);
+  --pbg:repeating-linear-gradient(0deg, color-mix(in srgb,var(--t) 16%,transparent) 0 1px, transparent 1px 7px), radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--t) 24%,#0b0a1a), #07060f 75%);
+  --if:color-mix(in srgb,var(--t) 16%,transparent); --is:var(--t); --isw:2px; --ik:#07060f; --ifilter:drop-shadow(0 0 4px var(--t)); --cb:var(--t);
+  --card-shadow:0 0 16px color-mix(in srgb,var(--t) 50%,transparent), inset 0 0 18px color-mix(in srgb,var(--t) 18%,transparent);
+}
+.sk[data-style="cyber"] .h-name,.sk[data-style="cyber"] .turn b{text-transform:uppercase; letter-spacing:.05em;}
+
+/* ---------- 4. Пиксели ---------- */
+.sk[data-style="pixel"]{
+  --fd:"Press Start 2P",ui-monospace,monospace; --fb:"Pixelify Sans",ui-monospace,monospace;
+  --bg:radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,.45)), repeating-conic-gradient(#30264a 0 25%, #29203f 0 50%) 0 0 / 64px 64px;
+  --ink:#fff;
+  --board:repeating-conic-gradient(#5a8c3a 0 25%, #4f7f33 0 50%) 0 0 / 32px 32px; --board-border:4px solid #1a1030; --board-radius:0;
+  --board-shadow:0 0 0 4px #e8d9a8, 0 0 0 8px #1a1030, 12px 12px 0 8px rgba(0,0,0,.45);
+  --divider:repeating-linear-gradient(90deg, #e8d9a8 0 8px, transparent 8px 16px); --divider-h:4px;
+  --clip:polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px));
+  --fw:4px;
+  --card-bg:linear-gradient(#2a44c8,#141c68); --card-ink:#fff; --card-radius:0; --card-bw:4px; --card-shadow:0 0 0 4px #0b0714, 8px 8px 0 4px rgba(0,0,0,.45);
+  --ribbon-bg:#0b0714; --ribbon-ink:#fce0a8; --ribbon-radius:0; --name-size:7.5px; --name-weight:400; --txt-size:12px;
+  --stat-font:"Press Start 2P",monospace; --stat-size:13px; --stat-weight:400; --stat-shadow:2px 2px 0 #0b0714; --stat-border:3px solid #0b0714; --stat-w:32px;
+  --atk-bg:#f8b800; --hp-bg:#d82800; --atk-r:0; --hp-r:0; --dmg:#fce0a8;
+  --cost-bg:#0058f8; --cost-r:0; --cost-border:3px solid #0b0714;
+  --mana-on:#3cbcfc; --mana-off:#0b0714; --gem-r:0;
+  --btn-bg:#f8b800; --btn-ink:#0b0714; --btn-border:4px solid #0b0714; --btn-r:0; --btn-size:9px; --btn-font:"Press Start 2P",monospace;
+  --btn-shadow:4px 4px 0 #0b0714, inset -4px -4px 0 #ac7c00, inset 4px 4px 0 #fce0a8;
+  --back:repeating-conic-gradient(#d82800 0 25%, #a81000 0 50%) 0 0 / 12px 12px; --back-border:4px solid #fce0a8; --back-r:0;
+  --arrow:#f8b800; --arrow-edge:#0b0714; --arrow-dash:12 12;
+  --sel:drop-shadow(4px 0 0 #fce0a8) drop-shadow(-4px 0 0 #fce0a8) drop-shadow(0 4px 0 #fce0a8) drop-shadow(0 -4px 0 #fce0a8);
+  --play:drop-shadow(3px 0 0 #58d854) drop-shadow(-3px 0 0 #58d854) drop-shadow(0 3px 0 #58d854) drop-shadow(0 -3px 0 #58d854);
+  --plate-bg:#0b0714; --plate-ink:#fce0a8; --plate-border:3px solid #fce0a8; --plate-r:0;
+  --taunt-bg:repeating-linear-gradient(0deg,#bcbcbc 0 6px,#8c8c8c 6px 8px); --shield-c:rgba(252,224,168,.9);
+  --power-r:0; --armor-bg:#bcbcbc;
+  --overlay:repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 2px, transparent 2px 4px);
+  -webkit-font-smoothing:none;
+}
+.sk[data-style="pixel"] :is(.unit,.card,.hero,.power){
+  --fbg:var(--t); --pbg:color-mix(in srgb,var(--t) 30%,#1a1030); --cb:#f4f4f4;
+}
+.sk[data-style="pixel"] .plate{font-size:10px;}
+.sk[data-style="pixel"] .hero .armor{border-radius:0;}
+.sk[data-style="pixel"] .turn b{font-size:12px;}
+
+/* ---------- 5. Акварель ---------- */
+.sk[data-style="watercolor"]{
+  --fd:"Amatic SC",cursive; --fb:"Neucha",cursive;
+  --bg:radial-gradient(ellipse 40% 35% at 18% 25%, rgba(140,191,107,.38), transparent 70%), radial-gradient(ellipse 45% 40% at 86% 72%, rgba(106,166,214,.32), transparent 70%),
+    radial-gradient(ellipse 35% 30% at 70% 12%, rgba(232,197,71,.28), transparent 70%), radial-gradient(ellipse 30% 30% at 12% 86%, rgba(217,101,91,.2), transparent 70%), #f4eee0;
+  --ink:#4a3a2c;
+  --board:radial-gradient(ellipse 58% 56% at 50% 50%, rgba(140,191,107,.5), rgba(140,191,107,.18) 72%, transparent 76%); --board-radius:50%; --board-filter:url(#f-wc);
+  --divider:repeating-linear-gradient(90deg, rgba(91,70,54,.4) 0 14px, transparent 14px 22px);
+  --radius:48% 52% 45% 55% / 55% 46% 54% 45%; --fw:3px;
+  --card-bg:#fffdf6; --card-ink:#4a3a2c; --card-radius:255px 15px 225px 15px / 15px 225px 15px 255px; --card-bw:2px; --card-shadow:2px 6px 14px rgba(74,58,44,.22);
+  --ribbon-bg:transparent; --ribbon-ink:#4a3a2c; --name-size:21px; --txt-size:12.5px;
+  --stat-font:"Amatic SC",cursive; --stat-size:27px; --stat-shadow:none;
+  --atk-bg:radial-gradient(circle at 40% 40%, #f4d96a, #deb33a); --atk-ink:#4a3a2c; --atk-r:55% 45% 50% 50% / 50% 55% 45% 50%;
+  --hp-bg:radial-gradient(circle at 40% 40%, #e98a80, #cf5a50); --hp-ink:#fffdf6; --hp-r:45% 55% 52% 48% / 55% 45% 55% 45%; --dmg:#ffe38a;
+  --cost-bg:radial-gradient(circle at 40% 40%,#8ec3ea,#5a95c8); --cost-ink:#fffdf6; --cost-r:50% 45% 55% 50% / 45% 55% 50% 50%;
+  --mana-on:radial-gradient(circle at 40% 40%,#8ec3ea,#5a95c8); --mana-off:rgba(74,58,44,.14); --gem-r:50% 45% 55% 50% / 45% 55% 50% 50%;
+  --btn-bg:#e8c547; --btn-ink:#4a3a2c; --btn-r:255px 15px 225px 15px / 15px 225px 15px 255px; --btn-border:2px solid #5b4636; --btn-shadow:2px 4px 0 rgba(91,70,54,.25); --btn-size:26px;
+  --back:radial-gradient(circle at 50% 50%, #e8c547 0 9px, transparent 10px), radial-gradient(circle at 30% 30%, #a8d2f0, #6aa6d6); --back-border:2px solid #5b4636; --back-r:14px 30px 12px 26px;
+  --arrow:#d9655b; --arrow-edge:rgba(91,70,54,.35);
+  --sel:drop-shadow(0 0 6px #e8c547) drop-shadow(0 0 12px #e8c547);
+  --play:drop-shadow(0 0 5px #8cbf6b) drop-shadow(0 0 5px #8cbf6b);
+  --plate-bg:#fffdf6; --plate-ink:#4a3a2c; --plate-border:2px solid #5b4636; --plate-r:255px 15px 225px 15px / 15px 225px 15px 255px;
+  --taunt-bg:rgba(91,70,54,.28); --shield-c:rgba(232,197,71,.9); --armor-bg:#a9a39a;
+}
+.sk[data-style="watercolor"] :is(.unit,.card,.hero,.power){
+  --fbg:color-mix(in srgb,var(--t) 85%,#5b4636);
+  --pbg:radial-gradient(circle at 45% 40%, color-mix(in srgb,var(--t) 35%,#fffdf6), #fffdf6 78%);
+  --if:color-mix(in srgb,var(--t) 82%,#fff); --is:#5b4636; --isw:1.5px; --ik:#fffdf6; --ifilter:url(#f-wc); --cb:#5b4636;
+}
+.sk[data-style="watercolor"] .unit:nth-child(odd){rotate:-1.5deg;}
+.sk[data-style="watercolor"] .unit:nth-child(even){rotate:1.2deg;}
+.sk[data-style="watercolor"] .plate{font-size:20px;}
+.sk[data-style="watercolor"] .turn b{font-size:28px;}
+
+/* ---------- 6. Былина ---------- */
+.sk[data-style="slavic"]{
+  --fd:"Ruslan Display",Georgia,serif; --fb:"Kurale",Georgia,serif;
+  --bg:radial-gradient(circle at 25% 25%, #c8231e 0 4px, transparent 5px) 0 0 / 70px 70px, radial-gradient(circle at 75% 75%, #e0a526 0 3px, transparent 4px) 0 0 / 70px 70px,
+    radial-gradient(ellipse at 50% 50%, #2a0f0a, #120605 70%);
+  --ink:#f0c64a;
+  --board:radial-gradient(ellipse at 50% 50%, #8a1812, #4a0a07 70%, #2a0504); --board-border:4px solid #d9a52b; --board-radius:60px;
+  --board-shadow:0 0 0 3px #120605, 0 0 0 7px #c8231e, 0 20px 50px rgba(0,0,0,.6), inset 0 0 0 10px #4a0a07, inset 0 0 0 12px rgba(240,198,74,.55);
+  --divider:repeating-linear-gradient(90deg, #f0c64a 0 6px, transparent 6px 10px, #e84a3a 10px 14px, transparent 14px 18px); --divider-h:3px;
+  --clip:polygon(50% 0,60% 6%,72% 8%,82% 16%,92% 20%,100% 32%,100% 100%,0 100%,0 32%,8% 20%,18% 16%,28% 8%,40% 6%); --fw:4px;
+  --card-bg:radial-gradient(ellipse at 50% 30%, #2a0f0a, #120605); --card-ink:#f3dca0; --card-radius:10px; --card-bw:3px;
+  --card-shadow:0 0 0 2px #120605, 0 0 0 4px #c8231e, 0 10px 24px rgba(0,0,0,.6);
+  --ribbon-bg:linear-gradient(#c8231e,#8a1410); --ribbon-ink:#f7e2a0; --ribbon-radius:14px; --name-size:11px; --name-weight:400; --txt-size:11px;
+  --stat-font:"Kurale",serif; --stat-size:21px; --stat-shadow:none; --stat-border:2px solid #120605;
+  --atk-bg:radial-gradient(circle at 40% 35%, #ffe58a, #d9a52b 60%, #8a6108); --atk-ink:#5a0c08;
+  --hp-bg:radial-gradient(circle at 40% 35%, #f0584a, #c8231e 60%, #6a0c08); --hp-ink:#ffe58a; --dmg:#ffffff;
+  --cost-bg:radial-gradient(circle at 40% 35%, #6aa0e8, #1f4fa8 60%, #0f2a5a); --cost-ink:#ffe58a; --cost-border:2px solid #d9a52b;
+  --mana-on:radial-gradient(circle at 40% 35%, #6aa0e8, #1f4fa8 60%, #0f2a5a); --mana-off:#3a1510; --gem-clip:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  --btn-bg:linear-gradient(#f0c64a,#b8860b); --btn-ink:#5a0c08; --btn-border:2px solid #120605; --btn-r:24px 24px 6px 6px; --btn-size:13px;
+  --btn-shadow:0 0 0 3px #c8231e, 0 8px 16px rgba(0,0,0,.5);
+  --back:radial-gradient(circle at 50% 50%, #f0c64a 0 7px, #c8231e 8px 13px, transparent 14px), repeating-radial-gradient(circle at 50% 50%, #120605 0 6px, #2a0f0a 6px 12px); --back-border:3px solid #d9a52b;
+  --arrow:#f0c64a; --arrow-edge:rgba(90,12,8,.8);
+  --sel:drop-shadow(0 0 4px #f0c64a) drop-shadow(0 0 14px #f0c64a);
+  --play:drop-shadow(0 0 4px #7ed957) drop-shadow(0 0 8px #7ed957);
+  --plate-bg:#c8231e; --plate-ink:#ffe58a; --plate-border:2px solid #f0c64a; --plate-r:14px;
+  --taunt-bg:linear-gradient(#f0c64a,#8a6108); --shield-c:rgba(255,229,138,.9);
+}
+.sk[data-style="slavic"] :is(.unit,.card,.hero,.power){
+  --fbg:linear-gradient(#ffe58a,#d9a52b 45%,#7a5206);
+  --pbg:radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--t) 50%,#c8231e), #2a0504 85%);
+  --if:#f0c64a; --is:#2a0504; --isw:1.5px; --ik:#2a0504; --cb:#d9a52b;
+}
+.sk[data-style="slavic"] .plate{font-size:12px; font-weight:400;}
+
+/* ---------- 7. Стимпанк ---------- */
+.sk[data-style="steam"]{
+  --fd:"Playfair Display SC",Georgia,serif; --fb:"Old Standard TT",Georgia,serif;
+  --bg:radial-gradient(circle at 14px 14px, #8a6a32 0 3px, #2a1a0c 4px, transparent 5px) 0 0 / 160px 120px,
+    repeating-linear-gradient(90deg, rgba(0,0,0,.4) 0 2px, transparent 2px 160px), repeating-linear-gradient(0deg, rgba(0,0,0,.4) 0 2px, transparent 2px 120px),
+    radial-gradient(ellipse at 50% 40%, #4a3320, #1f150c 75%);
+  --ink:#f0dcae;
+  --board:radial-gradient(circle, #f0d488 0 2.5px, #5a3a14 3.5px, transparent 4.5px) 0 6px / 36px 100% repeat-x,
+    radial-gradient(circle, #f0d488 0 2.5px, #5a3a14 3.5px, transparent 4.5px) 18px calc(100% - 6px) / 36px 100% repeat-x,
+    linear-gradient(135deg, #a86a32, #7a4a20 40%, #9a6030 60%, #6a3e18);
+  --board-border:6px solid #c9a24a; --board-radius:24px;
+  --board-shadow:0 0 0 3px #3a2410, 0 14px 40px rgba(0,0,0,.6), inset 0 0 0 3px #3a2410, inset 0 0 50px rgba(0,0,0,.5);
+  --divider:linear-gradient(#3a2410,#f0d488 45%,#b5893b 60%,#3a2410); --divider-h:8px;
+  --radius:50%; --fw:6px;
+  --card-bg:linear-gradient(#efe0bb,#d8c291); --card-ink:#3a2410; --card-radius:6px; --card-bw:4px; --card-shadow:inset 0 0 0 2px #7a5a20, 0 10px 22px rgba(0,0,0,.55);
+  --ribbon-bg:linear-gradient(#5a3a1a,#3a2410); --ribbon-ink:#f0d488; --ribbon-radius:2px; --name-size:11.5px;
+  --stat-size:19px; --stat-weight:900; --stat-shadow:none; --stat-border:3px dotted #3a2410;
+  --atk-bg:radial-gradient(circle at 40% 35%, #fff0b0, #d4af37 55%, #7a5a14); --atk-ink:#2a1a08;
+  --hp-bg:radial-gradient(circle at 40% 35%, #e58a5a, #a8322b 60%, #4a120e); --hp-ink:#fff0d0; --dmg:#ffd27a;
+  --cost-bg:radial-gradient(circle at 40% 35%, #b8e8e0, #3e8f86 60%, #174a44); --cost-ink:#fff; --cost-border:3px solid #b5893b;
+  --mana-on:radial-gradient(circle at 40% 35%, #b8e8e0, #3e8f86 60%, #174a44); --mana-off:#2a1a0c;
+  --btn-bg:linear-gradient(#f0d488,#b5893b 55%,#7a5a20); --btn-ink:#2a1a08; --btn-border:3px solid #3a2410; --btn-r:30px; --btn-shadow:0 5px 0 #3a2410, 0 8px 16px rgba(0,0,0,.5); --btn-size:15px;
+  --back:radial-gradient(circle at 50% 50%, #d4af37 0 10px, #3a2410 11px 13px, transparent 14px), repeating-conic-gradient(from 0deg at 50% 50%, #5a3a1a 0 10deg, #4a2e14 10deg 20deg); --back-border:3px solid #b5893b; --back-r:6px;
+  --arrow:#e58a2a; --arrow-edge:rgba(42,26,8,.8);
+  --sel:drop-shadow(0 0 4px #ffcf5a) drop-shadow(0 0 12px #ff9a2a);
+  --play:drop-shadow(0 0 4px #7fe0c8) drop-shadow(0 0 8px #3e8f86);
+  --plate-bg:linear-gradient(#5a3a1a,#3a2410); --plate-ink:#f0d488; --plate-border:2px solid #b5893b; --plate-r:4px;
+  --taunt-bg:linear-gradient(#8a8a8a,#4a4a4a); --shield-c:rgba(184,232,224,.9); --armor-bg:linear-gradient(#b8b8b8,#6a6a6a);
+}
+.sk[data-style="steam"] :is(.unit,.card,.hero,.power){
+  --fbg:radial-gradient(circle at 35% 30%, #fff0b0, #c9a24a 45%, #6b4a14 90%);
+  --pbg:radial-gradient(circle at 42% 32%, #fff7de, color-mix(in srgb,var(--t) 35%,#d4bc86) 60%, color-mix(in srgb,var(--t) 40%,#4a3014));
+  --if:#3a2410; --ik:#f3e3b8; --cb:#b5893b;
+}
+
+/* ---------- 8. Тушь ---------- */
+.sk[data-style="ink"]{
+  --fd:"Prata",Georgia,serif; --fb:"PT Serif",Georgia,serif;
+  --bg:repeating-linear-gradient(95deg, rgba(120,100,70,.045) 0 1px, transparent 1px 7px), repeating-linear-gradient(5deg, rgba(120,100,70,.04) 0 1px, transparent 1px 11px),
+    radial-gradient(ellipse 45% 22% at 82% 30%, rgba(27,26,23,.10), transparent 70%), radial-gradient(ellipse 35% 18% at 14% 72%, rgba(27,26,23,.08), transparent 70%),
+    radial-gradient(ellipse at 50% 40%, #f5efe2, #e4d9c2);
+  --ink:#1b1a17;
+  --board:linear-gradient(180deg, transparent, rgba(27,26,23,.07) 14%, rgba(27,26,23,.12) 50%, rgba(27,26,23,.07) 86%, transparent); --board-radius:0; --board-filter:url(#f-ink);
+  --divider:linear-gradient(90deg, transparent 2%, rgba(27,26,23,.85) 8%, rgba(27,26,23,.45) 70%, transparent 96%); --divider-h:4px;
+  --radius:50%; --fw:5px;
+  --card-bg:#f7f2e6; --card-ink:#1b1a17; --card-radius:2px; --card-bw:0px; --card-shadow:0 0 0 1.5px #1b1a17, 5px 7px 0 rgba(27,26,23,.12);
+  --ribbon-bg:transparent; --ribbon-ink:#1b1a17; --ribbon-border:1px solid rgba(27,26,23,.35); --name-size:13px; --name-weight:400; --txt-size:11px;
+  --stat-font:"Prata",serif; --stat-size:19px; --stat-weight:400; --stat-shadow:none;
+  --atk-bg:#1b1a17; --atk-ink:#f7f2e6; --hp-bg:#b3261e; --hp-ink:#f7f2e6; --hp-r:4px; --dmg:#ffd9a0;
+  --cost-bg:#1b1a17; --cost-ink:#f7f2e6;
+  --mana-on:#1b1a17; --mana-off:rgba(27,26,23,.12);
+  --btn-bg:#b3261e; --btn-ink:#f7f2e6; --btn-r:3px; --btn-shadow:4px 4px 0 rgba(27,26,23,.25); --btn-size:15px;
+  --back:radial-gradient(circle at 50% 50%, transparent 0 17px, #1b1a17 18px 22px, transparent 23px), #efe8d8; --back-border:1.5px solid #1b1a17; --back-r:2px;
+  --arrow:#b3261e; --arrow-edge:rgba(27,26,23,.25);
+  --sel:drop-shadow(0 0 3px #b3261e) drop-shadow(0 0 10px rgba(179,38,30,.8));
+  --play:drop-shadow(0 0 2px #1b1a17) drop-shadow(0 0 8px rgba(27,26,23,.45));
+  --plate-bg:#f7f2e6; --plate-ink:#1b1a17; --plate-border:1.5px solid #1b1a17; --plate-r:2px;
+  --taunt-bg:rgba(27,26,23,.22); --shield-c:rgba(179,38,30,.55); --armor-bg:#5c5850;
+}
+.sk[data-style="ink"] :is(.unit,.card,.hero,.power){
+  --fbg:conic-gradient(from 200deg, transparent 0 5%, var(--t) 12% 86%, transparent 95%);
+  --pbg:radial-gradient(circle at 50% 55%, color-mix(in srgb,var(--t) 14%,#f4eee0), #f4eee0 70%);
+  --if:#16140f; --ik:#f4eee0; --ifilter:url(#f-ink); --cb:#1b1a17;
+}
+.sk[data-style="ink"] .frame{filter:url(#f-ink);}
+.sk[data-style="ink"] .divider{filter:url(#f-ink);}
+
+/* ---------- 9. Мульт ---------- */
+.sk[data-style="cartoon"]{
+  --fd:"Rubik",system-ui,sans-serif; --fb:"Rubik",system-ui,sans-serif;
+  --bg:radial-gradient(ellipse 9% 6% at 10% 16%, #fff 60%, transparent 63%), radial-gradient(ellipse 8% 6% at 15% 12%, #fff 60%, transparent 63%),
+    radial-gradient(ellipse 10% 6% at 88% 10%, #fff 60%, transparent 63%), radial-gradient(ellipse 7% 5% at 83% 7%, #fff 60%, transparent 63%),
+    linear-gradient(#58c4ff, #2e8fe8 60%, #2a7bd0);
+  --ink:#fff;
+  --board:radial-gradient(ellipse 50% 60% at 50% 50%, #8fe06a, #5fbf3c 75%); --board-border:5px solid #1b1b3a; --board-radius:44px;
+  --board-shadow:0 10px 0 #3a8f28, 0 14px 0 #1b1b3a, 0 26px 30px rgba(0,0,0,.25);
+  --divider:repeating-linear-gradient(90deg, rgba(255,255,255,.75) 0 18px, transparent 18px 30px); --divider-h:5px;
+  --radius:24px; --fw:5px;
+  --card-bg:linear-gradient(#ffffff,#e6f0ff); --card-ink:#1b1b3a; --card-radius:16px; --card-bw:4px; --card-shadow:0 6px 0 #1b1b3a, 0 12px 20px rgba(0,0,0,.25);
+  --ribbon-ink:#fff; --ribbon-radius:10px; --name-size:12px; --name-weight:900; --name-stroke:3px #1b1b3a; --txt-size:11px;
+  --stat-size:22px; --stat-weight:900; --stat-ink:#fff; --stat-stroke:4px #1b1b3a; --stat-shadow:none; --stat-border:3px solid #1b1b3a;
+  --atk-bg:linear-gradient(#ffe45c,#ffb800); --hp-bg:linear-gradient(#ff7a7a,#e83a3a); --dmg:#ffd21f;
+  --cost-bg:linear-gradient(#e28bff,#a23cf0); --cost-border:3px solid #1b1b3a;
+  --mana-on:linear-gradient(#e28bff,#a23cf0); --mana-off:rgba(27,27,58,.35); --gem-r:50% 50% 50% 50% / 35% 35% 65% 65%;
+  --btn-bg:linear-gradient(#ffe45c,#ffb800); --btn-ink:#fff; --btn-border:4px solid #1b1b3a; --btn-r:16px; --btn-shadow:0 6px 0 #1b1b3a; --btn-size:17px; --btn-stroke:4px #1b1b3a;
+  --back:radial-gradient(circle at 50% 45%, #ffd21f 0 12px, #1b1b3a 13px 16px, transparent 17px), linear-gradient(#ff6a6a,#d83434); --back-border:4px solid #1b1b3a; --back-r:12px;
+  --arrow:#ff4d4d; --arrow-edge:#1b1b3a;
+  --sel:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #ffe45c);
+  --play:drop-shadow(0 0 3px #7dff5a) drop-shadow(0 0 8px #7dff5a);
+  --plate-bg:#1b1b3a; --plate-ink:#fff; --plate-r:10px;
+  --taunt-bg:linear-gradient(#b0b8c8,#6a7488); --shield-c:rgba(255,228,92,.95);
+}
+.sk[data-style="cartoon"] :is(.unit,.card,.hero,.power){
+  --fbg:#1b1b3a; --pbg:radial-gradient(circle at 50% 30%, color-mix(in srgb,var(--t) 45%,#fff), var(--t) 75%);
+  --if:#fff; --is:#1b1b3a; --isw:4px; --ik:#1b1b3a; --cb:#1b1b3a; --ribbon-bg:var(--t);
+}
+.sk[data-style="cartoon"] .plate{font-weight:800;}
+.sk[data-style="cartoon"] .turn b{font-size:20px; font-weight:900;}
+
+/* ---------- 10. Флэт ---------- */
+.sk[data-style="minimal"]{
+  --fd:"Unbounded",system-ui,sans-serif; --fb:"Manrope",system-ui,sans-serif;
+  --bg:#e7eaee; --ink:#111827;
+  --board:#f8f9fa; --board-radius:28px; --board-shadow:0 1px 2px rgba(17,24,39,.06), 0 12px 32px rgba(17,24,39,.08);
+  --divider:#e3e6ea;
+  --radius:20px; --fw:0px;
+  --card-bg:#fff; --card-ink:#111827; --card-radius:14px; --card-bw:0px; --card-shadow:0 1px 2px rgba(17,24,39,.08), 0 10px 24px rgba(17,24,39,.12);
+  --ribbon-bg:transparent; --ribbon-ink:#111827; --name-size:10.5px; --txt-size:11px;
+  --stat-size:14px; --stat-shadow:none; --stat-w:30px;
+  --atk-bg:#111827; --atk-ink:#fff; --hp-bg:#fff; --hp-ink:#111827; --stat-border:2px solid #111827; --atk-r:10px; --hp-r:10px; --dmg:#ef4444;
+  --cost-bg:#111827; --cost-ink:#fff; --cost-r:10px;
+  --mana-on:#2d7ff9; --mana-off:#d5dae0; --gem-r:4px;
+  --btn-bg:#111827; --btn-ink:#fff; --btn-r:999px; --btn-size:11px;
+  --back:radial-gradient(circle at 50% 50%, #fff 0 7px, transparent 8px), #111827; --back-border:0px solid transparent; --back-r:10px;
+  --arrow:#111827; --arrow-edge:rgba(255,255,255,.8);
+  --sel:drop-shadow(0 10px 12px rgba(45,127,249,.5));
+  --play:drop-shadow(0 6px 10px rgba(47,181,122,.6));
+  --plate-bg:#fff; --plate-ink:#111827; --plate-r:999px;
+  --taunt-bg:#cfd5dc; --shield-c:rgba(245,159,11,.8); --armor-bg:#9aa3ad;
+}
+.sk[data-style="minimal"] :is(.unit,.card,.hero,.power){
+  --fbg:var(--t); --pbg:color-mix(in srgb,var(--t) 13%,#fff); --if:var(--t); --ik:color-mix(in srgb,var(--t) 13%,#fff); --cb:transparent;
+}
+.sk[data-style="minimal"] .unit .art{bottom:18px;}
+.sk[data-style="minimal"] .card{border-top:6px solid var(--t);}
+.sk[data-style="minimal"] .hero .art,.sk[data-style="minimal"] .power .art{inset:0 0 6px;}
+.sk[data-style="minimal"] .plate{font-weight:500; font-size:12px; box-shadow:0 1px 3px rgba(17,24,39,.12);}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="f-ink" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="3" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="4"/>
+  </filter>
+  <filter id="f-wc" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="4" seed="8" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="0.6"/>
+  </filter>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Карточная игра · юниты 7 тиров · одна сцена в 10 стилях</p>
+    <h1>Стили карточной битвы</h1>
+    <p class="lede">Одна и та же партия: ваш ход, 6 из 8 маны, Архангел целится в Каменного голема с провокацией. Переключайте стиль, наводите на карты в руке и отмечайте понравившиеся.</p>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Стили"></nav>
+
+  <div class="stage" id="stage"><div class="scene sk" id="scene" data-style="tavern"></div></div>
+
+  <section class="strip sk" id="strip" data-style="tavern" aria-label="Семь тиров юнитов"></section>
+
+  <section class="info">
+    <div class="panel about" id="about"></div>
+    <aside class="panel picks" id="picks"></aside>
+  </section>
+</div>
+
+<script>
+const ICONS = {
+  rat:`<path d="M46 50c-8 6-26 6-32-2-4-6 0-16 8-18 6-2 12-4 20-2 10 3 14 14 4 22z"/><circle cx="18" cy="30" r="10"/><circle cx="12" cy="18" r="6"/><circle cx="25" cy="17" r="6"/><path d="M44 50c8 0 14 4 16 12-4-5-10-7-17-7z"/><circle class="k" cx="15" cy="30" r="2.5"/>`,
+  militia:`<rect x="46" y="10" width="4" height="52"/><path d="M48 0l6 12H42z"/><circle cx="26" cy="24" r="9"/><path d="M14 23c2-12 22-12 24 0z"/><path d="M8 36h36v10c0 10-8 15-18 18C16 61 8 56 8 46z"/><path class="k" d="M24 40h4v18h-4zM15 47h22v4H15z"/>`,
+  archer:`<path d="M18 4c24 10 24 46 0 56l3 2c28-12 28-48 0-60z"/><rect x="17" y="5" width="2" height="54"/><rect x="8" y="31" width="44" height="3"/><path d="M61 32.5L48 26v13z"/><path d="M3 26l9 6.5L3 39l3-6.5z"/>`,
+  wolf:`<path d="M10 6l14 16h16L54 6l-2 26-8 18-12 10-12-10-8-18z"/><path class="k" d="M19 31l8 3-6 4zM45 31l-8 3 6 4z"/><path class="k" d="M28 48h8l-4 5z"/>`,
+  golem:`<rect x="21" y="4" width="22" height="18" rx="3"/><rect x="12" y="24" width="40" height="22" rx="4"/><rect x="2" y="24" width="9" height="26" rx="3"/><rect x="53" y="24" width="9" height="26" rx="3"/><rect x="15" y="48" width="13" height="14" rx="2"/><rect x="36" y="48" width="13" height="14" rx="2"/><rect class="k" x="25" y="11" width="5" height="4"/><rect class="k" x="34" y="11" width="5" height="4"/><path class="k" d="M20 31l8 4-6 5zM40 29l5 7-7 1z"/>`,
+  mage:`<path d="M28 0l14 26H14z"/><rect x="6" y="25" width="44" height="6" rx="3"/><path d="M16 33h24l8 29H8z"/><circle class="k" cx="22" cy="39" r="2.4"/><circle class="k" cx="34" cy="39" r="2.4"/><rect x="51" y="18" width="3.5" height="44"/><path d="M52.7 2l3 7 6.3 1-4.6 4.5 1.4 6.5-6.1-3.4-6.1 3.4 1.4-6.5-4.6-4.5 6.3-1z"/>`,
+  gryphon:`<path d="M2 18C14 4 30 6 36 16c-8 0-10 4-6 8-8-2-12 2-8 8-8-2-16-6-20-14z"/><path d="M26 22h32v18c0 12-8 18-16 22-8-4-16-10-16-22z"/><path class="k" d="M40 27h4v28h-4zM31 36h22v4H31z"/>`,
+  necro:`<path d="M32 2C52 8 58 30 56 62H8C6 30 12 8 32 2z"/><ellipse class="k" cx="32" cy="32" rx="13" ry="15"/><circle cx="27" cy="30" r="3.5"/><circle cx="37" cy="30" r="3.5"/><path d="M29 37h6l-3 5z"/><path d="M26 43h12v4H26z"/>`,
+  fire:`<path d="M32 2c8 14 22 20 18 38-2 14-12 22-18 22-10 0-20-8-18-22 1-10 8-14 10-24 4 8 6 12 8 14 2-8-2-18 0-28z"/><path class="k" d="M32 34c6 8 8 14 4 20-3 4-8 3-9-2-1-6 3-10 5-18z"/>`,
+  kraken:`<ellipse cx="32" cy="20" rx="16" ry="17"/><path d="M17 28C8 38 6 50 12 62c0-10 4-18 12-26z"/><path d="M26 34c-4 10-4 20 0 28 2-8 4-16 6-26z"/><path d="M38 34c4 10 4 20 0 28-2-8-4-16-6-26z"/><path d="M47 28c9 10 11 22 5 34 0-10-4-18-12-26z"/><circle class="k" cx="26" cy="20" r="3.5"/><circle class="k" cx="38" cy="20" r="3.5"/>`,
+  angel:`<ellipse cx="32" cy="7" rx="11" ry="4"/><ellipse class="k" cx="32" cy="7" rx="7.5" ry="2"/><circle cx="32" cy="19" r="7"/><path d="M25 28h14l8 34H17z"/><path d="M24 30C12 18 4 20 2 32c6 0 6 6 4 10 6-4 10 0 12 4 2-6 4-10 6-16z"/><path d="M40 30c12-12 20-10 22 2-6 0-6 6-4 10-6-4-10 0-12 4-2-6-4-10-6-16z"/>`,
+  lich:`<path d="M13 21V5l9 8 10-11 10 11 9-8v16z"/><path d="M15 23h34v16c0 7-5 10-9 11v12H24V50c-4-1-9-4-9-11z"/><circle class="k" cx="25" cy="34" r="5"/><circle class="k" cx="39" cy="34" r="5"/><path class="k" d="M32 40l-3 6h6z"/><path class="k" d="M27 54h2v8h-2zM31 54h2v8h-2zM35 54h2v8h-2z"/>`,
+  dragon:`<path d="M4 34l20-12 6-16 6 14 8-6-1 9 13 7 5 10-16 2-4 12-10-5-11 9 2-13z"/><circle class="k" cx="41" cy="27" r="3"/><path class="k" d="M49 40l9-1-7 4z"/>`,
+};
+
+const UNITS = {
+  rat:{name:'Крысолов',tier:1,cost:1,atk:1,hp:2,text:'Боевой клич: призовите крысу 1/1.'},
+  militia:{name:'Ополченец',tier:1,cost:1,atk:2,hp:1,text:'Рывок.'},
+  archer:{name:'Лесной лучник',tier:2,cost:2,atk:2,hp:3,text:'Боевой клич: 1 урона.'},
+  wolf:{name:'Волк-вожак',tier:2,cost:2,atk:3,hp:2,text:'Другие звери получают +1 к атаке.'},
+  golem:{name:'Каменный голем',tier:3,cost:4,atk:2,hp:6,text:'Провокация.',taunt:true},
+  mage:{name:'Боевой маг',tier:3,cost:3,atk:4,hp:3,text:'Урон от заклинаний +1.'},
+  gryphon:{name:'Рыцарь грифона',tier:4,cost:5,atk:5,hp:4,text:'Натиск. Полёт.'},
+  necro:{name:'Некромант',tier:4,cost:5,atk:3,hp:5,text:'Когда союзник умирает, поднимите скелета 2/1.'},
+  fire:{name:'Огненный элементаль',tier:5,cost:6,atk:6,hp:5,text:'Боевой клич: 3 урона врагу.'},
+  kraken:{name:'Кракен',tier:5,cost:7,atk:7,hp:6,text:'Не может атаковать героя.'},
+  angel:{name:'Архангел',tier:6,cost:8,atk:7,hp:8,text:'Божественный щит.',shield:true},
+  lich:{name:'Лич-король',tier:6,cost:8,atk:6,hp:9,text:'В конце хода призовите стража 2/2.'},
+  dragon:{name:'Древний дракон',tier:7,cost:10,atk:10,hp:10,text:'Боевой клич: 4 урона всем остальным.'},
+};
+const TIER_NAMES = ['Рекрут','Боец','Ветеран','Элита','Герой','Легенда','Миф'];
+const LEGEND = ['militia','archer','mage','gryphon','fire','angel','dragon'];
+const ENEMY = [{k:'wolf'},{k:'necro'},{k:'golem',target:true},{k:'kraken',hp:4},{k:'dragon'}];
+const PLAYER = [{k:'militia'},{k:'archer'},{k:'fire'},{k:'angel',sel:true},{k:'gryphon',hp:2}];
+const HAND = ['rat','wolf','mage','fire','lich','dragon'];
+const MANA = 6, MANA_MAX = 8;
+
+const ROMAN = ['I','II','III','IV','V','VI','VII'];
+const SLAV = ['А','В','Г','Д','Є','Ѕ','З'];
+const KANJI = ['一','二','三','四','五','六','七'];
+
+const STYLES = [
+  {id:'tavern', name:'Таверна', sub:'Классическое фэнтези', font:'"Alegreya SC",Georgia,serif', fontNames:'Alegreya SC + Alegreya',
+   badge:'shield', tiers:['#9e9e9e','#4caf50','#2f7fe0','#a347e0','#f08a24','#e0303a','#ffd84a'],
+   desc:'Тёплое дерево, золото и пергамент. Самый узнаваемый жанровый стиль: игрок с первого кадра понимает, что перед ним карточная игра.',
+   refs:'Hearthstone, Might & Magic: Duel of Champions', art:4, read:5,
+   tierHow:'Римская цифра на гербовом щите, цвет самоцвета от серого до золотого',
+   swatches:['#3d2616','#b89660','#e2bb62','#f6e9c9','#2f6fd6']},
+  {id:'gothic', name:'Готика', sub:'Тёмное фэнтези', font:'"Cormorant SC",Georgia,serif', fontNames:'Cormorant SC + Cormorant Garamond',
+   badge:'diamond', tiers:['#6d6660','#7f8a4a','#4f6d7a','#6a4a7a','#8c5a2b','#a01818','#e8dcc4'],
+   desc:'Чёрный камень, кость и кровь, стрельчатые арки вместо рамок. Высокие тиры выглядят зловеще, а не нарядно.',
+   refs:'Gwent, Diablo, Darkest Dungeon', art:4, read:3,
+   tierHow:'Римская цифра в ромбе, от пепельного к кровавому, седьмой тир цвета кости',
+   swatches:['#0e0b0c','#1d1819','#4a3c36','#a01818','#e8dcc4']},
+  {id:'cyber', name:'Неон', sub:'Киберпанк', font:'"Russo One",system-ui,sans-serif', fontNames:'Russo One + JetBrains Mono',
+   badge:'tag', tiers:['#7d8aa3','#39ff88','#22d3ff','#6b7bff','#c14bff','#ff2e88','#ffe14d'],
+   desc:'Тёмный экран, неоновые контуры, сетка и скан-линии. Юнитов можно рисовать одной линией, свечение делает остальную работу.',
+   refs:'Cyberpunk 2077, Tron, Ruiner', art:2, read:4,
+   tierHow:'Метка T1–T7, цвет свечения рамки и контура юнита',
+   swatches:['#07060f','#22d3ff','#ff2e88','#ffe14d','#39ff88']},
+  {id:'pixel', name:'Пиксели', sub:'16-бит ретро', font:'"Press Start 2P",ui-monospace,monospace', fontNames:'Press Start 2P + Pixelify Sans', tabSize:11,
+   badge:'pips', tiers:['#bcbcbc','#58d854','#3cbcfc','#9878f8','#f8b800','#f83800','#fce0a8'],
+   desc:'Окна из JRPG, крупный пиксель и палитра NES. Арт дешёвый в производстве, а ностальгия работает сама.',
+   refs:'Chrono Trigger, Shovel Knight, Loop Hero', art:2, read:4,
+   tierHow:'Ряд пикселей-делений: сколько квадратиков, такой и тир',
+   swatches:['#29203f','#2a44c8','#f8b800','#d82800','#fce0a8']},
+  {id:'watercolor', name:'Акварель', sub:'Книжка сказок', font:'"Amatic SC",cursive', fontNames:'Amatic SC + Neucha', tabSize:20,
+   badge:'blob', tiers:['#a9a39a','#8cbf6b','#6aa6d6','#a88ad6','#e6a45a','#d9655b','#e8c547'],
+   desc:'Бумага, мягкие размывки и рамки, будто нарисованные от руки. Уютная книжка сказок вместо поля боя.',
+   refs:'Wildfrost, Child of Light, Tangledeep', art:3, read:3,
+   tierHow:'Цифра в акварельной капле и цвет размывки за юнитом',
+   swatches:['#f4eee0','#8cbf6b','#6aa6d6','#e8c547','#5b4636']},
+  {id:'slavic', name:'Былина', sub:'Хохлома и лубок', font:'"Ruslan Display",Georgia,serif', fontNames:'Ruslan Display + Kurale',
+   badge:'titlo', tiers:['#b8a88a','#3f8f4a','#2f5fa8','#7a3f9a','#d9892b','#e03a2e','#f0c030'],
+   desc:'Чёрный лак, киноварь и золото, кокошники вместо рамок. Тиры записаны старинными кириллическими цифрами под титлом.',
+   refs:'Хохлома, иллюстрации Билибина, Black Book', art:4, read:3,
+   tierHow:'Кириллические цифры под титлом: А, В, Г, Д, Є, Ѕ, З',
+   swatches:['#120605','#c8231e','#d9a52b','#f0c64a','#1f4fa8']},
+  {id:'steam', name:'Стимпанк', sub:'Латунь и пар', font:'"Playfair Display SC",Georgia,serif', fontNames:'Playfair Display SC + Old Standard TT',
+   badge:'gauge', tiers:['#7f7f7f','#6f8f5a','#4e7a8f','#7a5a8f','#b87333','#a8322b','#d4af37'],
+   desc:'Медные плиты с заклёпками, линзы-иллюминаторы и трубы. Тир юнита показывает манометр: чем сильнее, тем выше давление.',
+   refs:'Bioshock Infinite, Arcanum, Frostpunk', art:4, read:3,
+   tierHow:'Манометр: стрелка-дуга заполняется на 1/7 за каждый тир',
+   swatches:['#1f150c','#8a5a2b','#c9a24a','#efe0bb','#3e8f86']},
+  {id:'ink', name:'Тушь', sub:'Суми-э', font:'"Prata",Georgia,serif', fontNames:'Prata + PT Serif',
+   badge:'seal', tiers:['#a8a397','#86817a','#68645c','#4a4740','#2e2c27','#161510','#b3261e'],
+   desc:'Рисовая бумага, чёрная тушь и красная печать ханко. Чем выше тир, тем гуще тушь; седьмой тир отмечен красным.',
+   refs:'Okami, Sekiro, Ghost of Tsushima', art:2, read:4,
+   tierHow:'Иероглиф 一–七 на печати и густота туши в круге энсо',
+   swatches:['#efe8d8','#1b1a17','#68645c','#b3261e','#f7f2e6']},
+  {id:'cartoon', name:'Мульт', sub:'Яркий мобильный', font:'"Rubik",system-ui,sans-serif', fontNames:'Rubik 800–900',
+   badge:'coin', tiers:['#b0b8c8','#6ad14e','#3aa0ff','#b066ff','#ff9f1c','#ff4d4d','#ffd21f'],
+   desc:'Толстый контур, сочные цвета и объёмные цифры. Лучше всех читается на маленьком экране телефона.',
+   refs:'Clash Royale, Brawl Stars, Rush Royale', art:3, read:5,
+   tierHow:'Цветная монета с цифрой, цвет фона портрета',
+   swatches:['#2e8fe8','#5fbf3c','#ffb800','#a23cf0','#1b1b3a']},
+  {id:'minimal', name:'Флэт', sub:'Минимализм', font:'"Unbounded",system-ui,sans-serif', fontNames:'Unbounded + Manrope', tabSize:14,
+   badge:'dots', tiers:['#9aa3ad','#2fb57a','#2d7ff9','#7a5af8','#f59f0b','#ef4444','#111827'],
+   desc:'Плоские фигуры, чистые панели, цвет только там, где он что-то значит. Быстрее всего в разработке и проще всего балансировать визуально.',
+   refs:'Mini Metro, Card Crawl, Reigns', art:1, read:5,
+   tierHow:'Семь точек, закрашено столько, каков тир; полоса цвета тира',
+   swatches:['#e7eaee','#ffffff','#111827','#2d7ff9','#ef4444']},
+];
+
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), scene = $('#scene'), strip = $('#strip');
+let current = 0;
+let favs = [];
+try { favs = JSON.parse(localStorage.getItem('cardStyleFavs') || '[]'); } catch (e) { favs = []; }
+
+function art(icon){ return `<svg viewBox="0 0 64 64" aria-hidden="true">${ICONS[icon]}</svg>`; }
+
+function badge(S, n){
+  const i = n - 1;
+  switch (S.badge){
+    case 'shield': case 'diamond': return `<span class="tier tier-${S.badge}">${ROMAN[i]}</span>`;
+    case 'tag': return `<span class="tier tier-tag">T${n}</span>`;
+    case 'pips': return `<span class="tier tier-pips">${'<i></i>'.repeat(n)}</span>`;
+    case 'blob': return `<span class="tier tier-blob">${n}</span>`;
+    case 'titlo': return `<span class="tier tier-titlo"><b>${SLAV[i]}</b></span>`;
+    case 'gauge': return `<span class="tier tier-gauge" style="--p:${n/7}">${n}</span>`;
+    case 'seal': return `<span class="tier tier-seal">${KANJI[i]}</span>`;
+    case 'coin': return `<span class="tier tier-coin">${n}</span>`;
+    case 'dots': return `<span class="tier tier-dots">${Array.from({length:7},(_,j)=>`<i class="${j<n?'on':''}"></i>`).join('')}</span>`;
+  }
+}
+
+function unitHTML(S, o){
+  const u = UNITS[o.k], t = S.tiers[u.tier-1], hp = o.hp ?? u.hp;
+  const cls = ['unit', u.taunt&&'taunt', u.shield&&'shield', o.sel&&'sel', o.target&&'target'].filter(Boolean).join(' ');
+  return `<div class="${cls}" style="--t:${t}" title="${u.name} · тир ${u.tier}">
+    <div class="frame"></div><div class="art" data-icon="${o.k}" data-c="${t}">${art(o.k)}</div>
+    ${badge(S,u.tier)}
+    <span class="stat atk">${u.atk}</span><span class="stat hp${hp<u.hp?' dmg':''}">${hp}</span></div>`;
+}
+
+function cardHTML(S, k, i, n){
+  const u = UNITS[k], t = S.tiers[u.tier-1], c = i - (n-1)/2;
+  return `<div class="card${u.cost<=MANA?' playable':''}" style="--t:${t};--x:${c*100}px;--y:${c*c*6}px;--r:${c*5}deg;z-index:${i+1}">
+    <span class="cost">${u.cost}</span>
+    <div class="c-art"><div class="frame"></div><div class="art" data-icon="${k}" data-c="${t}">${art(k)}</div></div>
+    ${badge(S,u.tier)}
+    <div class="name">${u.name}</div>
+    <div class="txt">${u.text}</div>
+    <span class="stat atk">${u.atk}</span><span class="stat hp">${u.hp}</span></div>`;
+}
+
+function heroHTML(S, side, h){
+  const t = S.tiers[h.ti];
+  return `<div class="hero ${side}" style="--t:${t}"><div class="frame"></div><div class="art" data-icon="${h.icon}" data-c="${t}">${art(h.icon)}</div>
+    <span class="stat hp">${h.hp}</span>${h.armor?`<span class="stat armor">${h.armor}</span>`:''}<span class="h-name plate">${h.name}</span></div>
+    <div class="power ${side}" style="--t:${t}"><div class="frame"></div><div class="art" data-icon="${h.power}" data-c="${t}">${art(h.power)}</div><span class="cost">2</span></div>`;
+}
+
+function deckHTML(side, top, count){
+  return `<div class="deck ${side}"><div class="back" style="left:6px;top:6px"></div><div class="back" style="left:3px;top:3px"></div><div class="back" style="left:0;top:0"></div><span class="count plate">${count}</span></div>`;
+}
+
+function gems(on, max){ return Array.from({length:max},(_,i)=>`<i class="${i<on?'on':''}"></i>`).join(''); }
+
+function sceneHTML(S){
+  const backs = [0,1,2,3,4].map(i=>{const c=i-2; return `<div class="back" style="left:${c*44-35}px;transform:translateY(${-c*c*4}px) rotate(${-c*7}deg)"></div>`;}).join('');
+  return `
+    <div class="ehand">${backs}</div>
+    ${heroHTML(S,'e',{ti:5,icon:'lich',power:'necro',hp:24,name:'Король-лич'})}
+    <div class="mana e"><span class="num plate">5/7</span><span class="gems">${gems(5,7)}</span></div>
+    ${deckHTML('e',196,15)}
+    <div class="board">
+      <div class="divider"></div>
+      <div class="row e">${ENEMY.map(o=>unitHTML(S,o)).join('')}</div>
+      <div class="row p">${PLAYER.map(o=>unitHTML(S,o)).join('')}</div>
+    </div>
+    <div class="turn plate"><b>Ход 7</b><span>ваш ход</span><div class="timer"><i></i></div></div>
+    <div class="endturn" role="button" tabindex="-1">Конец хода</div>
+    ${deckHTML('p',420,18)}
+    ${heroHTML(S,'p',{ti:2,icon:'mage',power:'fire',hp:18,armor:3,name:'Верховный маг'})}
+    <div class="mana p"><span class="num plate">${MANA}/${MANA_MAX}</span><span class="gems">${gems(MANA,MANA_MAX)}</span></div>
+    <svg class="arrow" viewBox="0 0 1280 900" aria-hidden="true"><path class="edge"/><path class="line"/><polygon class="head"/><circle class="ring" r="44"/></svg>
+    <div class="hand">${HAND.map((k,i)=>cardHTML(S,k,i,HAND.length)).join('')}</div>`;
+}
+
+function offsetIn(el, root){
+  let x = 0, y = 0;
+  while (el && el !== root){ x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; }
+  return {x, y};
+}
+
+function drawArrow(){
+  const a = scene.querySelector('.unit.sel'), b = scene.querySelector('.unit.target');
+  if (!a || !b) return;
+  const pa = offsetIn(a, scene), pb = offsetIn(b, scene);
+  const ax = pa.x + a.offsetWidth/2, ay = pa.y + 4;
+  const bx = pb.x + b.offsetWidth/2, by = pb.y + b.offsetHeight/2;
+  const cx = (ax + bx)/2 + 60, cy = Math.min(ay, by) + (ay - by) * .35;
+  const ang = Math.atan2(by - cy, bx - cx);
+  const ex = bx - Math.cos(ang)*48, ey = by - Math.sin(ang)*48;
+  const d = `M${ax} ${ay} Q${cx} ${cy} ${ex} ${ey}`;
+  scene.querySelector('.arrow .edge').setAttribute('d', d);
+  scene.querySelector('.arrow .line').setAttribute('d', d);
+  const hx = bx - Math.cos(ang)*30, hy = by - Math.sin(ang)*30, w = 20, L = 32;
+  const px = -Math.sin(ang), py = Math.cos(ang);
+  const bx0 = hx - Math.cos(ang)*L, by0 = hy - Math.sin(ang)*L;
+  scene.querySelector('.arrow .head').setAttribute('points', `${hx},${hy} ${bx0+px*w},${by0+py*w} ${bx0-px*w},${by0-py*w}`);
+  const ring = scene.querySelector('.arrow .ring');
+  ring.setAttribute('cx', bx); ring.setAttribute('cy', by);
+}
+
+/* Pixel style: rasterise each portrait to a tiny canvas and snap it to a 3-colour palette. */
+function hexRgb(h){ h = h.replace('#',''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)); }
+function mixHex(a, b, t){ const A=hexRgb(a), B=hexRgb(b); return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
+function pixelate(root){
+  root.querySelectorAll('.art[data-icon]').forEach(el=>{
+    const N = 22, fill = mixHex(el.dataset.c, '#ffffff', .25), line = '#140c1c';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 72 72" width="${N}" height="${N}"><style>*{fill:${fill};stroke:${line};stroke-width:5;paint-order:stroke;stroke-linejoin:round}.k{fill:${line};stroke:none}</style>${ICONS[el.dataset.icon]}</svg>`;
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas'); cv.width = cv.height = N;
+      const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0, N, N);
+      try {
+        const id = ctx.getImageData(0, 0, N, N), p = id.data, F = hexRgb(fill), K = hexRgb(line);
+        for (let i = 0; i < p.length; i += 4){
+          if (p[i+3] < 110){ p[i+3] = 0; continue; }
+          const dF = (p[i]-F[0])**2 + (p[i+1]-F[1])**2 + (p[i+2]-F[2])**2;
+          const dK = (p[i]-K[0])**2 + (p[i+1]-K[1])**2 + (p[i+2]-K[2])**2;
+          const C = dF < dK ? F : K; p[i]=C[0]; p[i+1]=C[1]; p[i+2]=C[2]; p[i+3]=255;
+        }
+        ctx.putImageData(id, 0, 0);
+      } catch (e) {}
+      if (el.isConnected) el.replaceChildren(cv);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
+function stripHTML(S){
+  return LEGEND.map((k,i)=>`<div class="lg">${unitHTML(S,{k})}<span class="cap plate">Тир ${i+1} · ${TIER_NAMES[i]}</span></div>`).join('');
+}
+
+function meter(n){ return `<span class="meter" aria-hidden="true">${Array.from({length:5},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`; }
+const ART_WORDS = ['','минимальный','небольшой','средний','большой','очень большой'];
+const READ_WORDS = ['','слабая','так себе','нормальная','хорошая','отличная'];
+
+function renderAbout(S){
+  const on = favs.includes(S.id);
+  $('#about').innerHTML = `
+    <p class="eyebrow">Стиль ${current+1} из 10 · ${S.sub}</p>
+    <h2 style="font-family:${S.font.replace(/"/g,"'")}">${S.name}</h2>
+    <p class="desc">${S.desc}</p>
+    <dl class="meta">
+      <div><dt>Похоже на</dt><dd>${S.refs}</dd></div>
+      <div><dt>Шрифты</dt><dd>${S.fontNames}</dd></div>
+      <div><dt>Объём работы над артом</dt><dd>${meter(S.art)}${ART_WORDS[S.art]}</dd></div>
+      <div><dt>Читаемость на телефоне</dt><dd>${meter(S.read)}${READ_WORDS[S.read]}</dd></div>
+      <div style="grid-column:1/-1"><dt>Как видны тиры</dt><dd>${S.tierHow}</dd></div>
+    </dl>
+    <div class="swatches">${S.swatches.map(c=>`<span><i style="background:${c}"></i>${c}</span>`).join('')}</div>
+    <button class="btn${on?' on':''}" id="fav" type="button" aria-pressed="${on}"><span class="star">${on?'★':'☆'}</span>${on?'В шорт-листе':'Добавить в шорт-лист'}</button>`;
+  $('#fav').onclick = () => toggleFav(S.id);
+}
+
+function renderPicks(){
+  const list = STYLES.filter(s=>favs.includes(s.id));
+  $('#picks').innerHTML = `
+    <h3>Шорт-лист</h3>
+    ${list.length ? `<ul>${list.map(s=>`<li><button type="button" data-go="${s.id}">${s.name}</button> · ${s.sub}</li>`).join('')}</ul>`
+                  : `<p>Пока пусто. Отметьте стили звёздочкой, чтобы сравнить их между собой.</p>`}
+    <p>Когда выберете, напишите название стиля в чат. Можно смешать: например, рамки из «Таверны» и тиры из «Былины».</p>
+    <p class="keys"><kbd>1</kbd>–<kbd>0</kbd> или <kbd>←</kbd> <kbd>→</kbd> переключают стили</p>`;
+  $('#picks').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>select(STYLES.findIndex(s=>s.id===b.dataset.go)));
+}
+
+function renderTabs(){
+  $('#tabs').innerHTML = STYLES.map((s,i)=>`
+    <button class="tab" role="tab" id="tab-${s.id}" aria-selected="${i===current}" data-i="${i}" type="button">
+      <span class="key">${(i+1)%10}</span>
+      <span class="nm" style="font-family:${s.font.replace(/"/g,"'")};font-size:${s.tabSize||16}px">${s.name}${favs.includes(s.id)?'<span class="fav" aria-label="в шорт-листе">★</span>':''}</span>
+      <span class="sub">${s.sub}</span>
+      <span class="sw" aria-hidden="true">${s.swatches.slice(0,3).map(c=>`<i style="background:${c}"></i>`).join('')}</span>
+    </button>`).join('');
+  $('#tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>select(+b.dataset.i));
+}
+
+function toggleFav(id){
+  favs = favs.includes(id) ? favs.filter(f=>f!==id) : [...favs, id];
+  try { localStorage.setItem('cardStyleFavs', JSON.stringify(favs)); } catch (e) {}
+  renderTabs(); renderAbout(STYLES[current]); renderPicks();
+}
+
+function paint(){
+  const S = STYLES[current];
+  scene.dataset.style = S.id; strip.dataset.style = S.id;
+  scene.innerHTML = sceneHTML(S);
+  strip.innerHTML = stripHTML(S);
+  if (S.id === 'pixel'){ pixelate(scene); pixelate(strip); }
+  drawArrow();
+}
+
+function select(i, instant){
+  current = (i + STYLES.length) % STYLES.length;
+  const S = STYLES[current];
+  renderTabs(); renderAbout(S); renderPicks();
+  try { history.replaceState(null, '', '#' + S.id); } catch (e) {}
+  try { localStorage.setItem('cardStyleLast', S.id); } catch (e) {}
+  if (instant || matchMedia('(prefers-reduced-motion: reduce)').matches){ paint(); return; }
+  scene.classList.add('swap');
+  setTimeout(()=>{ paint(); scene.classList.remove('swap'); }, 170);
+}
+
+function fit(){
+  const s = stage.clientWidth / 1280;
+  scene.style.transform = `scale(${s})`;
+}
+new ResizeObserver(fit).observe(stage);
+
+document.addEventListener('keydown', e=>{
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (/^[0-9]$/.test(e.key)){ select(e.key === '0' ? 9 : +e.key - 1); }
+  else if (e.key === 'ArrowRight'){ select(current + 1); }
+  else if (e.key === 'ArrowLeft'){ select(current - 1); }
+});
+
+(function start(){
+  let id = location.hash.slice(1);
+  if (!STYLES.some(s=>s.id===id)){ try { id = localStorage.getItem('cardStyleLast') || ''; } catch (e) { id = ''; } }
+  const i = STYLES.findIndex(s=>s.id===id);
+  select(i < 0 ? 0 : i, true);
+  fit();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawArrow);
+})();
+</script>
