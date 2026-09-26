@@ -91,7 +91,8 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile .zz svg *{fill:#c7d2fe;}
 .tile .st{position:absolute; bottom:7%; display:flex; align-items:center; gap:2px; padding:2px 5px; border-radius:7px; font:700 max(10px,13cqmin)/1.2 var(--fd);}
 .tile .st svg{width:max(9px,10cqmin); height:max(9px,10cqmin);}
-.tile .st.a{left:6%; background:var(--ink); color:#0b0d10;} .tile .st.a svg *{fill:#0b0d10;}
+.tile .st.a{left:6%; background:var(--ink); color:#0b0d10; transition:background .2s;} .tile .st.a svg *{fill:#0b0d10;}
+.tile .st.a.off{background:#5f5a53; color:#1c1916;} .tile .st.a.off svg *{fill:#1c1916;}
 .tile .st.h{right:6%; background:#0b0d10; color:#fca5a5; box-shadow:inset 0 0 0 1.5px #5b2a2a;} .tile .st.h svg *{fill:var(--hpc);}
 .tile .st.h.d{color:var(--hpc); box-shadow:inset 0 0 0 1.5px var(--hpc);}
 .tile.sleep .ic{opacity:.62;}
@@ -102,7 +103,10 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile.trio{cursor:pointer; box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 60%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 50%,transparent);}
 .tile.trio:hover{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 22px var(--gold);}
 .tile.ready{box-shadow:inset 0 0 0 2px var(--team), 0 0 0 2px color-mix(in srgb,var(--tp) 45%,transparent), 0 0 14px color-mix(in srgb,var(--tp) 35%,transparent);}
-.tile.spent .ic{opacity:.55;}
+.cell.hdrop{cursor:crosshair; box-shadow:inset 0 0 0 2px color-mix(in srgb,#e0503f 70%,transparent), inset 0 0 18px color-mix(in srgb,#e0503f 25%,transparent);}
+.cell.hdrop::after{content:"⚔ герой"; position:absolute; inset:0; display:grid; place-items:center; font:700 11px var(--fd); letter-spacing:.04em; color:#e0503f; text-transform:uppercase; opacity:.8;}
+.cell.hdrop.hov{box-shadow:inset 0 0 0 3px #e0503f, inset 0 0 24px color-mix(in srgb,#e0503f 40%,transparent);}
+.tile.tgt.hov{box-shadow:inset 0 0 0 2px #fff, 0 0 0 4px #e0503f, 0 0 22px #e0503f;}
 .tile.tgt{cursor:crosshair; box-shadow:inset 0 0 0 2px #e0503f, 0 0 0 3px color-mix(in srgb,#e0503f 60%,transparent), 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
 .hero.tgt{cursor:crosshair; border-color:#e0503f; box-shadow:0 0 0 2px #e0503f, 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
 .tile.swp{box-shadow:inset 0 0 0 2px var(--tp), 0 0 0 3px color-mix(in srgb,var(--tp) 55%,transparent);}
@@ -166,6 +170,7 @@ p{margin:0 0 10px; max-width:70ch;}
 .fly{position:fixed; z-index:200; pointer-events:none; width:108px; height:154px; left:0; top:0; transform-origin:0 0;}
 .fly .face,.fly .backf{transform:none;}
 .fly.tilefly{width:auto; height:auto;}
+.fly *{pointer-events:none !important;}
 .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap; width:min(100%,var(--bw,860px));}
 .btn{all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:999px; background:var(--ink); color:#0b0d10; font:700 13px/1 var(--fd);}
 .btn.ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--off);}
@@ -265,13 +270,15 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
       <div><h3>Общее</h3><ul>
         <li>Мана = номер хода, не больше 10. Карта стоит столько маны, какого она тира.</li>
         <li>На старте 6 карт, дальше +3 за ход, в руке до 9.</li>
-        <li>Автобоя нет. В свой ход нажмите на своего юнита (он светится), потом на врага в красной рамке или на героя противника. Каждый юнит бьёт раз за ход, с двойным ударом — дважды.</li>
-        <li>Цели: ближайший враг прямо и в двух соседних колонках (по диагонали вперёд). Ближний бой не бьёт через своих, стрелки бьют. Героя можно ударить, если прямо перед юнитом врагов нет.</li>
+        <li>Автобоя нет. В свой ход перетащите своего юнита на врага в красной рамке — это атака. Каждый юнит бьёт раз за ход, с двойным ударом — дважды.</li>
+        <li>Цели: ближайший враг прямо и в двух соседних колонках (по диагонали вперёд). Ближний бой не бьёт через своих, стрелки бьют.</li>
+        <li>Удар по герою: перетащите юнита на пустую клетку врага в колонке, где перед ним нет врагов. Такие клетки подсвечены «⚔ герой».</li>
+        <li>Значок атаки на юните белый — он может бить в этом ходу; серый — уже бил или спит.</li>
         <li>Только что выставленный или улучшенный юнит спит и не бьёт до следующего хода.</li>
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
         <li>Погиб юнит в переднем ряду — боец ближнего боя, стоявший за ним, сразу шагает на его место. Стрелки всегда остаются в тылу.</li>
-        <li>Манёвр, раз за ход: нажмите на своего юнита, потом на соседнюю пустую клетку (шаг) или на соседнего своего юнита (обмен местами). Вбок, вперёд или назад, не по диагонали.</li>
-        <li>Суккуб бьёт цепью: 3 цели, 1 тому, кто стоит за целью (или ближайшему врагу), и 1 его соседу слева или справа (50 на 50). Нет соседа — ближайшему по диагонали, нет и такого — просто ближайшему врагу. Лишний урон у суккуба не переносится.</li>
+        <li>Манёвр, раз за ход: перетащите своего юнита на соседнюю пустую клетку (шаг) или на соседнего своего юнита (обмен местами). Вбок, вперёд или назад, не по диагонали. Юнита, который уже бил в этом ходу, двигать и менять местами нельзя.</li>
+        <li>Суккуб бьёт цепью: 3 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
         <li>Грифон даёт сдачу: кто ударил его вблизи, сразу получает 2 в ответ.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую.</li>
@@ -413,6 +420,13 @@ function ico(key){
 const icoAt = (key, i) => `<svg class="ico" viewBox="${FIG_VB[key] || '0 0 64 64'}" aria-hidden="true">${FIG[key][i]}</svg>`;
 const SWORD = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 1.5L15 1l-.5 1.5L7 10l-1-1zM4 9l3 3-1 1-1-1-2 2-1-1 2-2-1-1z"/></svg>`;
 const HEART = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14.5S1 10 1 5.5A3.5 3.5 0 0 1 8 4a3.5 3.5 0 0 1 7 1.5C15 10 8 14.5 8 14.5z"/></svg>`;
+const BOW = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1c6 3 6 11 0 14l1 1c7-4 7-12 0-16z"/><path d="M4.4 1.6h1v12.8h-1zM2 7.4h10v1.2H2z"/><path d="M15.4 8L11 5.4v5.2z"/></svg>`;
+const FIREBALL = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 15.4c-3.4 0-5.4-2.2-5.4-5C2.6 6.6 5.8 5.4 6.4 1.4c1.6 1.6 2 3.4 1.6 5 1.4-.6 2.2-2.2 2-4 2.6 2.4 3.6 5.2 3.6 7.8 0 2.9-2.2 5.2-5.6 5.2z"/></svg>`;
+const HEADS = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M.6 9.6c0-2 1.2-3.4 2.8-3.4L3 3.4l1.6 2.2c1 .4 1.6 1.6 1.6 3v4H1.4z"/><path d="M15.4 9.6c0-2-1.2-3.4-2.8-3.4l.4-2.8-1.6 2.2c-1 .4-1.6 1.6-1.6 3v4h4.8z"/><path d="M4.6 7.6c0-2.4 1.4-4 3.4-4l-.4-3 1.2 2.4 1.2-2.4-.4 3c2 0 3.4 1.6 3.4 4v6H4.6z"/></svg>`;
+const CLAW = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.4 1.4c3 2.4 4.2 6.6 3.4 13.2L4.2 14.4C4.8 9 4 5 1.6 2.6zM6.8.8c3 2.6 4 7 3.2 14l-1.6-.2c.6-5.8 0-9.8-2.4-12.4zM11.2 1.6c2.8 2.4 3.6 6.4 3 12.4l-1.6-.2c.4-5.2-.2-8.8-2.2-11z"/></svg>`;
+const ORB = `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.4"/><path d="M8 0l1.2 3H6.8zM8 16l-1.2-3h2.4zM0 8l3-1.2v2.4zM16 8l-3 1.2V6.8z"/></svg>`;
+const ATK_ICON = {archer:BOW, hunter:BOW, succubus:FIREBALL, hound:HEADS, imp:CLAW, demon:CLAW, priest:ORB, druid:ORB, pixie:ORB};
+const atkIcon = key => ATK_ICON[key] || SWORD;
 const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
 
 const FAC = {
@@ -429,7 +443,7 @@ const FAC = {
     {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, splash:true, ab:'Три головы: задевает соседей цели на 1', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
-    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', chain:true, ab:'Цепная атака: 3, потом 1 тому, кто за целью, и 1 его соседу', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
+    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', chain:true, ab:'Цепь по соседям: 3, потом 1 и 1', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
     {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'Два удара за ход', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
@@ -710,8 +724,8 @@ function note(){}
 /* Manual attacks: nearest enemy straight ahead and in the two neighbouring columns.
    Melee can't strike through its own units, ranged can. The hero is open when nothing hostile stands straight ahead. */
 function attackTargets(u){
-  const units = []; let hero = false;
-  if (!u || u.where !== 'f') return {units, hero};
+  const units = [], lanes = []; let hero = false;
+  if (!u || u.where !== 'f') return {units, hero, lanes};
   const A = U(u), d = FWD[u.side];
   for (const dc of [0, -1, 1]){
     const c = u.c + dc; if (c < 0 || c >= COLS()) continue;
@@ -721,11 +735,21 @@ function attackTargets(u){
       if (v.side !== u.side){ units.push(v); found = true; break; }
       if (!A.ranged){ blocked = true; break; }
     }
-    if (dc === 0 && !found && !blocked) hero = true;
+    if (!found && !blocked){ hero = true; lanes.push(c); }
   }
-  return {units, hero};
+  return {units, hero, lanes};
 }
+/* Empty enemy cells in open lanes: dropping a unit there strikes the enemy hero. */
+function heroCells(u){
+  if (!canAttack(u)) return [];
+  const T = attackTargets(u), out = [];
+  ZONE[other(u.side)].forEach(r => T.lanes.forEach(c => { if (!fieldAt(r, c)) out.push(CELLS[r][c]); }));
+  return out;
+}
+const acted = u => !!u.acted;
 const canAttack = u => u && u.where === 'f' && !u.sleep && (u.atks || 0) > 0 && (() => { const T = attackTargets(u); return T.hero || T.units.length > 0; })();
+/* white attack badge: this unit can still strike this turn */
+const armed = u => u.where === 'f' && (u.side === S.side ? !u.sleep && (u.atks || 0) > 0 : !u.stun);
 const selUnit = () => S && S.sel && S.sel.unit != null ? S.units.find(u => u.id === S.sel.unit) : null;
 /* Trio by placement: a card completes a trio if the target cell touches a pair (or joins a chain of two). */
 function completionAt(side, type, cell, excl){
@@ -780,7 +804,7 @@ const mid = el => { const b = box(el); return {x:b.x + b.w / 2, y:b.y + b.h / 2}
 function tileInner(u, extra = ''){
   const A = U(u), d = u.hp < A.hp;
   return `<span class="tr">${RO[u.type]}</span>${u.sleep ? `<span class="zz" title="спит">${ZZZ}</span>` : ''}<div class="ic">${ico(A.key)}</div>`
-    + `<span class="st a">${SWORD}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
+    + `<span class="st a${armed(u) ? '' : ' off'}" title="${armed(u) ? 'Может атаковать в этом ходу' : u.sleep ? 'Спит' : 'Уже атаковал или не может бить'}">${atkIcon(A.key)}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
 }
 function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
 /* Pairs that some affordable card in hand would upgrade. */
@@ -810,7 +834,7 @@ function syncUnits(dropId){
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
-  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); });
+  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); el.classList.toggle('hdrop', T.hcells.includes(el)); });
   $('#hero-e')?.classList.toggle('tgt', AT.hero);
   renderOverlay();
 }
@@ -826,14 +850,14 @@ function renderOverlay(){
   if (su && su.side === 'p' && S.side === 'p' && canAttack(su)){
     const T = attackTargets(su), a = mid(CELLS[su.r][su.c]), from = {x:a.x, y:a.y - 16};
     T.units.forEach(v => { const b = mid(CELLS[v.r][v.c]); s += line(from, {x:b.x, y:b.y + 16}, '#d0473b', false, .9); });
-    if (T.hero) s += line(from, {x:a.x, y:top - 4}, '#d2a247', true, .9);
+    T.lanes.forEach(c => { const x = mid(CELLS[0][c]).x; s += line(from, {x, y:top - 4}, '#d2a247', true, .9); });
   }
   ov.setAttribute('viewBox', `0 0 ${W} ${H}`); ov.innerHTML = s;
 }
 new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
 
 function targetsFor(sel){
-  const out = {cells:[], ups:[], upCells:[], swaps:[]};
+  const out = {cells:[], ups:[], upCells:[], swaps:[], hcells:[]};
   if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
   let type, src = null;
   if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
@@ -841,10 +865,11 @@ function targetsFor(sel){
     src = S.units.find(u => u.id === sel.unit); if (!src || src.side !== 'p') return out;
     /* once per turn: step to an empty neighbouring cell or swap with a neighbouring unit of yours */
     if (src.where === 'f'){
-      if (S.moved.p || src.where !== 'f') return out;
+      out.hcells = heroCells(src);
+      if (S.moved.p || acted(src)) return out;
       for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]){
         const r = src.r + dr, c = src.c + dc; if (!ZONE.p.includes(r) || c < 0 || c >= COLS()) continue;
-        const v = fieldAt(r, c); if (!v) out.cells.push(CELLS[r][c]); else if (v.side === 'p') out.swaps.push(v);
+        const v = fieldAt(r, c); if (!v) out.cells.push(CELLS[r][c]); else if (v.side === 'p' && !acted(v)) out.swaps.push(v);
       }
       return out;
     }
@@ -874,12 +899,12 @@ function renderBars(){
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span><span class="chip" title="Раз за ход: сдвинуть юнита на соседнюю клетку или поменять местами двух соседних">Манёвр <b>${S.moved.p ? 'сделан' : 'есть'}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? (canAttack(selUnit()) ? 'Атака: нажмите на врага в красной рамке' + (attackTargets(selUnit()).hero ? ' или на героя противника' : '') + '.' : '') + (!S.moved.p ? ' Манёвр: соседняя клетка или соседний юнит (⇄).' : '') : 'Выберите подсвеченную цель: золото — улучшение.')
-    : readyTrios().size ? 'Тройка собрана: нажмите на любого из трёх (↑) — двое других сольются в него. Любое другое действие, и шанс пропадёт.' : S.moved.p && !onField('p').some(canAttack) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Нажмите на своего юнита (светится), потом на цель. ' : '') + 'Выставьте карты, потом «Конец хода».';
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? 'Отпустите на враге в красной рамке — атака, на пустой клетке врага — удар по герою, на соседней своей клетке или юните — манёвр.' : 'Выберите подсвеченную цель: золото — улучшение.')
+    : readyTrios().size ? 'Тройка собрана: нажмите на любого из трёх (↑) — двое других сольются в него. Любое другое действие, и шанс пропадёт.' : S.moved.p && !onField('p').some(canAttack) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
-  return `<div class="face" style="--t:${TC[t]}"><span class="cost">${t + 1}</span><span class="tr">${RO[t]}</span><div class="art">${ico(A.key)}</div><span class="nm">${A.name}</span><span class="ab">${A.ab}</span><div class="sts"><span class="a">${SWORD}${A.atk}</span><span class="h">${HEART}${A.hp}</span></div></div>`;
+  return `<div class="face" style="--t:${TC[t]}"><span class="cost">${t + 1}</span><span class="tr">${RO[t]}</span><div class="art">${ico(A.key)}</div><span class="nm">${A.name}</span><span class="ab">${A.ab}</span><div class="sts"><span class="a">${atkIcon(A.key)}${A.atk}</span><span class="h">${HEART}${A.hp}</span></div></div>`;
 }
 function cardEl(card){
   const el = document.createElement('div');
@@ -1040,9 +1065,9 @@ async function kill(v){
 }
 /* Once per turn: move one unit to a free neighbouring cell or swap two neighbouring units. */
 async function maneuver(u, dest){
-  if (!alive(u) || u.where !== 'f' || S.moved[u.side]) return false;
+  if (!alive(u) || u.where !== 'f' || S.moved[u.side] || acted(u)) return false;
   if (dest.id != null){
-    const v = dest; if (!alive(v) || v.side !== u.side || v.where !== 'f' || !adj(u, v)) return false;
+    const v = dest; if (!alive(v) || v.side !== u.side || v.where !== 'f' || !adj(u, v) || acted(v)) return false;
     const a = {r:u.r, c:u.c}; Object.assign(u, {r:v.r, c:v.c}); Object.assign(v, a);
   } else {
     if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r) || !adj(u, dest)) return false;
@@ -1125,20 +1150,18 @@ async function hit(u, t){
   for (const v of sides) if (alive(v)) await damage(v, 1);
   for (const v of flame) if (alive(v) && !S.over) await damage(v, A.breath);
 }
-/* Succubus chain: 3 to the target, 2 to the enemy behind it (or the nearest one), then 1 to a side neighbour of that one (random), else a diagonal one, else the nearest. */
+/* Succubus chain: 3 to the target, then 1 to an adjacent enemy behind it (or beside it), then 1 to a neighbour of that one.
+   It only jumps between touching units, never across an empty cell. */
 const enemiesOf = u => S.units.filter(v => v.where === 'f' && v.side !== u.side && alive(v));
-const dist = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c);
-const nearestTo = (u, p, skip) => enemiesOf(u).filter(v => !skip.includes(v)).sort((a, b) => dist(a, p) - dist(b, p) || Math.random() - .5)[0] || null;
+const around = (u, p, skip, dirs) => dirs.map(([dr, dc]) => fieldAt(p.r + dr, p.c + dc)).filter(v => v && v.side !== u.side && !skip.includes(v));
+const pick = a => a.length ? a[Math.floor(Math.random() * a.length)] : null;
 function chainFirst(u, t){
-  const v = fieldAt(t.r + FWD[u.side], t.c);
-  return v && v.side !== u.side ? v : nearestTo(u, t, [t]);
+  return around(u, t, [t], [[FWD[u.side], 0]])[0] || pick(around(u, t, [t], [[0, -1], [0, 1]]));
 }
 async function chainRest(u, hop1, from, t){
   if (!hop1 || !alive(hop1) || S.over) return;
   const p1 = {r:hop1.r, c:hop1.c};
-  const sides = [-1, 1].map(dc => fieldAt(p1.r, p1.c + dc)).filter(v => v && v.side !== u.side && v !== t);
-  const diag = [[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([dr, dc]) => fieldAt(p1.r + dr, p1.c + dc)).filter(v => v && v.side !== u.side && v !== t);
-  const hop2 = sides.length ? sides[Math.floor(Math.random() * sides.length)] : diag.length ? diag[Math.floor(Math.random() * diag.length)] : nearestTo(u, p1, [t, hop1]);
+  const hop2 = pick(around(u, p1, [t, hop1], [[0, -1], [0, 1]])) || pick(around(u, p1, [t, hop1], [[-1, -1], [-1, 1], [1, -1], [1, 1]]));
   await travel(mid(CELLS[from.r][from.c]), mid(CELLS[p1.r][p1.c])); await damage(hop1, 1);
   if (!hop2 || !alive(hop2) || S.over) return;
   await travel(mid(CELLS[p1.r][p1.c]), mid(slotEl(hop2))); await damage(hop2, 1);
@@ -1146,7 +1169,7 @@ async function chainRest(u, hop1, from, t){
 async function attack(u, t){
   if (!alive(u) || !canAttack(u)) return false;
   const T = attackTargets(u); if (t === 'hero' ? !T.hero : !T.units.includes(t)) return false;
-  u.atks--; if (u.side === 'p') S.offer = null;
+  u.atks--; u.acted = true; if (u.side === 'p') S.offer = null;
   if (t === 'hero') await heroHit(u); else await hit(u, t);
   checkOver(); return true;
 }
@@ -1173,7 +1196,7 @@ function checkOver(){
   return !!S.over;
 }
 async function startTurn(side, first){
-  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = U(u).double ? 2 : 1; } });
+  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = U(u).double ? 2 : 1; u.acted = false; } });
   S.moved[side] = false;
   S.mana[side] = Math.min(S.turn, MANA_MAX);
   for (const u of onField(side).filter(v => U(v).heal)){
@@ -1328,6 +1351,17 @@ function dropAt(x, y){
 async function perform(sel, dest, fromRect){
   if (!sel || !dest) return false;
   const T = targetsFor(sel);
+  const fsrc = sel.unit != null ? S.units.find(u => u.id === sel.unit && u.where === 'f') : null;
+  if (fsrc){
+    let act = null;
+    if (dest.unit && dest.unit.side !== fsrc.side && canAttack(fsrc) && attackTargets(fsrc).units.includes(dest.unit)) act = () => attack(fsrc, dest.unit);
+    else if (!dest.unit && T.hcells.includes(dest.el)) act = () => attack(fsrc, 'hero');
+    else if (dest.unit ? T.swaps.includes(dest.unit) : T.cells.includes(dest.el)) act = () => maneuver(fsrc, dest.unit ? dest.unit : dest);
+    if (!act) return false;
+    S.busy = true; S.offer = null; S.sel = null; renderAll();
+    const ok = await act();
+    S.busy = false; S.sel = null; renderAll(); return ok;
+  }
   if (dest.unit){ if (!T.ups.includes(dest.unit) && !T.swaps.includes(dest.unit)) return false; }
   else if (!T.cells.includes(dest.el)) return false;
   S.busy = true; S.offer = null; renderBars(); let ok;
@@ -1341,6 +1375,13 @@ document.addEventListener('pointerdown', e => {
   if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
   const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
   const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
+  const fieldUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'f');
+  if (fieldUnit){
+    if (!(canAttack(fieldUnit) || (!S.moved.p && !acted(fieldUnit)))) return;
+    e.preventDefault();
+    drag = {sel:{unit:fieldUnit.id}, src:tile, field:true, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
+    return;
+  }
   if (!card && !campUnit) return;
   e.preventDefault();
   if (campUnit && S.sel && targetsFor(S.sel).ups.includes(campUnit)) return;
@@ -1360,7 +1401,7 @@ document.addEventListener('pointermove', e => {
     const w = drag.ghost.offsetWidth || 108, h = drag.ghost.offsetHeight || 154;
     drag.ghost.style.transform = `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
     document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
-    const d = dropAt(e.clientX, e.clientY); if (d && d.el && (d.el.classList.contains('drop') || d.el.classList.contains('mg'))) d.el.classList.add('hov');
+    const d = dropAt(e.clientX, e.clientY); if (d && d.el && ['drop', 'mg', 'tgt', 'swp', 'hdrop'].some(k => d.el.classList.contains(k))) d.el.classList.add('hov');
     e.preventDefault();
   }
 }, {passive:false});
@@ -1368,6 +1409,7 @@ document.addEventListener('pointerup', async e => {
   if (!drag) return;
   const d = drag; drag = null;
   document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+  if (!d.on && d.field) return;
   if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = d.sel.unit != null; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
   const dest = dropAt(e.clientX, e.clientY);
@@ -1390,25 +1432,7 @@ $('#bwrap').addEventListener('click', async e => {
     await trioUpgrade(dest.unit, members);
     S.busy = false; renderAll(); return;
   }
-  /* attack: selected unit, then a highlighted enemy */
-  const su = selUnit();
-  if (su && su.side === 'p' && dest && dest.unit && dest.unit.side === 'e' && attackTargets(su).units.includes(dest.unit) && canAttack(su)){
-    S.busy = true; renderAll();
-    await attack(su, dest.unit);
-    S.busy = false; if (!alive(su) || !canAttack(su)) S.sel = null; renderAll(); return;
-  }
-  /* pick one of your units on the field: attack with it, or this turn's move or swap */
-  if (dest && dest.unit && dest.unit.side === 'p' && dest.unit.where === 'f' && (!S.moved.p || canAttack(dest.unit))){
-    S.sel = S.sel && S.sel.unit === dest.unit.id ? null : {unit:dest.unit.id}; Sfx.play('pick'); renderAll(); return;
-  }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
-});
-document.addEventListener('click', async e => {
-  const h = e.target.closest('#hero-e'); if (!h || !S || S.side !== 'p' || S.busy || S.over) return;
-  const su = selUnit(); if (!su || su.side !== 'p' || !attackTargets(su).hero || !canAttack(su)) return;
-  S.busy = true; renderAll();
-  await attack(su, 'hero');
-  S.busy = false; if (!alive(su) || !canAttack(su)) S.sel = null; renderAll();
 });
 $('#end').onclick = endTurn;
 $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
