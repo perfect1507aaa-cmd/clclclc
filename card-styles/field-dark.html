@@ -202,6 +202,7 @@ details.panel > summary:focus-visible{outline:2px solid var(--tp); outline-offse
 .sbtn[aria-pressed="true"]{border-color:var(--gold); background:#221d10;}
 .sbtn[aria-pressed="true"]::before{border-left-color:var(--gold);}
 .sbtn.playing{background:#16302e;}
+.sbtn.prev{border-style:dashed; color:var(--mut);}
 @media (max-width:640px){ .srow{grid-template-columns:1fr;} }
 .igal{overflow-x:auto;}
 .igal table{min-width:680px;}
@@ -272,7 +273,7 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
         <li>На старте 6 карт, дальше +3 за ход, в руке до 9.</li>
         <li>Автобоя нет. В свой ход перетащите своего юнита на врага в красной рамке — это атака.</li>
         <li>Очки хода: у юнита 1 очко (у охотника, танцора и жеребца — 2). Удар и шаг тратят по очку. Охотник может выстрелить дважды или выстрелить и отойти.</li>
-        <li>Мана = номер хода, но не больше 5.</li>
+        <li>Мана = номер хода, но не больше 4.</li>
         <li>Стрелки бьют только прямо: ближайшего врага в своей колонке, через своих.</li>
         <li>Ближний бой бьёт только прямо и только из переднего ряда: ближнюю клетку впереди или дальнюю, если ближняя пуста. Из заднего ряда боец сначала выходит вперёд. Адский пёс бьёт ещё и наискосок.</li>
         <li>Сдача: атакованный юнит отвечает своим уроном, один раз за ход. Грифон отвечает на каждый удар. Стрелкам сдачу не даёт никто, кроме суккуба. На удары адского пса и феи сдачи нет. Спящий и ослеплённый не отвечают.</li>
@@ -302,7 +303,7 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
   </details>
 
   <h2>Звуки</h2>
-  <p class="lede">Первый в каждой строке — звук, который вы выбрали. Дальше пять стилей: сухой фоли (близко и реалистично), настолка (деревянные фишки), ретро (8-бит), оркестр (пиццикато, литавры, медь) и кино (плотные короткие удары). Эха почти нет. У атак первым идёт фирменный звук юнита. Нажатие проигрывает звук и выбирает его: выбранный (золотая рамка) сразу звучит в бою.</p>
+  <p class="lede">Два пакета. «Текущий» — звуки, которые вы выбрали раньше. «Реализм» — живые звуки: голоса и рык через форманты, звон стали у клинков, тетива, копыта, крылья, огонь. В реализме ранение и гибель звучат голосом самого юнита: пёс скулит, человек стонет, Энт трещит. Кнопки «ранение» и «гибель» в строке юнита только прослушивают. Выбранный звук (золотая рамка) сразу звучит в бою.</p>
   <div class="panel" id="sndcats"></div>
   <div class="panel" id="sndatk"></div>
 
@@ -479,7 +480,7 @@ const MODES = {
 const TC = ['#8b93a1','#7d9a4a','#4f7bb8','#8065b3','#c08a2e','#b8423a','#d8d2c4'];
 const RO = ['I','II','III','IV','V','VI','VII'];
 const ROWS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1}, BACK = {p:3, e:0}, FRONT = {p:2, e:1};
-const HERO_HP = 30, HAND_MAX = 9, MANA_MAX = 5;
+const HERO_HP = 30, HAND_MAX = 9, MANA_MAX = 4;
 let MODE_ID = 'col';
 try { const m = localStorage.getItem('fieldMode'); if (MODES[m]) MODE_ID = m; } catch (e) {}
 const M = () => MODES[MODE_ID];
@@ -494,19 +495,19 @@ const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 const ACLASS = {peasant:'light', imp:'light', pixie:'light', archer:'bow', hunter:'bow', footman:'blade', dancer:'blade', griffin:'beast', hound:'beast', unicorn:'beast',
   priest:'magic', succubus:'magic', angel:'magic', druid:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy', treant:'heavy', gdragon:'heavy'};
 /* Five sound styles: every event and every unit attack has one variant per style. */
-const STYLES = ['Сухой фоли', 'Настолка', 'Ретро', 'Оркестр', 'Кино'];
-const ATK_VARS = ['Фирменный', ...STYLES];
+/* Two packs: the current sounds, and a realistic one (voices, steel, strings, hooves, fire). */
+const ATK_VARS = ['Фирменный', 'Реализм'];
 const CATS = {
-  draw:{name:'Вытягивание карты', vars:['Шорох плаща', ...STYLES]},
-  place:{name:'Выставление', vars:['Тяжёлый шаг', ...STYLES]},
-  hurt:{name:'Получение урона', vars:['Пробитый доспех', ...STYLES]},
-  die:{name:'Гибель', vars:['Падение тела', ...STYLES]},
-  hero:{name:'Удар по герою', vars:['Раскат грома', ...STYLES]},
-  up:{name:'Улучшение', vars:['Тёмный ритуал', ...STYLES]},
+  draw:{name:'Вытягивание карты', vars:['Шорох плаща', 'Реализм']},
+  place:{name:'Выставление', vars:['Тяжёлый шаг', 'Реализм']},
+  hurt:{name:'Получение урона (в реализме — голос раненого юнита)', vars:['Пробитый доспех', 'Реализм']},
+  die:{name:'Гибель (в реализме — голос юнита)', vars:['Падение тела', 'Реализм']},
+  hero:{name:'Удар по герою', vars:['Раскат грома', 'Реализм']},
+  up:{name:'Улучшение', vars:['Тёмный ритуал', 'Реализм']},
 };
 let SEL_SND = {draw:0, place:0, hurt:0, die:0, hero:0, up:0, atk:{}};
-try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds2') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
-const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds2', JSON.stringify(SEL_SND)); } catch (e) {} };
+try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds3') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
+const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds3', JSON.stringify(SEL_SND)); } catch (e) {} };
 const Sfx = {
   ctx:null, on:true, out:null, verb:null, nb:null,
   ensure(){
@@ -575,54 +576,114 @@ const Sfx = {
   choir(freqs, dur, {vol = .05, delay = 0} = {}){ freqs.forEach(f => [-8, 8].forEach(d => this.osc(f * Math.pow(2, d / 1200), dur, {type:'sawtooth', vol, a:dur * .4, delay, wet:true, lp:700, q:4}))); },
   groan(dur = .8, {f = 110, vol = .08, delay = 0} = {}){ this.osc(f, dur, {type:'sawtooth', vol, a:.08, f2:f * .6, delay, wet:true, lp:600, q:5}); this.osc(f * 1.01, dur, {type:'sawtooth', vol:vol * .6, a:.1, f2:f * .58, delay, lp:1100, q:6}); },
   crackle(dur = .4, {vol = .06, delay = 0} = {}){ for (let i = 0; i < 8; i++) this.burst(.012, {vol:vol * (0.5 + Math.random()), type:'highpass', f:1800, delay:delay + Math.random() * dur}); this.burst(dur, {vol:vol * .6, f:700, a:.05, delay}); },
-  /* crisp building blocks for the new styles */
   click(f = 3000, vol = .15, delay = 0){ this.burst(.012, {vol, type:'bandpass', f, q:1, a:.001, delay}); },
-  knock(f = 900, vol = .3, delay = 0){ this.burst(.07, {vol, type:'bandpass', f, q:9, a:.001, delay}); this.osc(f * .5, .05, {type:'triangle', vol:vol * .4, a:.001, delay}); },
-  sq(f, dur, {f2 = null, vol = .06, delay = 0, type = 'square'} = {}){ this.osc(f, dur, {type, vol, a:.002, f2, delay}); },
-  bits(dur, vol = .05, delay = 0){ this.burst(dur, {vol, type:'highpass', f:1500, a:.002, delay}); },
-  pluck(f, vol = .16, delay = 0){ this.osc(f, .28, {type:'triangle', vol, a:.002, delay, lp:f * 5}); this.osc(f * 2, .12, {type:'sine', vol:vol * .3, a:.002, delay}); },
-  timp(f = 60, vol = .5, delay = 0){ this.osc(f * 1.6, .7, {vol, a:.003, f2:f, delay}); this.burst(.08, {vol:vol * .25, f:700, delay}); },
-  snare(vol = .2, delay = 0){ this.burst(.14, {vol, type:'highpass', f:1600, a:.002, delay}); this.osc(190, .07, {type:'triangle', vol:vol * .6, a:.002, delay}); },
-  stab(f, dur = .3, vol = .08, delay = 0){ this.horn(f, dur, {vol, delay}); },
-  swish(dur = .12, f = 900, f2 = 3200, vol = .12, delay = 0){ this.burst(dur, {vol, type:'bandpass', f, f2, q:2, a:dur * .5, delay}); },
+  /* ---- realistic pack: voices through formants, plucked strings, steel, hooves, wings, fire ---- */
+  voice({f = 120, f2 = null, dur = .3, form = [[600, 1], [1000, .6], [2400, .25]], vol = .5, vib = 0, rough = 0, breath = .25, delay = 0, wet = false, q = 7} = {}){
+    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain(), mix = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * .9);
+    const stops = [o];
+    if (vib){ const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5 + Math.random() * 2; lg.gain.value = f * vib; l.connect(lg).connect(o.frequency); stops.push(l); }
+    let src = o;
+    if (rough){ const am = c.createGain(), l = c.createOscillator(), lg = c.createGain(); l.type = 'square'; l.frequency.value = 24 + Math.random() * 16; lg.gain.value = rough * .5; am.gain.value = 1 - rough * .5; l.connect(lg).connect(am.gain); o.connect(am); src = am; stops.push(l); }
+    const n = c.createBufferSource(); n.buffer = this.nb; n.loop = true; const ng = c.createGain(); ng.gain.value = breath; n.connect(ng);
+    form.forEach(([ff, gain]) => { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = ff; bp.Q.value = q; const fg = c.createGain(); fg.gain.value = gain; src.connect(bp); ng.connect(bp); bp.connect(fg).connect(mix); });
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(.04, dur * .2)); g.gain.setValueAtTime(vol, t + dur * .55); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    mix.connect(g); this.route(g, wet);
+    stops.forEach(x => { x.start(t); x.stop(t + dur + .05); }); n.start(t, Math.random()); n.stop(t + dur + .05);
+  },
+  /* Karplus-Strong plucked string: a bowstring twang */
+  string(f = 100, {vol = .5, delay = 0, decay = .994, dur = .5} = {}){
+    const c = this.ctx, sr = c.sampleRate, N = Math.max(2, Math.round(sr / f)), len = Math.floor(sr * dur), b = c.createBuffer(1, len, sr), d = b.getChannelData(0);
+    for (let i = 0; i < N; i++) d[i] = Math.random() * 2 - 1;
+    for (let i = N; i < len; i++) d[i] = decay * .5 * (d[i - N] + d[i - N + 1]);
+    const s = c.createBufferSource(), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
+    s.buffer = b; g.gain.value = vol; s.connect(lp).connect(g); this.route(g, false); s.start(c.currentTime + delay);
+  },
+  /* steel: a short, inharmonic blade ring over a sharp scrape */
+  steel(vol = .06, delay = 0, p = 1){
+    [2210, 3130, 4470, 5930, 7340].forEach((f, i) => this.osc(f * p, .14 + i * .03, {vol:vol / (1 + i * .5), a:.001, delay}));
+    this.burst(.03, {vol:vol * 2, type:'highpass', f:2500, a:.001, delay});
+  },
+  swing(dur = .18, vol = .14, delay = 0, lo = 350, hi = 1600){ this.burst(dur, {vol, type:'bandpass', f:lo, f2:hi, q:1.3, a:dur * .55, delay}); },
+  cut(vol = .35, delay = 0){ this.burst(.06, {vol:vol * .45, type:'bandpass', f:1300, q:1, delay}); this.impact(70, {vol, dur:.12, delay}); },
+  gallop(vol = .25, delay = 0){ [0, .07, .19, .26].forEach(d => { this.impact(95, {vol, dur:.07, delay:delay + d}); this.burst(.04, {vol:vol * .25, type:'bandpass', f:1600, delay:delay + d}); }); },
+  wings(vol = .12, delay = 0, n = 2){ for (let k = 0; k < n; k++) this.burst(.13, {vol, type:'lowpass', f:900, f2:260, a:.04, delay:delay + k * .17}); },
+  fire(dur = .5, vol = .12, delay = 0){ this.burst(dur, {vol, type:'lowpass', f:300, f2:2600, a:dur * .35, delay}); this.crackle(dur, {vol:vol * .5, delay}); },
+  /* voices */
+  grunt(delay = 0, p = 1, vol = .5){ this.voice({f:140 * p, f2:108 * p, dur:.17, form:[[650, 1], [1100, .6], [2500, .2]], breath:.5, vol, delay}); },
+  hurtM(delay = 0, p = 1){ this.voice({f:175 * p, f2:118 * p, dur:.27, form:[[560, 1], [900, .7], [2400, .25]], rough:.25, vol:.6, delay}); },
+  dieM(delay = 0, p = 1){ this.voice({f:150 * p, f2:78 * p, dur:.85, form:[[520, 1], [860, .6], [2300, .2]], vib:.02, vol:.42, delay}); this.impact(45, {vol:.35, dur:.25, delay:delay + .55}); },
+  rgrowl(delay = 0, p = 1, dur = .5, vol = .6){ this.voice({f:82 * p, f2:72 * p, dur, form:[[420, 1], [900, .5], [2000, .15]], rough:1, breath:.6, vol, delay}); },
+  bark(delay = 0){ this.voice({f:390, f2:270, dur:.13, form:[[700, 1], [1450, .55]], rough:.35, breath:.4, vol:.6, delay}); },
+  yelp(delay = 0, long = false){ this.voice({f:880, f2:1450, dur:.14, form:[[1050, 1], [2300, .4]], breath:.2, vol:.45, delay}); this.voice({f:1400, f2:640, dur:long ? .7 : .34, form:[[1050, 1], [2300, .4]], vib:.07, breath:.2, vol:.4, delay:delay + .12}); },
+  roar(delay = 0, p = 1, dur = .8){ this.voice({f:66 * p, f2:52 * p, dur, form:[[340, 1], [780, .7], [1600, .3]], rough:1, breath:.8, vol:.7, delay, wet:true}); this.burst(dur, {vol:.06, type:'lowpass', f:700, a:dur * .3, delay}); },
+  neigh(delay = 0, short = false){ this.voice({f:560, f2:980, dur:.22, form:[[900, 1], [1650, .6], [2900, .25]], breath:.35, vol:.35, delay}); if (!short) this.voice({f:980, f2:430, dur:.5, form:[[900, 1], [1650, .6], [2900, .25]], vib:.07, breath:.35, vol:.32, delay:delay + .2}); },
+  snort(delay = 0){ this.burst(.2, {vol:.12, type:'bandpass', f:900, q:1.5, a:.02, delay}); },
+  screech(delay = 0, dur = .4){ this.voice({f:1750, f2:1250, dur, form:[[2500, 1], [3600, .5]], vib:.05, rough:.25, breath:.3, vol:.55, delay}); },
+  squeal(delay = 0){ this.voice({f:620, f2:950, dur:.2, form:[[1250, 1], [2700, .4]], rough:.3, vol:.7, delay}); },
+  hiss(delay = 0){ this.voice({f:300, f2:230, dur:.3, form:[[820, 1], [1350, .6], [2900, .3]], breath:.8, vol:.45, delay}); },
+  gasp(delay = 0){ this.voice({f:680, f2:480, dur:.15, form:[[1100, 1], [2600, .5]], breath:.7, vol:.5, delay}); },
+  creak(delay = 0, dur = .6){ this.voice({f:46, f2:38, dur, form:[[520, 1], [1150, .5]], rough:.7, breath:.9, vol:.5, delay}); },
+  real(key){
+    const R = {
+      peasant:() => { this.grunt(); this.swing(.14, .12, .02, 500, 1800); this.cut(.3, .15); },
+      archer:() => { this.string(98, {vol:.55}); this.swing(.24, .06, .03, 3500, 1200); this.impact(130, {vol:.22, dur:.07, delay:.28}); this.burst(.04, {vol:.08, type:'bandpass', f:900, delay:.28}); },
+      footman:() => { this.grunt(0, .95); this.swing(.18, .14, .03); this.steel(.05, .19); this.cut(.35, .2); },
+      griffin:() => { this.screech(0, .32); this.wings(.12, .05, 2); this.cut(.3, .36); },
+      priest:() => { [220, 277, 330].forEach(f => this.voice({f, dur:.5, form:[[800, 1], [1150, .6], [2900, .2]], vib:.012, breath:.1, vol:.14, wet:true})); this.impact(50, {vol:.35, delay:.42, wet:true}); },
+      cavalier:() => { this.gallop(.22); this.neigh(.05, true); this.impact(40, {vol:.6, dur:.25, delay:.32}); this.crackle(.2, {vol:.12, delay:.33}); this.grunt(.3, .9); },
+      angel:() => { this.wings(.13, 0, 2); this.swing(.2, .14, .3, 300, 1400); this.steel(.05, .47, .9); this.cut(.4, .48); },
+      imp:() => { [0, .05, .1].forEach(d => this.burst(.05, {vol:.12, type:'bandpass', f:2200, q:1.4, a:.01, delay:d})); this.squeal(.04); this.cut(.25, .1); },
+      demon:() => { this.rgrowl(0, .8, .35); this.swing(.18, .14, .1, 250, 1100); this.impact(45, {vol:.65, dur:.18, delay:.26}); },
+      hound:() => { this.rgrowl(0, 1, .32); this.bark(.28); this.crackle(.06, {vol:.16, delay:.36}); this.cut(.3, .38); },
+      succubus:() => { this.fire(.42, .12); this.hiss(.02); this.impact(55, {vol:.35, dur:.14, delay:.4}); },
+      charger:() => { this.gallop(.24); this.neigh(.05); this.fire(.35, .08, .1); this.impact(45, {vol:.5, dur:.18, delay:.33}); },
+      fiend:() => { this.roar(0, .9, .5); this.swing(.28, .18, .15, 200, 1000); this.steel(.07, .42, .7); this.cut(.55, .43); },
+      devil:() => { this.roar(0, .8, .6); this.fire(.5, .14, .2); this.impact(35, {vol:.7, dur:.3, delay:.62, wet:true}); },
+      pixie:() => { this.swing(.14, .06, 0, 1800, 4200); this.string(880, {vol:.12, dur:.18, decay:.99}); this.gasp(.06); },
+      dancer:() => { this.swing(.12, .13, 0, 600, 2400); this.steel(.045, .11); this.swing(.12, .13, .15, 700, 2600); this.steel(.05, .26, 1.08); this.cut(.3, .27); },
+      hunter:() => { this.string(104, {vol:.5}); this.swing(.22, .06, .03, 3600, 1200); this.string(110, {vol:.45, delay:.16}); this.swing(.22, .05, .19, 3600, 1200); this.impact(130, {vol:.2, dur:.07, delay:.4}); },
+      druid:() => { for (let k = 0; k < 5; k++) this.burst(.12, {vol:.05, type:'bandpass', f:2400 + k * 300, q:1.2, a:.04, delay:k * .07}); this.creak(.1, .35); this.crackle(.15, {vol:.12, delay:.42}); this.impact(55, {vol:.35, dur:.14, delay:.45}); },
+      unicorn:() => { this.gallop(.2); this.neigh(.08, true); this.cut(.4, .32); },
+      treant:() => { this.creak(0, .5); this.swing(.3, .16, .2, 150, 700); this.impact(32, {vol:.8, dur:.35, delay:.48}); this.crackle(.3, {vol:.12, delay:.5}); },
+      gdragon:() => { this.roar(0, 1, .7); this.roar(0, 1.5, .5); this.fire(.6, .24, .35); this.impact(40, {vol:.5, dur:.3, delay:.7}); },
+    };
+    (R[key] || R.footman)();
+  },
+  hurtOf(key){
+    const H = {peasant:() => this.hurtM(0, 1.05), archer:() => this.hurtM(0, 1.1), footman:() => { this.steel(.03); this.hurtM(.02, .95); }, griffin:() => this.screech(0, .22), priest:() => this.hurtM(0, 1),
+      cavalier:() => { this.steel(.03); this.hurtM(.02, .9); }, angel:() => this.voice({f:150, f2:115, dur:.3, form:[[560, 1], [900, .7], [2400, .25]], vol:.55, wet:true}),
+      imp:() => this.squeal(), demon:() => this.rgrowl(0, .85, .22, .85), hound:() => this.yelp(), succubus:() => this.hiss(), charger:() => { this.snort(); this.neigh(.05, true); },
+      fiend:() => this.rgrowl(0, .7, .28, .85), devil:() => this.roar(0, 1, .3), pixie:() => this.gasp(), dancer:() => this.hurtM(0, 1.15), hunter:() => this.hurtM(0, 1.1),
+      druid:() => this.hurtM(0, .9), unicorn:() => { this.snort(); this.neigh(.04, true); }, treant:() => { this.creak(0, .3); this.crackle(.12, {vol:.14}); }, gdragon:() => this.roar(0, 1.15, .35)};
+    this.impact(70, {vol:.3, dur:.1});
+    (H[key] || H.footman)();
+  },
+  dieOf(key){
+    const K = {griffin:() => { this.screech(0, .7); this.wings(.1, .2, 1); }, imp:() => { this.squeal(); this.squeal(.18); }, demon:() => this.rgrowl(0, .7, .8, .6),
+      hound:() => this.yelp(0, true), succubus:() => this.voice({f:320, f2:160, dur:.8, form:[[820, 1], [1350, .6], [2900, .3]], vib:.03, vol:.45}),
+      charger:() => this.neigh(0), unicorn:() => this.neigh(0), fiend:() => this.roar(0, .75, .9), devil:() => this.roar(0, .65, 1.1), gdragon:() => this.roar(0, .9, 1.2),
+      treant:() => { this.creak(0, .9); this.crackle(.6, {vol:.16, delay:.3}); }, pixie:() => this.voice({f:700, f2:380, dur:.4, form:[[1100, 1], [2600, .5]], breath:.7, vol:.3}),
+      angel:() => this.voice({f:150, f2:75, dur:1, form:[[520, 1], [860, .6], [2300, .2]], vib:.02, vol:.5, wet:true})};
+    (K[key] || (() => this.dieM()))();
+    this.impact(42, {vol:.5, dur:.3, delay:.5});
+  },
+  hurt(u){ if (!this.on || !this.ctx) return; try { SEL_SND.hurt === 1 ? this.hurtOf(U(u).key) : this.cat('hurt', 0); } catch (e) {} },
+  die(u){ if (!this.on || !this.ctx) return; try { SEL_SND.die === 1 ? this.dieOf(U(u).key) : this.cat('die', 0); } catch (e) {} },
   cat(name, i){
     const R = {
       draw:[() => this.whoosh(.3, {vol:.06, f:300, f2:900}),
-        () => { this.burst(.09, {vol:.07, type:'bandpass', f:2500, f2:4200, q:1.2, a:.02}); this.click(5000, .08, .07); },
-        () => { this.knock(1400, .22); this.burst(.04, {vol:.05, type:'bandpass', f:3000, q:1, delay:.01}); },
-        () => { this.sq(660, .07, {f2:990}); this.sq(1320, .06, {delay:.07, vol:.04}); },
-        () => { this.pluck(392, .14); this.pluck(523, .12, .07); },
-        () => { this.swish(.14, 1500, 4500, .08); this.click(4000, .1, .1); this.osc(90, .08, {vol:.15, a:.002, delay:.1}); }],
+        () => { this.burst(.09, {vol:.07, type:'bandpass', f:3200, f2:2000, q:1, a:.03}); this.burst(.012, {vol:.06, type:'highpass', f:5000, delay:.08}); }],
       place:[() => { this.impact(48, {vol:.55}); this.burst(.1, {vol:.05, f:300}); },
-        () => { this.impact(70, {vol:.35, dur:.12}); this.click(3000, .14); this.burst(.05, {vol:.08, type:'bandpass', f:1200, q:1}); },
-        () => { this.knock(700, .35); this.knock(500, .2, .035); },
-        () => { this.sq(220, .1, {f2:110}); this.bits(.05, .04); },
-        () => this.timp(65, .5),
-        () => { this.impact(45, {vol:.6, dur:.25}); this.click(2500, .2); this.burst(.25, {vol:.08, f:900, f2:200}); }],
+        () => { this.impact(65, {vol:.42, dur:.14}); this.burst(.05, {vol:.06, type:'bandpass', f:2200, q:1.2}); this.crackle(.08, {vol:.07}); }],
       hurt:[() => { this.burst(.03, {vol:.12, type:'bandpass', f:1100, q:3}); this.impact(60, {vol:.45, dur:.22}); },
-        () => { this.burst(.04, {vol:.14, type:'bandpass', f:1800, q:1}); this.impact(90, {vol:.3, dur:.1}); },
-        () => { this.knock(1100, .3); this.knock(1600, .15, .04); },
-        () => { this.sq(330, .12, {f2:80}); this.bits(.08, .05); },
-        () => { this.pluck(110, .2); this.snare(.22); },
-        () => { this.click(3500, .25); this.impact(55, {vol:.5, dur:.18}); this.burst(.12, {vol:.08, f:2000, f2:300}); }],
+        () => this.hurtOf('footman')],
       die:[() => { this.impact(38, {vol:.6, dur:.4}); this.burst(.4, {vol:.08, f:400, f2:120, delay:.03}); },
-        () => { this.impact(50, {vol:.5, dur:.2}); this.burst(.2, {vol:.08, f:800, f2:200}); this.burst(.15, {vol:.06, type:'bandpass', f:1200, q:1, delay:.05}); },
-        () => { this.knock(600, .3); this.knock(450, .25, .08); this.knock(350, .2, .18); },
-        () => [440, 330, 220, 110].forEach((f, k) => this.sq(f, .08, {delay:k * .07, vol:.05})),
-        () => { this.timp(55, .55); this.pluck(147, .14, .08); this.pluck(98, .14, .2); },
-        () => { this.impact(35, {vol:.7, dur:.45}); this.burst(.6, {vol:.1, f:1500, f2:80}); this.click(2500, .2); }],
+        () => this.dieOf('footman')],
       hero:[() => { this.burst(1.6, {vol:.18, f:260, f2:60, a:.02, wet:true}); this.impact(30, {vol:.7, dur:.8}); },
-        () => { this.impact(40, {vol:.8, dur:.35}); this.burst(.15, {vol:.1, type:'bandpass', f:600, q:1}); this.crackle(.2, {vol:.1}); },
-        () => { this.knock(300, .5); this.knock(260, .4, .12); this.burst(.2, {vol:.08, f:500}); },
-        () => { this.sq(110, .3, {f2:55, vol:.07}); this.bits(.3, .06); this.sq(82, .2, {delay:.1, vol:.05}); },
-        () => { this.timp(45, .7); this.timp(45, .6, .18); this.stab(73, .5, .07); },
-        () => { this.impact(28, {vol:.9, dur:.7}); this.click(2000, .3); this.burst(.8, {vol:.14, f:3000, f2:60}); }],
+        () => { this.impact(36, {vol:.85, dur:.4}); this.burst(.25, {vol:.1, type:'lowpass', f:500}); this.creak(.05, .4); this.crackle(.25, {vol:.1, delay:.05}); }],
       up:[() => { this.osc(36, 1.4, {vol:.4, a:.5, wet:true}); this.burst(1.2, {vol:.07, type:'bandpass', f:300, f2:1400, q:2, a:.8, wet:true}); this.impact(34, {vol:.6, delay:1.1, wet:true}); },
-        () => { this.burst(.05, {vol:.1, type:'bandpass', f:2500, q:1}); this.impact(80, {vol:.3, dur:.12}); this.burst(.1, {vol:.08, type:'bandpass', f:1200, q:1, delay:.1}); this.impact(60, {vol:.4, dur:.15, delay:.12}); },
-        () => { [500, 700, 900].forEach((f, k) => this.knock(f, .25, k * .09)); this.knock(400, .45, .3); },
-        () => { [262, 330, 392, 523].forEach((f, k) => this.sq(f, .06, {delay:k * .06, vol:.05})); this.sq(784, .15, {delay:.24, vol:.05}); },
-        () => { this.stab(98, .5); this.stab(147, .6, .08, .2); this.timp(49, .5, .35); },
-        () => { this.burst(.5, {vol:.1, type:'bandpass', f:200, f2:3000, q:1.5, a:.4}); this.impact(35, {vol:.7, delay:.5}); this.click(3000, .2, .5); }],
+        () => { this.horn(98, .9, {vol:.09}); [0, .18, .36].forEach((d, k) => this.impact(55, {vol:.3 + k * .1, dur:.16, delay:d})); }],
     };
     (R[name][i] || R[name][0])();
   },
@@ -653,34 +714,7 @@ const Sfx = {
   },
   attack(key, i){
     if (!i) return this.signature(key);
-    const cls = ACLASS[key], tier = Math.max(0, Object.values(FAC).map(f => f.units.findIndex(u => u.key === key)).find(x => x >= 0) ?? 0);
-    const f = 90 - tier * 8, m = 1 - tier * .07;
-    const STY = [
-      /* сухой фоли: close, dry, realistic */
-      {light:() => { this.swish(.12, 800, 2500, .12); this.impact(f * 1.4, {vol:.3, dur:.1, delay:.1}); this.click(3000, .12, .1); },
-       blade:() => { this.swish(.14, 2000, 5000, .12); this.burst(.05, {vol:.12, type:'bandpass', f:3000, q:1.4, delay:.12}); this.impact(f, {vol:.35, dur:.14, delay:.12}); },
-       bow:() => { this.osc(120 * m, .15, {type:'triangle', vol:.2, a:.002, f2:100 * m, lp:1500}); this.swish(.2, 4000, 1500, .06, .04); this.impact(120, {vol:.2, dur:.08, delay:.25}); },
-       beast:() => { this.growl(.2, {f:f, band:700, vol:.1}); this.crackle(.05, {vol:.14, delay:.12}); this.impact(f, {vol:.35, dur:.12, delay:.12}); },
-       magic:() => { this.burst(.3, {vol:.08, type:'bandpass', f:300, f2:2500, q:1.5, a:.2}); this.crackle(.2, {vol:.08, delay:.2}); this.impact(f * .8, {vol:.3, dur:.15, delay:.3}); },
-       heavy:() => { this.swish(.3, 150, 700, .14); this.impact(f * .6, {vol:.7, dur:.3, delay:.28}); this.crackle(.2, {vol:.08, delay:.3}); }},
-      /* настолка: wooden pieces on a table */
-      {light:() => this.knock(1200 * m, .3), blade:() => { this.knock(1500 * m, .28); this.knock(900 * m, .2, .04); }, bow:() => { this.pluck(196 * m, .14); this.knock(1300 * m, .2, .12); },
-       beast:() => { this.knock(700 * m, .3); this.knock(700 * m, .25, .07); }, magic:() => [1000, 1300, 1600].forEach((x, k) => this.knock(x * m, .2, k * .05)), heavy:() => { this.knock(400 * m, .5); this.knock(300 * m, .3, .06); }},
-      /* ретро: 8-bit */
-      {light:() => this.sq(440 * m, .08, {f2:220 * m}), blade:() => { this.bits(.06, .05); this.sq(880 * m, .06, {f2:440 * m}); }, bow:() => this.sq(1200 * m, .15, {f2:300 * m}),
-       beast:() => { this.sq(150 * m, .12, {vol:.07}); this.bits(.1, .05); }, magic:() => [523, 659, 784].forEach((x, k) => this.sq(x * m, .05, {delay:k * .04, vol:.05})), heavy:() => { this.sq(110 * m, .2, {f2:55 * m, vol:.07}); this.bits(.15, .06); }},
-      /* оркестр: pizzicato, timpani, brass */
-      {light:() => this.pluck(262 * m, .16), blade:() => { this.pluck(330 * m, .15); this.snare(.2, .02); }, bow:() => { this.pluck(440 * m, .14); this.pluck(220 * m, .12, .05); },
-       beast:() => this.stab(82 * m, .3, .08), magic:() => [392, 494, 587].forEach((x, k) => this.pluck(x * m, .12, k * .05)), heavy:() => { this.timp(f * .7, .6); this.stab(55, .35, .06); }},
-      /* кино: tight, punchy hits */
-      {light:() => { this.swish(.1, 1000, 3500, .1); this.click(3500, .15, .08); this.impact(f * 1.2, {vol:.35, dur:.12, delay:.08}); },
-       blade:() => { this.swish(.08, 2500, 6000, .12); this.click(4000, .2, .07); this.impact(f, {vol:.45, dur:.15, delay:.07}); },
-       bow:() => { this.swish(.25, 5000, 1200, .07); this.click(2500, .18, .22); this.impact(100, {vol:.3, dur:.1, delay:.22}); },
-       beast:() => { this.growl(.25, {f:f * .8, band:500, vol:.1}); this.impact(f * .7, {vol:.55, dur:.2, delay:.15}); this.click(2000, .15, .15); },
-       magic:() => { this.burst(.35, {vol:.1, type:'bandpass', f:200, f2:4000, q:1, a:.3}); this.osc(f * 1.5, .4, {vol:.4, a:.005, f2:f * .4, delay:.3}); },
-       heavy:() => { this.swish(.35, 120, 900, .15); this.impact(28, {vol:.9, dur:.5, delay:.32}); this.click(2000, .2, .32); this.crackle(.3, {vol:.08, delay:.35}); }},
-    ];
-    (STY[i - 1]?.[cls] || (() => this.signature(key)))();
+    this.real(key);
   },
   play(name){
     if (!this.on || !this.ctx) return;
@@ -1064,7 +1098,7 @@ async function fromCamp(u, dest){
   await wait(320); return true;
 }
 async function kill(v){
-  const el = TILES.get(v.id); Sfx.play('die');
+  const el = TILES.get(v.id); Sfx.die(v);
   if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
   S.units = S.units.filter(x => x !== v); syncUnits();
   /* a melee ally standing behind steps into the gap; ranged units stay in the rear */
@@ -1091,7 +1125,7 @@ const eff = (t, dmg) => U(t).armor ? Math.max(1, dmg - U(t).armor) : dmg;
 async function damage(t, raw){
   const dmg = eff(t, raw);
   t.hp -= dmg; const el = TILES.get(t.id);
-  Sfx.play('hurt');
+  Sfx.hurt(t);
   if (el){
     el.animate([{filter:'brightness(2)'}, {filter:'none'}], {duration:D(220)});
     const hb = el.querySelector('.st.h'); if (hb){ hb.querySelector('b').textContent = Math.max(0, t.hp); hb.classList.add('d'); flashHP(hb); }
@@ -1100,10 +1134,27 @@ async function damage(t, raw){
   await wait(360);
   if (t.hp <= 0) await kill(t);
 }
-async function strikeFx(u, targetPt){
+/* Dragged attacks strike from where the unit was released: a hit (or a shot) from that spot, then it flies back to its slot. */
+async function strikeFx(u, targetPt, fromRect){
   const A = U(u), el = TILES.get(u.id), a = mid(slotEl(u));
   if (el) el.classList.add('acting');
   Sfx.play(A.key);
+  if (fromRect && el){
+    const L = $('#units').getBoundingClientRect(), p = {x:fromRect.left + fromRect.width / 2 - L.left, y:fromRect.top + fromRect.height / 2 - L.top};
+    const dx = p.x - a.x, dy = p.y - a.y;
+    if (A.ranged){
+      u._hold = el.animate([{transform:`translate(${dx}px,${dy}px)`}, {transform:`translate(${dx}px,${dy}px)`}], {duration:1, fill:'forwards'});
+      const bo = document.createElement('div'); bo.className = 'bolt ' + (A.bolt || 'arrow'); $('#units').appendChild(bo);
+      const ang = Math.atan2(targetPt.y - p.y, targetPt.x - p.x);
+      await bo.animate([{transform:`translate(${p.x}px,${p.y}px) rotate(${ang}rad)`, opacity:.4}, {transform:`translate(${targetPt.x}px,${targetPt.y}px) rotate(${ang}rad)`, opacity:1}], {duration:D(190), easing:'cubic-bezier(.4,0,.8,1)'}).finished;
+      bo.remove();
+    } else {
+      const bx = (targetPt.x - p.x) * .35, by = (targetPt.y - p.y) * .35;
+      u._hold = el.animate([{transform:`translate(${dx}px,${dy}px) scale(1.04)`}, {transform:`translate(${dx + bx}px,${dy + by}px) scale(1.08)`}], {duration:D(110), easing:'cubic-bezier(.6,0,1,1)', fill:'forwards'});
+      await u._hold.finished;
+    }
+    return;
+  }
   await wait(120);
   if (A.ranged){
     const bo = document.createElement('div'); bo.className = 'bolt ' + (A.bolt || 'arrow'); $('#units').appendChild(bo);
@@ -1113,6 +1164,13 @@ async function strikeFx(u, targetPt){
   } else if (el){
     await el.animate([{transform:'translate(0,0)'}, {transform:`translate(${(targetPt.x - a.x) * .4}px,${(targetPt.y - a.y) * .4}px) scale(1.05)`, offset:.55}, {transform:'translate(0,0)'}], {duration:D(300), easing:'cubic-bezier(.5,0,.3,1)'}).finished;
   }
+}
+function goHome(u){
+  const el = TILES.get(u.id), hold = u._hold; if (!hold) return; u._hold = null;
+  if (!el || !el.isConnected){ hold.cancel(); return; }
+  const cur = getComputedStyle(el).transform;
+  el.animate([{transform:cur === 'none' ? 'translate(0,0)' : cur}, {transform:'translate(0,0)'}], {duration:D(240), easing:'cubic-bezier(.3,.8,.3,1)'});
+  hold.cancel();
 }
 async function travel(from, to){
   const bo = document.createElement('div'); bo.className = 'bolt spill'; $('#units').appendChild(bo);
@@ -1136,9 +1194,9 @@ async function carry(u, r, c, amount){
   floatAt(from.x, edge + (u.side === 'p' ? 16 : -16), `−${amount}`, 'g');
   await wait(220);
 }
-async function hit(u, t){
+async function hit(u, t, fromRect){
   const A = U(u), tr = t.r, tc = t.c;
-  await strikeFx(u, mid(slotEl(t)));
+  await strikeFx(u, mid(slotEl(t)), fromRect); goHome(u);
   let dmg = A.atk; if (A.ranged && U(t).shield) dmg = Math.ceil(dmg / 2);
   const behind = A.pierce ? fieldAt(t.r + FWD[u.side], t.c) : null;
   const sides = [];
@@ -1188,17 +1246,17 @@ function retaliates(u, t){
   const A = U(u), T = U(t);
   return alive(t) && alive(u) && !S.over && t.where === 'f' && !t.stun && !t.sleep && !A.noRetal && (!A.ranged || T.retalRanged) && (T.retalInf || !t.retalUsed);
 }
-async function attack(u, t){
+async function attack(u, t, fromRect){
   if (!alive(u) || !canAttack(u)) return false;
   const T = attackTargets(u); if (t === 'hero' ? !T.hero : !T.units.includes(t)) return false;
   u.atks--; u.acted = true;
-  if (t === 'hero') await heroHit(u); else await hit(u, t);
+  if (t === 'hero') await heroHit(u, fromRect); else await hit(u, t, fromRect);
   checkOver(); return true;
 }
-async function heroHit(u){
+async function heroHit(u, fromRect){
   const A = U(u), o = other(u.side), dmg = A.atk * (A.heroX2 ? 2 : 1), a = mid(slotEl(u));
   const edge = u.side === 'p' ? CELLS[0][0].offsetTop - 20 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 20;
-  await strikeFx(u, {x:a.x, y:edge});
+  await strikeFx(u, {x:a.x, y:edge}, fromRect); goHome(u);
   S.hero[o] = Math.max(0, S.hero[o] - dmg);
   Sfx.play('hero'); renderBars();
   const hEl = $('#hero-' + o); if (hEl) flashHP(hEl.querySelector('.hv'));
@@ -1384,9 +1442,9 @@ function perform(sel, dest, fromRect){
   let act = null;
   if (fsrc){
     const key = dest.unit || dest.el;
-    if (dest.unit && dest.unit.side !== fsrc.side && canAttack(fsrc) && attackTargets(fsrc).units.includes(dest.unit)) act = () => attack(fsrc, dest.unit);
-    else if (!dest.unit && T.hcells.includes(dest.el)) act = () => attack(fsrc, 'hero');
-    else if (T.reach.has(key)){ const step = T.reach.get(key); act = async () => { if (await maneuver(fsrc, step)) await attack(fsrc, dest.unit || 'hero'); }; }
+    if (dest.unit && dest.unit.side !== fsrc.side && canAttack(fsrc) && attackTargets(fsrc).units.includes(dest.unit)) act = () => attack(fsrc, dest.unit, fromRect);
+    else if (!dest.unit && T.hcells.includes(dest.el)) act = () => attack(fsrc, 'hero', fromRect);
+    else if (T.reach.has(key)){ const step = T.reach.get(key); act = async () => { if (await maneuver(fsrc, step)) await attack(fsrc, dest.unit || 'hero', fromRect); }; }
     else if (dest.unit ? T.swaps.includes(dest.unit) : T.cells.includes(dest.el)) act = () => maneuver(fsrc, dest.unit ? dest.unit : dest);
   } else {
     if (dest.unit){ if (!T.ups.includes(dest.unit)) return false; }
@@ -1442,7 +1500,7 @@ document.addEventListener('pointerup', async e => {
   if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = d.sel.unit != null; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
   const dest = dropAt(e.clientX, e.clientY);
-  if (!perform(d.sel, dest, d.sel.card != null ? rect : null)){ S.sel = null; renderAll(); }
+  if (!perform(d.sel, dest, rect)){ S.sel = null; renderAll(); }
 });
 document.addEventListener('pointercancel', () => { document.documentElement.classList.remove('dragging'); if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
 document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
@@ -1483,10 +1541,16 @@ function renderModes(){
 /* ---------- sound lab ---------- */
 function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
 function renderSoundLab(){
-  $('#sndcats').innerHTML = `<h3>События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
-  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${ATK_VARS.map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}</div></div>`)).join('');
+  const allReal = Object.keys(CATS).every(k => SEL_SND[k] === 1) && Object.values(FAC).every(f => f.units.every(u => SEL_SND.atk[u.key] === 1));
+  const allCur = Object.keys(CATS).every(k => !SEL_SND[k]) && Object.values(FAC).every(f => f.units.every(u => !SEL_SND.atk[u.key]));
+  $('#sndcats').innerHTML = `<h3>Весь пакет</h3><div class="srow"><b>Переключить всё сразу</b><div class="svars"><button class="sbtn" type="button" data-pack="0" aria-pressed="${allCur}">Текущий</button><button class="sbtn" type="button" data-pack="1" aria-pressed="${allReal}">Реализм</button></div></div><h3 style="margin-top:14px">События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
+  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${ATK_VARS.map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}<button class="sbtn prev" type="button" data-prev="hurt" data-key="${u.key}">ранение</button><button class="sbtn prev" type="button" data-prev="die" data-key="${u.key}">гибель</button></div></div>`)).join('');
 }
 document.addEventListener('click', e => {
+  const pk = e.target.closest('[data-pack]');
+  if (pk){ Sfx.ensure(); const v = +pk.dataset.pack; Object.keys(CATS).forEach(k => SEL_SND[k] = v); Object.values(FAC).forEach(f => f.units.forEach(u => SEL_SND.atk[u.key] = v)); saveSnd(); renderSoundLab(); Sfx.real && v ? Sfx.real('footman') : Sfx.signature('footman'); return; }
+  const pv = e.target.closest('[data-prev]');
+  if (pv){ Sfx.ensure(); pv.dataset.prev === 'hurt' ? Sfx.hurtOf(pv.dataset.key) : Sfx.dieOf(pv.dataset.key); flashBtn(pv); return; }
   const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
   Sfx.ensure(); const i = +b.dataset.i;
   if (b.dataset.cat){ SEL_SND[b.dataset.cat] = i; Sfx.cat(b.dataset.cat, i); } else { SEL_SND.atk[b.dataset.atk] = i; Sfx.attack(b.dataset.atk, i); }
