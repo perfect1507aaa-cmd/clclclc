@@ -81,7 +81,11 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile{position:absolute; box-sizing:border-box; border-radius:12px; pointer-events:auto; cursor:pointer; container-type:size; touch-action:none;
   background:radial-gradient(90% 80% at 50% 35%, color-mix(in srgb,var(--t) 22%,#1a1715), color-mix(in srgb,var(--t) 6%,#0e0c0b));
   box-shadow:inset 0 0 0 2px var(--team), inset 0 0 18px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.55);
-  transition:left .3s cubic-bezier(.3,.8,.3,1), top .3s cubic-bezier(.3,.8,.3,1);}
+  transition:left .24s cubic-bezier(.3,.8,.3,1), top .24s cubic-bezier(.3,.8,.3,1);}
+.arena{--hand:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M9 16V6.6a1.9 1.9 0 0 1 3.8 0V13V4.6a1.9 1.9 0 0 1 3.8 0V13V5.6a1.9 1.9 0 0 1 3.8 0V14V8.4a1.9 1.9 0 0 1 3.8 0V19c0 6-3.6 10-9 10-4.4 0-6.8-2.6-8.8-6.6L3.4 17a1.9 1.9 0 0 1 3.2-2z' fill='%23d9c7a0' stroke='%231c160f' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M9 18h15' stroke='%231c160f' stroke-width='1.2'/%3E%3C/svg%3E") 13 6, grab;
+  --grip:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M7 14.6a2.1 2.1 0 0 1 3.9-1.2 2.1 2.1 0 0 1 3.9-.8 2.1 2.1 0 0 1 3.9.4 2.1 2.1 0 0 1 4 1.2V20c0 5.6-3.4 9-8.4 9-4.6 0-7.4-3.2-7.4-7.8z' fill='%23d9c7a0' stroke='%231c160f' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M10.9 13.4v3.4M14.8 12.6v4M18.7 13v3.8' stroke='%231c160f' stroke-width='1.3' fill='none'/%3E%3C/svg%3E") 14 12, grabbing;}
+#hand .card, .tile.p.ready, .tile.p.trio, .tile.p[data-drag]{cursor:var(--hand);}
+html.dragging, html.dragging *{cursor:var(--grip) !important;}
 .tile.p{--team:color-mix(in srgb,var(--tp) 80%,transparent);} .tile.e{--team:color-mix(in srgb,var(--te) 80%,transparent); cursor:default;}
 .tile .ic{position:absolute; left:50%; top:43%; width:57cqmin; height:57cqmin; translate:-50% -50%; filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));}
 .tile .ic svg{width:100%; height:100%; overflow:visible;}
@@ -103,12 +107,11 @@ p{margin:0 0 10px; max-width:70ch;}
 .tile.trio{cursor:pointer; box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 3px color-mix(in srgb,var(--gold) 60%,transparent), 0 0 18px color-mix(in srgb,var(--gold) 50%,transparent);}
 .tile.trio:hover{box-shadow:inset 0 0 0 2px var(--gold), 0 0 0 4px var(--gold), 0 0 22px var(--gold);}
 .tile.ready{box-shadow:inset 0 0 0 2px var(--team), 0 0 0 2px color-mix(in srgb,var(--tp) 45%,transparent), 0 0 14px color-mix(in srgb,var(--tp) 35%,transparent);}
-.cell.hdrop{cursor:crosshair; box-shadow:inset 0 0 0 2px color-mix(in srgb,#e0503f 70%,transparent), inset 0 0 18px color-mix(in srgb,#e0503f 25%,transparent);}
-.cell.hdrop::after{content:"⚔ герой"; position:absolute; inset:0; display:grid; place-items:center; font:700 11px var(--fd); letter-spacing:.04em; color:#e0503f; text-transform:uppercase; opacity:.8;}
+.cell.hdrop{ box-shadow:inset 0 0 0 2px color-mix(in srgb,#e0503f 70%,transparent), inset 0 0 18px color-mix(in srgb,#e0503f 25%,transparent);}
 .cell.hdrop.hov{box-shadow:inset 0 0 0 3px #e0503f, inset 0 0 24px color-mix(in srgb,#e0503f 40%,transparent);}
 .tile.tgt.hov{box-shadow:inset 0 0 0 2px #fff, 0 0 0 4px #e0503f, 0 0 22px #e0503f;}
-.tile.tgt{cursor:crosshair; box-shadow:inset 0 0 0 2px #e0503f, 0 0 0 3px color-mix(in srgb,#e0503f 60%,transparent), 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
-.hero.tgt{cursor:crosshair; border-color:#e0503f; box-shadow:0 0 0 2px #e0503f, 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
+.tile.tgt{ box-shadow:inset 0 0 0 2px #e0503f, 0 0 0 3px color-mix(in srgb,#e0503f 60%,transparent), 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
+.hero.tgt{ border-color:#e0503f; box-shadow:0 0 0 2px #e0503f, 0 0 16px color-mix(in srgb,#e0503f 50%,transparent);}
 .tile.swp{box-shadow:inset 0 0 0 2px var(--tp), 0 0 0 3px color-mix(in srgb,var(--tp) 55%,transparent);}
 .tile .mgl.swl{background:var(--tp);}
 .tile .mgl.tri,.tile .mgl.swl{top:5%; padding:1px 9px; font-size:max(12px,12cqmin);}
@@ -258,7 +261,6 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
       <button class="btn" id="end" type="button">Конец хода</button>
       <button class="btn ghost" id="reset" type="button">Заново</button>
       <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук</button>
-      <button class="btn ghost" id="arr" type="button" aria-pressed="true">Цели</button>
       <span class="hint" id="hint"></span>
     </div>
   </section>
@@ -271,9 +273,12 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
         <li>Мана = номер хода, не больше 10. Карта стоит столько маны, какого она тира.</li>
         <li>На старте 6 карт, дальше +3 за ход, в руке до 9.</li>
         <li>Автобоя нет. В свой ход перетащите своего юнита на врага в красной рамке — это атака. Каждый юнит бьёт раз за ход, с двойным ударом — дважды.</li>
-        <li>Цели: ближайший враг прямо и в двух соседних колонках (по диагонали вперёд). Ближний бой не бьёт через своих, стрелки бьют.</li>
-        <li>Удар по герою: перетащите юнита на пустую клетку врага в колонке, где перед ним нет врагов. Такие клетки подсвечены «⚔ герой».</li>
-        <li>Значок атаки на юните белый — он может бить в этом ходу; серый — уже бил или спит.</li>
+        <li>Стрелки бьют только прямо: ближайшего врага в своей колонке, через своих.</li>
+        <li>Ближний бой бьёт только из переднего ряда: три клетки вплотную впереди (прямо и по диагонали) и дальнюю клетку прямо, если ближняя пуста. Из заднего ряда боец сначала выходит вперёд.</li>
+        <li>Удар по герою: перетащите юнита на пустую клетку врага в его колонке. Можно, только если в этой колонке нет ни одного врага. По диагонали героя не ударить.</li>
+        <li>Манёвр и атака сочетаются: можно сначала шагнуть, потом ударить, или сразу перетащить юнита на цель, до которой он дотянется после шага.</li>
+        <li>Действия можно делать не дожидаясь конца анимации: они выполнятся по очереди.</li>
+        <li>Значок атаки белый — юнит может бить в этом ходу; серый — уже бил, спит или сейчас ход другой стороны.</li>
         <li>Только что выставленный или улучшенный юнит спит и не бьёт до следующего хода.</li>
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
         <li>Погиб юнит в переднем ряду — боец ближнего боя, стоявший за ним, сразу шагает на его место. Стрелки всегда остаются в тылу.</li>
@@ -484,7 +489,7 @@ const U = u => F[u.side].units[u.type];
 const svg = k => ico(k);
 const $ = s => document.querySelector(s);
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const D = ms => RM ? Math.round(ms * 0.2) : ms;
+const D = ms => Math.round(ms * (RM ? 0.2 : 0.8));
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
 /* ---------- sound: heavier, darker synthesis ---------- */
@@ -721,22 +726,23 @@ const newCard = side => ({uid:uid++, type:rollType(side)});
 const who = side => side === 'p' ? 'Вы' : F.e.name;
 function note(){}
 
-/* Manual attacks: nearest enemy straight ahead and in the two neighbouring columns.
-   Melee can't strike through its own units, ranged can. The hero is open when nothing hostile stands straight ahead. */
+/* Manual attacks.
+   Ranged: the nearest enemy straight ahead (they shoot over their own units).
+   Melee: only from the front row; the three cells right ahead, plus the far cell straight ahead if the near one is empty.
+   The hero is open only when there is no enemy at all in the unit's own column (never diagonally). */
 function attackTargets(u){
   const units = [], lanes = []; let hero = false;
   if (!u || u.where !== 'f') return {units, hero, lanes};
-  const A = U(u), d = FWD[u.side];
-  for (const dc of [0, -1, 1]){
-    const c = u.c + dc; if (c < 0 || c >= COLS()) continue;
-    let found = false, blocked = false;
-    for (let r = u.r + d; r >= 0 && r < ROWS; r += d){
-      const v = fieldAt(r, c); if (!v) continue;
-      if (v.side !== u.side){ units.push(v); found = true; break; }
-      if (!A.ranged){ blocked = true; break; }
-    }
-    if (!found && !blocked){ hero = true; lanes.push(c); }
+  const A = U(u), d = FWD[u.side], o = other(u.side), foe = v => v && v.side === o;
+  if (A.ranged){
+    for (let r = u.r + d; r >= 0 && r < ROWS; r += d){ const v = fieldAt(r, u.c); if (foe(v)){ units.push(v); break; } }
+  } else {
+    if (u.r !== FRONT[u.side]) return {units, hero, lanes};
+    const r1 = u.r + d;
+    for (const dc of [-1, 0, 1]){ const v = fieldAt(r1, u.c + dc); if (foe(v)) units.push(v); }
+    const far = fieldAt(r1 + d, u.c); if (!fieldAt(r1, u.c) && foe(far)) units.push(far);
   }
+  if (!S.units.some(v => v.where === 'f' && v.side === o && v.c === u.c)){ hero = true; lanes.push(u.c); }
   return {units, hero, lanes};
 }
 /* Empty enemy cells in open lanes: dropping a unit there strikes the enemy hero. */
@@ -749,7 +755,7 @@ function heroCells(u){
 const acted = u => !!u.acted;
 const canAttack = u => u && u.where === 'f' && !u.sleep && (u.atks || 0) > 0 && (() => { const T = attackTargets(u); return T.hero || T.units.length > 0; })();
 /* white attack badge: this unit can still strike this turn */
-const armed = u => u.where === 'f' && (u.side === S.side ? !u.sleep && (u.atks || 0) > 0 : !u.stun);
+const armed = u => u.where === 'f' && u.side === S.side && !u.sleep && (u.atks || 0) > 0;
 const selUnit = () => S && S.sel && S.sel.unit != null ? S.units.find(u => u.id === S.sel.unit) : null;
 /* Trio by placement: a card completes a trio if the target cell touches a pair (or joins a chain of two). */
 function completionAt(side, type, cell, excl){
@@ -827,20 +833,20 @@ function syncUnits(dropId){
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
     const swp = T.swaps.includes(u);
     if (swp) el.classList.add('swp');
-    if (AT.units.includes(u)) el.classList.add('tgt');
+    if (AT.units.includes(u) || T.reach.has(u)) el.classList.add('tgt');
     if (myTurn && u.side === 'p' && u.where === 'f' && !u.sleep){ if (canAttack(u) && !sel) el.classList.add('ready'); else if ((u.atks || 0) === 0) el.classList.add('spent'); }
     el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${tri ? `\nНажмите сейчас: тройка сольётся сюда → ${next}` : ''}`;
     el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : tri ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : '');
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
-  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); el.classList.toggle('hdrop', T.hcells.includes(el)); });
+  CELLS.flat().concat(CAMP.p).forEach(el => { el.classList.toggle('drop', T.cells.includes(el)); el.classList.toggle('upc', T.upCells.includes(el)); el.classList.toggle('hdrop', T.hcells.includes(el) || T.reach.has(el)); });
   $('#hero-e')?.classList.toggle('tgt', AT.hero);
   renderOverlay();
 }
 function renderOverlay(){
   const ov = $('#overlay'); if (!ov) return;
-  if (!SHOW_ARROWS || S.over || S.busy){ ov.innerHTML = ''; return; }
+  ov.innerHTML = ''; return;
   const g = $('#grid'), W = g.offsetWidth, H = g.offsetHeight; let s = '';
   const line = (a, b, col, dash, op) => {
     const ang = Math.atan2(b.y - a.y, b.x - a.x), L = 9, Wd = 5, bx = b.x - Math.cos(ang) * L, by = b.y - Math.sin(ang) * L, px = -Math.sin(ang), py = Math.cos(ang);
@@ -857,7 +863,7 @@ function renderOverlay(){
 new ResizeObserver(() => { if (S){ S.units.forEach(u => { const el = TILES.get(u.id); if (el) placeTile(el, u); }); renderOverlay(); layoutHand(); } }).observe(document.body);
 
 function targetsFor(sel){
-  const out = {cells:[], ups:[], upCells:[], swaps:[], hcells:[]};
+  const out = {cells:[], ups:[], upCells:[], swaps:[], hcells:[], reach:new Map()};
   if (!S || !sel || S.side !== 'p' || S.busy || S.over) return out;
   let type, src = null;
   if (sel.card != null){ const c = S.hand.p.find(h => h.uid === sel.card); if (!c || c.type + 1 > S.mana.p) return out; type = c.type; }
@@ -870,6 +876,18 @@ function targetsFor(sel){
       for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]){
         const r = src.r + dr, c = src.c + dc; if (!ZONE.p.includes(r) || c < 0 || c >= COLS()) continue;
         const v = fieldAt(r, c); if (!v) out.cells.push(CELLS[r][c]); else if (v.side === 'p' && !acted(v)) out.swaps.push(v);
+      }
+      /* step + strike: enemies and hero cells that open up after one step into a free cell */
+      if (!src.sleep && (src.atks || 0) > 0){
+        const direct = attackTargets(src).units, home = {r:src.r, c:src.c};
+        for (const cell of out.cells){
+          const step = {r:+cell.dataset.r, c:+cell.dataset.c};
+          Object.assign(src, step);
+          const T2 = attackTargets(src), hc = heroCells(src);
+          Object.assign(src, home);
+          T2.units.forEach(v => { if (!direct.includes(v) && !out.reach.has(v)) out.reach.set(v, step); });
+          hc.forEach(el => { if (!out.hcells.includes(el) && !out.reach.has(el)) out.reach.set(el, step); });
+        }
       }
       return out;
     }
@@ -899,7 +917,7 @@ function renderBars(){
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span><span class="chip" title="Раз за ход: сдвинуть юнита на соседнюю клетку или поменять местами двух соседних">Манёвр <b>${S.moved.p ? 'сделан' : 'есть'}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? 'Отпустите на враге в красной рамке — атака, на пустой клетке врага — удар по герою, на соседней своей клетке или юните — манёвр.' : 'Выберите подсвеченную цель: золото — улучшение.')
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : 'Выберите подсвеченную цель: золото — улучшение.')
     : readyTrios().size ? 'Тройка собрана: нажмите на любого из трёх (↑) — двое других сольются в него. Любое другое действие, и шанс пропадёт.' : S.moved.p && !onField('p').some(canAttack) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
@@ -977,7 +995,7 @@ async function drawCards(side, k, animate){
 }
 function spendCard(side, cardUid){
   const i = S.hand[side].findIndex(h => h.uid === cardUid); if (i < 0) return null;
-  const card = S.hand[side][i]; if (S.mana[side] < card.type + 1) return null;
+  const card = S.hand[side][i]; if (S.mana[side] < card.type + 1){ const el = $(`#hand .card[data-uid="${cardUid}"]`); if (el) el.style.visibility = ''; return null; }
   S.hand[side].splice(i, 1); S.mana[side] -= card.type + 1; return card;
 }
 function sourceRect(side, card, fromRect){
@@ -1014,7 +1032,7 @@ async function deployCard(side, cardUid, dest, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
   if (dest.camp && !M().camp) return false;
   const toEl = dest.camp ? CAMP[side][dest.i] : CELLS[dest.r][dest.c];
-  if (dest.camp ? campAt(side, dest.i) : (fieldAt(dest.r, dest.c) || !ZONE[side].includes(dest.r))) return false;
+  if (dest.camp ? campAt(side, dest.i) : (fieldAt(dest.r, dest.c) || !ZONE[side].includes(dest.r))){ const el = $(`#hand .card[data-uid="${cardUid}"]`); if (el) el.style.visibility = ''; return false; }
   if (!spendCard(side, cardUid)) return false;
   S.sel = null;
   const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
@@ -1230,7 +1248,7 @@ function cellScore(side, type, r, c){
 }
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
 /* A short, uneven pause before each move, as if the opponent is thinking. */
-const think = () => new Promise(r => setTimeout(r, RM ? 0 : 300 + Math.random() * 700));
+const think = () => new Promise(r => setTimeout(r, RM ? 0 : 240 + Math.random() * 560));
 /* The AI takes a trio offer at once: it merges into whichever of the three stands in the best row for the next tier. */
 async function aiOffer(u){
   for (let g = 0; g < 6 && u && !S.over; g++){
@@ -1250,7 +1268,7 @@ async function aiManeuver(side){
     }
   }
   for (const u of onField(side)){
-    if (!U(u).ranged && u.r === BACK[side] && !fieldAt(FRONT[side], u.c) && S.units.some(v => v.where === 'f' && v.side !== side && v.c === u.c)){ await think(); return maneuver(u, {r:FRONT[side], c:u.c}); }
+    if (!U(u).ranged && u.r === BACK[side] && !fieldAt(FRONT[side], u.c) && !u.acted){ await think(); return maneuver(u, {r:FRONT[side], c:u.c}); }
   }
 }
 async function aiTurn(){
@@ -1318,7 +1336,9 @@ async function aiAttacks(side){
 /* ---------- turn flow ---------- */
 async function endTurn(){
   if (S.side !== 'p' || S.busy || S.over) return;
-  S.busy = true; S.sel = null; S.offer = null; renderAll();
+  S.busy = true; S.sel = null; renderAll();
+  await chain; S.offer = null;
+  if (S.over){ S.busy = false; return; }
   S.side = 'e'; Sfx.play('turn');
   await startTurn('e', S.turn === 1); await wait(180);
   await aiTurn(); await wait(180);
@@ -1348,28 +1368,36 @@ function dropAt(x, y){
   if (c.dataset.camp) return c.dataset.camp === 'p' ? {camp:true, i:+c.dataset.i, el:c} : null;
   return {r:+c.dataset.r, c:+c.dataset.c, el:c};
 }
-async function perform(sel, dest, fromRect){
+/* Player actions run one after another in a queue, but input never waits for an animation to finish.
+   Each action re-checks itself when its turn comes. */
+let chain = Promise.resolve(), pending = 0;
+function enqueue(fn){
+  pending++;
+  chain = chain.then(fn).catch(err => console.error(err)).then(() => { pending--; renderAll(); });
+  return chain;
+}
+function perform(sel, dest, fromRect){
   if (!sel || !dest) return false;
   const T = targetsFor(sel);
   const fsrc = sel.unit != null ? S.units.find(u => u.id === sel.unit && u.where === 'f') : null;
+  let act = null;
   if (fsrc){
-    let act = null;
+    const key = dest.unit || dest.el;
     if (dest.unit && dest.unit.side !== fsrc.side && canAttack(fsrc) && attackTargets(fsrc).units.includes(dest.unit)) act = () => attack(fsrc, dest.unit);
     else if (!dest.unit && T.hcells.includes(dest.el)) act = () => attack(fsrc, 'hero');
+    else if (T.reach.has(key)){ const step = T.reach.get(key); act = async () => { if (await maneuver(fsrc, step)) await attack(fsrc, dest.unit || 'hero'); }; }
     else if (dest.unit ? T.swaps.includes(dest.unit) : T.cells.includes(dest.el)) act = () => maneuver(fsrc, dest.unit ? dest.unit : dest);
-    if (!act) return false;
-    S.busy = true; S.offer = null; S.sel = null; renderAll();
-    const ok = await act();
-    S.busy = false; S.sel = null; renderAll(); return ok;
+  } else {
+    if (dest.unit){ if (!T.ups.includes(dest.unit)) return false; }
+    else if (!T.cells.includes(dest.el)) return false;
+    if (sel.card != null) act = () => dest.unit ? upgradeWithCard('p', sel.card, dest.unit, fromRect) : deployCard('p', sel.card, dest, fromRect);
+    else { const u = S.units.find(x => x.id === sel.unit); act = () => fromCamp(u, dest.unit ? {unit:dest.unit} : dest); }
   }
-  if (dest.unit){ if (!T.ups.includes(dest.unit) && !T.swaps.includes(dest.unit)) return false; }
-  else if (!T.cells.includes(dest.el)) return false;
-  S.busy = true; S.offer = null; renderBars(); let ok;
-  const src = sel.unit != null ? S.units.find(u => u.id === sel.unit) : null;
-  if (src && src.where === 'f') ok = await maneuver(src, dest.unit ? dest.unit : dest);
-  else if (sel.card != null) ok = dest.unit ? await upgradeWithCard('p', sel.card, dest.unit, fromRect) : await deployCard('p', sel.card, dest, fromRect);
-  else ok = await fromCamp(S.units.find(u => u.id === sel.unit), dest.unit ? {unit:dest.unit} : dest);
-  S.busy = false; S.sel = null; renderAll(); return ok;
+  if (!act) return false;
+  S.offer = null; S.sel = null;
+  if (sel.card != null){ const el = $(`#hand .card[data-uid="${sel.card}"]`); if (el) el.style.visibility = 'hidden'; }
+  renderAll(); enqueue(act);
+  return true;
 }
 document.addEventListener('pointerdown', e => {
   if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
@@ -1391,7 +1419,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('pointermove', e => {
   if (!drag) return;
   if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 6){
-    drag.on = true; S.sel = drag.sel; renderAll(); Sfx.play('pick');
+    drag.on = true; document.documentElement.classList.add('dragging'); S.sel = drag.sel; renderAll(); Sfx.play('pick');
     const g = document.createElement('div'); g.className = 'fly';
     if (drag.sel.card != null){ const c = S.hand.p.find(h => h.uid === drag.sel.card); g.innerHTML = cardFace(c.type); }
     else { const u = S.units.find(v => v.id === drag.sel.unit), b = drag.src.getBoundingClientRect(); g.classList.add('tilefly'); g.innerHTML = `<div class="tile p" style="position:relative;width:${b.width}px;height:${b.height}px;--t:${TC[u.type]}">${tileInner(u)}</div>`; }
@@ -1407,15 +1435,15 @@ document.addEventListener('pointermove', e => {
 }, {passive:false});
 document.addEventListener('pointerup', async e => {
   if (!drag) return;
-  const d = drag; drag = null;
+  const d = drag; drag = null; document.documentElement.classList.remove('dragging');
   document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
   if (!d.on && d.field) return;
   if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = d.sel.unit != null; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
   const dest = dropAt(e.clientX, e.clientY);
-  if (!(await perform(d.sel, dest, d.sel.card != null ? rect : null))){ S.sel = null; renderAll(); }
+  if (!perform(d.sel, dest, d.sel.card != null ? rect : null)){ S.sel = null; renderAll(); }
 });
-document.addEventListener('pointercancel', () => { if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
+document.addEventListener('pointercancel', () => { document.documentElement.classList.remove('dragging'); if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
 document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
 $('#hand').addEventListener('keydown', e => { const card = e.target.closest('.card'); if (card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (S.side === 'p' && !S.busy){ S.sel = {card:+card.dataset.uid}; renderAll(); } } });
 $('#bwrap').addEventListener('click', async e => {
@@ -1424,20 +1452,18 @@ $('#bwrap').addEventListener('click', async e => {
   const dest = dropAt(e.clientX, e.clientY);
   if (S.sel && dest){
     if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
-    if (await perform(S.sel, dest)) return;
+    if (perform(S.sel, dest)) return;
   }
   if (dest && dest.unit && readyTrios().has(dest.unit.id)){
-    const members = offerMembers();
-    S.sel = null; S.busy = true; renderAll();
-    await trioUpgrade(dest.unit, members);
-    S.busy = false; renderAll(); return;
+    const members = offerMembers(), u = dest.unit;
+    S.sel = null; S.offer = null; renderAll();
+    enqueue(() => trioUpgrade(u, members)); return;
   }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
 $('#end').onclick = endTurn;
 $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
 $('#snd').onclick = e => { Sfx.on = !Sfx.on; e.currentTarget.setAttribute('aria-pressed', Sfx.on); e.currentTarget.textContent = Sfx.on ? 'Звук' : 'Без звука'; };
-$('#arr').onclick = e => { SHOW_ARROWS = !SHOW_ARROWS; e.currentTarget.setAttribute('aria-pressed', SHOW_ARROWS); renderOverlay(); };
 
 function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
