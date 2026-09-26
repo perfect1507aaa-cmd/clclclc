@@ -141,8 +141,6 @@ html.dragging, html.dragging *{cursor:var(--grip) !important;}
 .card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 30px)) rotate(0deg) scale(1.1); z-index:40;}
 .card:focus-visible{outline:2px solid var(--tp); outline-offset:3px; border-radius:12px;}
 .card.ghosted{opacity:.2;}
-.card.canup .face{box-shadow:inset 0 0 0 2px var(--gold), 0 0 18px color-mix(in srgb,var(--gold) 45%,transparent), 0 10px 22px rgba(0,0,0,.5);}
-.card.canup::after{content:"↑"; position:absolute; right:-7px; top:-7px; z-index:3; width:22px; height:22px; border-radius:50%; background:var(--gold); color:#0b0d10; font:700 13px/22px var(--fd); text-align:center;}
 .card .in{position:absolute; inset:0; transform-style:preserve-3d; transition:transform .4s cubic-bezier(.3,.7,.3,1);}
 .card.back .in{transform:rotateY(180deg);}
 .face,.backf{position:absolute; inset:0; border-radius:12px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-sizing:border-box; overflow:hidden;}
@@ -277,7 +275,7 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
         <li>Мана = номер хода, но не больше 5.</li>
         <li>Стрелки бьют только прямо: ближайшего врага в своей колонке, через своих.</li>
         <li>Ближний бой бьёт только прямо и только из переднего ряда: ближнюю клетку впереди или дальнюю, если ближняя пуста. Из заднего ряда боец сначала выходит вперёд. Адский пёс бьёт ещё и наискосок.</li>
-        <li>Сдача: атакованный юнит отвечает своим уроном, один раз за ход. Грифон отвечает на каждый удар. Стрелкам сдачу не даёт никто, кроме суккуба. На удар адского пса сдачи нет. Ослеплённый не отвечает.</li>
+        <li>Сдача: атакованный юнит отвечает своим уроном, один раз за ход. Грифон отвечает на каждый удар. Стрелкам сдачу не даёт никто, кроме суккуба. На удары адского пса и феи сдачи нет. Спящий и ослеплённый не отвечают.</li>
         <li>Удар по герою: перетащите юнита на пустую клетку врага в его колонке. Можно, только если в этой колонке нет ни одного врага. По диагонали героя не ударить.</li>
         <li>Шаг и удар вместе — только у юнитов с 2 очками: перетащите на цель, до которой юнит дотянется после шага.</li>
         <li>Действия можно делать не дожидаясь конца анимации: они выполнятся по очереди.</li>
@@ -286,16 +284,14 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
         <li>Погиб юнит в переднем ряду — боец ближнего боя, стоявший за ним, сразу шагает на его место. Стрелки всегда остаются в тылу.</li>
         <li>Шаг: перетащите своего юнита на соседнюю пустую клетку или на соседнего своего (обмен местами). Вбок, вперёд или назад, не по диагонали. Тратит очко хода. Менять местами можно только с тем, кто в этом ходу ещё не действовал.</li>
-        <li>Суккуб бьёт цепью: 3 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
+        <li>Суккуб бьёт цепью: 2 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую.</li>
       </ul></div>
       <div><h3>Тройка («Колонны», «Открытие»)</h3><ul>
-        <li>Тройка — три одинаковых юнита, стоящих вплотную по горизонтали или вертикали. По диагонали не считается.</li>
-        <li>Улучшение необязательно и только в момент выставления. Выставили юнита третьим к паре — все трое загораются золотом со стрелкой ↑. Нажмите на любого из трёх: двое других сольются в него, получится юнит тиром выше на его месте.</li>
-        <li>Сделали другое действие (выставили карту, манёвр, юнит из лагеря, конец хода) — шанс пропал. Позже эту тройку уже не слить.</li>
-        <li>Карта, положенная прямо на юнита из пары, улучшает сразу, как раньше.</li>
-        <li>Золотом подсвечены готовые тройки, пары, которые достроит карта из руки, и такие карты.</li>
+        <li>Тройка — три одинаковых юнита на поле, стоящие вплотную по горизонтали или вертикали (не по диагонали).</li>
+        <li>Слить тройку можно в любой ход, если хотя бы у двоих из трёх есть ход (не спят и ещё не действовали). Тройка загорается золотом, стрелка ↑ стоит над теми, в кого можно слить: только в юнита, у которого есть ход. Нажмите на него — двое других сольются в него, он станет тиром выше и уснёт на ход.</li>
+        <li>Картой на юнита улучшить нельзя: все трое должны уже стоять на поле.</li>
       </ul></div>
       <div><h3>Режимы</h3><ul>
         <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
@@ -450,13 +446,13 @@ const FAC = {
     {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, diagonal:true, noRetal:true, ab:'Бьёт прямо и наискосок, на его удар сдачи нет', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
-    {key:'succubus', name:'Суккуб', atk:3, hp:10, ranged:true, bolt:'fire', chain:true, retalRanged:true, ab:'Цепь по соседям: 3, потом 1 и 1. Даёт сдачу и стрелкам', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
+    {key:'succubus', name:'Суккуб', atk:2, hp:9, ranged:true, bolt:'fire', chain:true, retalRanged:true, ab:'Цепь по соседям: 2, потом 1 и 1. Даёт сдачу и стрелкам', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
     {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
   ]},
   sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#7fae5a', units:[
-    {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', ab:'Пыльца: бьёт через своих', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
+    {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', noRetal:true, ab:'Пыльца: бьёт через своих, без сдачи', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
     {key:'dancer', name:'Танцор клинков', atk:1, hp:6, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
     {key:'hunter', name:'Охотник', atk:1, hp:6, ranged:true, double:true, bolt:'arrow', ab:'2 очка хода: два выстрела или выстрел и шаг', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
     {key:'druid', name:'Друид', atk:3, hp:12, ranged:true, bolt:'leaf', heal:2, ab:'Стреляет; в начале хода лечит соседей на 2', homm:'Друид', hs:'Атк 7 · Защ 7 · 7–9 · ХП 34'},
@@ -471,8 +467,8 @@ try { const r = JSON.parse(localStorage.getItem('fieldRaces') || 'null'); if (r 
 const F = {get p(){ return FAC[RACE.p]; }, get e(){ return FAC[RACE.e]; }};
 const MODES = {
   col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'860px',
-    desc:'Поле 5×4, в руке I и II тир. Выставили третьего такого же юнита вплотную к паре (не по диагонали) — можно сразу слить тройку в него нажатием. Не слили сразу — позже нельзя. Карта прямо на юнита из пары улучшает сразу.',
-    howto:'Перетащите карту на пустую клетку двух нижних линий или кликните карту, потом клетку. Золотая клетка достраивает тройку; сразу после выставления над новым юнитом стрелка ↑ — нажмите на него, чтобы слить тройку, или продолжайте ход. Золотой юнит под выбранной картой — улучшение сразу.'},
+    desc:'Поле 5×4, в руке I и II тир. Три одинаковых юнита вплотную (не по диагонали) можно слить в юнита тиром выше в любой ход, если хотя бы у двоих есть ход.',
+    howto:'Перетащите карту на пустую клетку двух нижних линий. Своих юнитов перетаскивайте на врага (атака), на пустую клетку врага (удар по герою) или на соседнюю клетку (шаг). Тройка с ходами загорается золотом — нажмите на юнита со стрелкой ↑.'},
   unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.6, .28, .12], unlock:true, bw:'860px',
     desc:'Как «Колонны», но сначала в руку приходит только I тир. Собрали юнита II тира — в колоде появляются карты II тира. Собрали III — появляется III.',
     howto:'Собирайте тройки, чтобы открыть карты старших тиров. Открытые тиры показаны рядом с вашей маной.'},
@@ -773,26 +769,27 @@ function completionAt(side, type, cell, excl){
   return null;
 }
 const partnerOf = u => u.type < 6 ? onField(u.side).find(w => w !== u && w.type === u.type && adj(u, w)) : null;
-/* The trio offer belongs to the unit just placed (or just upgraded) and lapses with the next action. */
-const trioOf = u => u && alive(u) && u.where === 'f' && M().upgrade === 'trio' && u.type < 6 ? completionAt(u.side, u.type, u) : null;
-/* Members of the trio just formed; any of them can be chosen until the next action. */
-const offerMembers = () => S && S.offer ? S.offer.map(id => S.units.find(u => u.id === id)).filter(u => u && alive(u) && u.where === 'f') : [];
+/* Trio upgrade: three units of one kind standing together (not diagonally), all on the board.
+   At least two of them must still have a move; they merge into one that has a move. Any turn. */
+const hasMove = u => u && alive(u) && u.where === 'f' && !u.sleep && (u.atks || 0) > 0;
+function triosOf(x){
+  if (!x || !alive(x) || x.where !== 'f' || M().upgrade !== 'trio' || x.type >= 6) return [];
+  const fr = onField(x.side).filter(u => u !== x && u.type === x.type), out = [];
+  for (const v of fr) for (const w of fr){
+    if (v.id >= w.id) continue;
+    if ((adj(x, v) && (adj(x, w) || adj(v, w))) || (adj(x, w) && adj(v, w))) out.push([v, w]);
+  }
+  return out;
+}
+const upgradePair = x => hasMove(x) ? triosOf(x).find(([v, w]) => hasMove(v) || hasMove(w)) || null : null;
+function trioState(side){
+  const members = new Set(), heads = new Set();
+  for (const x of onField(side)){ const p = upgradePair(x); if (p){ heads.add(x.id); members.add(x.id); p.forEach(v => members.add(v.id)); } }
+  return {members, heads};
+}
 function readyTrios(){
-  const set = new Set(); if (!S || S.side !== 'p' || S.busy || S.over) return set;
-  const m = offerMembers(); if (m.length === 3) m.forEach(u => set.add(u.id));
-  return set;
-}
-function setOffer(u){
-  const pair = u && u.side === 'p' ? trioOf(u) : null;
-  S.offer = pair ? [u.id, ...pair.map(v => v.id)] : null;
-  if (S.offer) Sfx.play('offer');
-}
-function cardUpgradeInfo(side, type){
-  const cells = [], units = [];
-  if (M().upgrade !== 'trio' || type >= 6) return {cells, units};
-  ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c) && completionAt(side, type, {r, c})) cells.push({r, c}); });
-  onField(side).filter(u => u.type === type && partnerOf(u)).forEach(u => units.push(u));
-  return {cells, units};
+  if (!S || S.side !== 'p' || S.busy || S.over) return {members:new Set(), heads:new Set()};
+  return trioState('p');
 }
 
 /* ---------- board DOM ---------- */
@@ -818,30 +815,23 @@ function tileInner(u, extra = ''){
     + `<span class="st a${armed(u) ? '' : ' off'}" title="${armed(u) ? 'Может атаковать в этом ходу' : u.sleep ? 'Спит' : 'Уже атаковал или не может бить'}">${atkIcon(A.key)}${A.atk}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
 }
 function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
-/* Pairs that some affordable card in hand would upgrade. */
-function hintPairs(){
-  const set = new Set(); if (S.side !== 'p' || S.busy || M().upgrade !== 'trio') return set;
-  const types = new Set(S.hand.p.filter(c => c.type + 1 <= S.mana.p).map(c => c.type));
-  onField('p').forEach(u => { if (types.has(u.type)){ const w = partnerOf(u); if (w){ set.add(u.id); set.add(w.id); } } });
-  return set;
-}
 function syncUnits(dropId){
-  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), pairs = hintPairs(), trios = readyTrios();
+  const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), trios = readyTrios();
   const myTurn = S.side === 'p' && !S.busy && !S.over, su = selUnit(), AT = myTurn && su && su.side === 'p' && canAttack(su) ? attackTargets(su) : {units:[], hero:false};
   for (const u of S.units){
     let el = TILES.get(u.id);
     if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
       if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
-    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id, tri = !mg && trios.has(u.id);
-    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${!mg && !tri && pairs.has(u.id) ? ' pair' : ''}${keep}`;
+    const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id, tri = !mg && trios.members.has(u.id), head = tri && trios.heads.has(u.id);
+    el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${keep}`;
     el.style.setProperty('--t', TC[u.type]);
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
     const swp = T.swaps.includes(u);
     if (swp) el.classList.add('swp');
     if (AT.units.includes(u) || T.reach.has(u)) el.classList.add('tgt');
     if (myTurn && u.side === 'p' && u.where === 'f' && !u.sleep){ if (canAttack(u) && !sel) el.classList.add('ready'); else if ((u.atks || 0) === 0) el.classList.add('spent'); }
-    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${tri ? `\nНажмите сейчас: тройка сольётся сюда → ${next}` : ''}`;
-    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : tri ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : '');
+    el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? ', ослеплён' : ''}. ${U(u).ab}${head ? `\nНажмите: тройка сольётся сюда → ${next}` : ''}`;
+    el.innerHTML = tileInner(u, mg ? `<span class="mgl">↑ ${next}</span>` : head ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : '');
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
@@ -902,7 +892,7 @@ function targetsFor(sel){
   ZONE.p.forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) out.cells.push(CELLS[r][c]); });
   if (sel.card != null && M().camp) for (let i = 0; i < CAMP_N; i++) if (!campAt('p', i)) out.cells.push(CAMP.p[i]);
   if (M().upgrade === 'stack' && type < 6) out.ups = S.units.filter(u => u.side === 'p' && u !== src && u.type === type);
-  if (M().upgrade === 'trio' && sel.card != null){ const info = cardUpgradeInfo('p', type); out.ups = info.units; out.upCells = info.cells.map(x => CELLS[x.r][x.c]); }
+
   return out;
 }
 
@@ -923,7 +913,7 @@ function renderBars(){
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
   $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : 'Выберите подсвеченную цель: золото — улучшение.')
-    : readyTrios().size ? 'Тройка собрана: нажмите на любого из трёх (↑) — двое других сольются в него. Любое другое действие, и шанс пропадёт.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
+    : readyTrios().heads.size ? 'Тройка готова: нажмите на юнита со стрелкой ↑ — двое других сольются в него. Сливать можно только в того, у кого есть ход.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
   const A = F[side].units[t];
@@ -947,8 +937,6 @@ function layoutHand(){
     const c = S.hand.p.find(h => h.uid === +el.dataset.uid), poor = !!c && c.type + 1 > S.mana.p;
     el.classList.toggle('poor', poor);
     el.classList.toggle('sel', !!(S.sel && S.sel.card === +el.dataset.uid));
-    const info = c && !poor && S.side === 'p' && !S.busy ? cardUpgradeInfo('p', c.type) : {cells:[], units:[]};
-    el.classList.toggle('canup', info.cells.length + info.units.length > 0);
   });
 }
 function rerenderHandFaces(){ document.querySelectorAll('#hand .card').forEach(el => { const c = S.hand.p.find(h => h.uid === +el.dataset.uid); if (c) el.querySelector('.in').innerHTML = `${cardFace(c.type)}<div class="backf"></div>`; }); }
@@ -1027,11 +1015,10 @@ async function promote(target, fromDesc){
   }
   await wait(260);
 }
-/* Optional trio upgrade: the two neighbours merge into the chosen unit. */
-async function trioUpgrade(u, members){
-  const others = members ? members.filter(v => v !== u && alive(v)) : trioOf(u);
-  if (!others || others.length !== 2) return false;
-  await absorb(u, others); await promote(u, 'тройка'); setOffer(u); return true;
+/* Trio upgrade: the other two merge into the chosen unit, which then sleeps for a turn. */
+async function trioUpgrade(u){
+  const pair = upgradePair(u); if (!pair) return false;
+  await absorb(u, pair); await promote(u, 'тройка'); return true;
 }
 async function deployCard(side, cardUid, dest, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid); if (!card) return false;
@@ -1045,7 +1032,7 @@ async function deployCard(side, cardUid, dest, fromRect){
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
   S.units.push(u);
-  Sfx.play(dest.camp ? 'camp' : 'place'); if (side === 'p') setOffer(u);
+  Sfx.play(dest.camp ? 'camp' : 'place');
   syncUnits(u.id); renderBars(); ringAt(toEl, side === 'p' ? '#7fb2c4' : '#c8483a');
   await wait(120);
   return u;
@@ -1058,7 +1045,7 @@ async function upgradeWithCard(side, cardUid, target, fromRect){
   if (!spendCard(side, cardUid)) return false;
   S.sel = null; const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
   await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, TILES.get(target.id) || slotEl(target), side === 'e');
-  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); if (side === 'p') setOffer(target); }
+  if (partner){ await absorb(target, [partner]); await promote(target, 'карта и пара'); }
   else await promote(target, 'карта');
   return target;
 }
@@ -1096,7 +1083,7 @@ async function maneuver(u, dest){
     if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r) || !adj(u, dest)) return false;
     Object.assign(u, {r:dest.r, c:dest.c});
   }
-  u.atks--; u.acted = true; S.sel = null; if (u.side === 'p') S.offer = null;
+  u.atks--; u.acted = true; S.sel = null;
   Sfx.play('move'); syncUnits(); renderBars();
   await wait(340); return true;
 }
@@ -1199,12 +1186,12 @@ async function chainRest(u, hop1, from, t){
    except from the succubus. Nobody answers the hound. Blinded units can't answer. */
 function retaliates(u, t){
   const A = U(u), T = U(t);
-  return alive(t) && alive(u) && !S.over && t.where === 'f' && !t.stun && !A.noRetal && (!A.ranged || T.retalRanged) && (T.retalInf || !t.retalUsed);
+  return alive(t) && alive(u) && !S.over && t.where === 'f' && !t.stun && !t.sleep && !A.noRetal && (!A.ranged || T.retalRanged) && (T.retalInf || !t.retalUsed);
 }
 async function attack(u, t){
   if (!alive(u) || !canAttack(u)) return false;
   const T = attackTargets(u); if (t === 'hero' ? !T.hero : !T.units.includes(t)) return false;
-  u.atks--; u.acted = true; if (u.side === 'p') S.offer = null;
+  u.atks--; u.acted = true;
   if (t === 'hero') await heroHit(u); else await hit(u, t);
   checkOver(); return true;
 }
@@ -1265,13 +1252,12 @@ function cellScore(side, type, r, c){
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
 /* A short, uneven pause before each move, as if the opponent is thinking. */
 const think = () => new Promise(r => setTimeout(r, RM ? 0 : 240 + Math.random() * 560));
-/* The AI takes a trio offer at once: it merges into whichever of the three stands in the best row for the next tier. */
-async function aiOffer(u){
-  for (let g = 0; g < 6 && u && !S.over; g++){
-    const pair = trioOf(u); if (!pair) return;
-    const members = [u, ...pair], best = members.map(x => ({x, s:rowFit(x.side, x.type + 1, x.r) + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
-    if (best.s < 0) return;
-    await think(); u = best.x; await trioUpgrade(u, members);
+/* The AI merges trios whenever it can, into the unit whose row suits the next tier. */
+async function aiUpgrades(side){
+  for (let g = 0; g < 8 && !S.over; g++){
+    const best = onField(side).filter(x => upgradePair(x)).map(x => ({x, s:rowFit(side, x.type + 1, x.r) + x.type * .1 + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
+    if (!best || best.s < 0) return;
+    await think(); await trioUpgrade(best.x);
   }
 }
 /* One move per turn: pull a ranged unit out of the front row, or push a melee unit forward to cover the rear. */
@@ -1310,7 +1296,6 @@ async function aiTurn(){
         if (pair){ const fit = rowFit(side, card.type + 1, f.r); if (fit >= 0) s = Math.max(s, 3 + fit + card.type + 1); }
         opts.push({card, kind:'cell', f, s});
       }
-      if (M().upgrade === 'trio') onField(side).filter(u => u.type === card.type && partnerOf(u)).forEach(u => { const fit = rowFit(side, u.type + 1, u.r); opts.push({card, kind:'onto', u, s:3 + (fit < 0 ? -12 : fit) + u.type + 1}); });
       if (M().upgrade === 'stack') mine().filter(u => u.type === card.type && u.type < 6).forEach(u => opts.push({card, kind:'onto', u, s:2 + fitNext(side, u.type, u.r, u.where)}));
       if (M().camp){ const i = [0, 1, 2].find(i => !campAt(side, i)); if (i != null) opts.push({card, kind:'camp', i, s:(F[side].units[card.type + 1]?.ranged ? 1.5 : .2)}); }
     }
@@ -1321,9 +1306,10 @@ async function aiTurn(){
     if (best.kind === 'cell') placed = await deployCard(side, best.card.uid, {r:best.f.r, c:best.f.c});
     else if (best.kind === 'onto') placed = await upgradeWithCard(side, best.card.uid, best.u);
     else placed = await deployCard(side, best.card.uid, {camp:true, i:best.i});
-    if (placed && placed.where === 'f' && M().upgrade === 'trio') await aiOffer(placed);
+    if (placed && placed.where === 'f' && M().upgrade === 'trio') await aiUpgrades(side);
     renderBars();
   }
+  if (!S.over && M().upgrade === 'trio') await aiUpgrades(side);
   if (!S.over) await aiAttacks(side);
   if (!S.over) await aiManeuver(side);
 }
@@ -1352,7 +1338,7 @@ async function aiAttacks(side){
 async function endTurn(){
   if (S.side !== 'p' || S.busy || S.over) return;
   S.busy = true; S.sel = null; renderAll();
-  await chain; S.offer = null;
+  await chain;
   if (S.over){ S.busy = false; return; }
   S.side = 'e'; Sfx.play('turn');
   await startTurn('e', S.turn === 1); await wait(180);
@@ -1365,7 +1351,7 @@ async function endTurn(){
 }
 async function newGame(){
   $('#bwrap .over')?.remove();
-  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, offer:null, unlocked:{p:0, e:0}};
+  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, unlocked:{p:0, e:0}};
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
   buildBoard(); renderModes();
   for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
@@ -1409,7 +1395,7 @@ function perform(sel, dest, fromRect){
     else { const u = S.units.find(x => x.id === sel.unit); act = () => fromCamp(u, dest.unit ? {unit:dest.unit} : dest); }
   }
   if (!act) return false;
-  S.offer = null; S.sel = null;
+  S.sel = null;
   if (sel.card != null){ const el = $(`#hand .card[data-uid="${sel.card}"]`); if (el) el.style.visibility = 'hidden'; }
   renderAll(); enqueue(act);
   return true;
@@ -1469,10 +1455,10 @@ $('#bwrap').addEventListener('click', async e => {
     if (dest.unit && S.sel.unit === dest.unit.id){ S.sel = null; renderAll(); return; }
     if (perform(S.sel, dest)) return;
   }
-  if (dest && dest.unit && readyTrios().has(dest.unit.id)){
-    const members = offerMembers(), u = dest.unit;
-    S.sel = null; S.offer = null; renderAll();
-    enqueue(() => trioUpgrade(u, members)); return;
+  if (dest && dest.unit && readyTrios().heads.has(dest.unit.id)){
+    const u = dest.unit;
+    S.sel = null; renderAll();
+    enqueue(() => trioUpgrade(u)); return;
   }
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
