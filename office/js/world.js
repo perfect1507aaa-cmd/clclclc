@@ -131,14 +131,17 @@ export function buildWorld(scene, { screenTex }) {
   };
   inner(3.06, DOOR1);
   inner(4.98, DOOR2);
-  // open door leaves
-  const leaf = (D, zc, open) => {
-    const g = new THREE.Group(); g.position.set(D.x1 - 0.02, 0, zc + 0.06); g.rotation.y = open; scene.add(g);
+  // door leaves: closed at start, main.js swings them open
+  refs.doors = [];
+  const leaf = (D, zc, openAngle, name) => {
+    const g = new THREE.Group(); g.position.set(D.x1 - 0.02, 0, zc + 0.06); scene.add(g);
     box(g, D.x1 - D.x0 - 0.04, D.h - 0.02, 0.04, std(0x9b7b56, 0.55, 0, { map: TX.woodTex() }), -(D.x1 - D.x0) / 2, D.h / 2, 0.02);
-    box(g, 0.12, 0.02, 0.05, M.metal, -(D.x1 - D.x0) + 0.1, 1.02, 0.05);
+    [-0.03, 0.07].forEach((z) => box(g, 0.12, 0.02, 0.03, M.metal, -(D.x1 - D.x0) + 0.1, 1.02, z));
+    reg(g, 'door', name);
+    refs.doors.push({ pivot: g, open: false, angle: 0, openAngle, name, x: (D.x0 + D.x1) / 2, z: zc, D });
   };
-  leaf(DOOR1, 3.06, -1.75);
-  leaf(DOOR2, 4.98, -1.6);
+  leaf(DOOR1, 3.06, -1.75, 'Дверь офиса');
+  leaf(DOOR2, 4.98, -1.6, 'Дверь кухни');
   // skirting
   const skirt = std(0x5a5550, 0.6);
   box(scene, x1 - x0, 0.08, 0.015, skirt, 0, 0.04, z0 + 0.008, { cast: false });
@@ -291,15 +294,13 @@ export function buildWorld(scene, { screenTex }) {
   col(-3.3, 2.3, -2.65, 2.95);
 
   // ---------- workstations ----------
-  [-1.75, 0, 1.75].forEach((x) => { buildDesk(scene, x, M); col(x - 0.8, -1.22, x + 0.8, -0.34); });
+  buildDesk(scene, 0, M); col(-0.8, -1.22, 0.8, -0.34);
   [-0.875, 0.875].forEach((x) => {
     box(scene, 0.04, 0.34, 0.78, M.partition, x, DESK_H + 0.17, -0.75);
     box(scene, 0.05, 0.02, 0.8, M.darkMetal, x, DESK_H + 0.35, -0.75);
   });
-  [-1.75, 0, 1.75].forEach((x) => {
-    box(scene, 1.62, 0.42, 0.04, M.partition, x, DESK_H + 0.21, -1.18);
-    box(scene, 1.62, 0.02, 0.05, M.darkMetal, x, DESK_H + 0.43, -1.18);
-  });
+  box(scene, 1.62, 0.42, 0.04, M.partition, 0, DESK_H + 0.21, -1.18);
+  box(scene, 1.62, 0.02, 0.05, M.darkMetal, 0, DESK_H + 0.43, -1.18);
   plane(scene, 0.21, 0.297, new THREE.MeshStandardMaterial({ map: TX.paperTex('ГРАФИК СМЕН', 14, 6) }), -0.62, DESK_H + 0.24, -1.157).rotation.z = 0.04;
 
   // ---------- player workstation ----------
@@ -348,8 +349,10 @@ export function buildWorld(scene, { screenTex }) {
     for (let k = 0; k < 4 + lvl * 3; k++) box(tray, 0.18, 0.002, 0.25, M.paper, 0, y + 0.008 + k * 0.003, -0.01).rotation.y = (k % 3 - 1) * 0.03;
   }
   reg(tray, 'papers', 'Лоток с бумагами');
-  const note = plane(scene, 0.21, 0.297, new THREE.MeshStandardMaterial({ map: TX.paperTex('ПРАЙС-ЛИСТ', 16, 2) }), 0.05, DESK_H + 0.001, -0.74);
-  note.rotation.set(-Math.PI / 2, 0, 0.35);
+  const sheet = plane(scene, 0.21, 0.297, new THREE.MeshStandardMaterial({ map: TX.paperTex('ПОСТОЯННЫЕ ЗАКАЗЫ', 22, 2) }), 0.05, DESK_H + 0.002, -0.74);
+  sheet.rotation.set(-Math.PI / 2, 0, 0.35);
+  reg(sheet, 'sheet', 'Лист постоянных заказов');
+  refs.sheet = sheet;
   const pad = new THREE.Group(); pad.position.set(-0.31, DESK_H, -0.42); pad.rotation.y = 0.25; scene.add(pad);
   box(pad, 0.15, 0.012, 0.21, std(0xf0ecd8, 0.9), 0, 0.006, 0);
   cyl(pad, 0.005, 0.005, 0.14, std(0x1e46b4, 0.3), 0.04, 0.02, 0.01, 8).rotation.set(Math.PI / 2, 0, 0.3);
@@ -364,45 +367,59 @@ export function buildWorld(scene, { screenTex }) {
   const bin = new THREE.Group(); bin.position.set(0.18, 0, -0.95); scene.add(bin);
   add(bin, new THREE.CylinderGeometry(0.13, 0.11, 0.32, 20, 1, true), std(0x3a3d42, 0.6, 0.2, { side: THREE.DoubleSide }), 0, 0.16, 0);
 
-  // ---------- boss: Алёна Владимировна (left desk) ----------
-  makeMonitor(scene, M, new THREE.MeshBasicMaterial({ map: TX.spreadsheetTex(), toneMapped: false }), -1.75, -0.9);
-  makeKeyboard(scene, M, -1.75, -0.55, true);
-  makeMouse(scene, M, -1.44, -0.55);
-  const violets = new THREE.Group(); violets.position.set(-2.45, DESK_H, -1.0); scene.add(violets);
+  // ---------- boss: Алёна Владимировна, back to the window, facing the office ----------
+  // the station is built in its own frame: she sits at the origin facing local -Z (= world +X)
+  const bs = new THREE.Group(); bs.position.set(-2.75, 0, -0.25); bs.rotation.y = -Math.PI / 2; scene.add(bs);
+  buildDesk(bs, 0, M);
+  box(bs, 1.62, 0.3, 0.03, M.partition, 0, 0.36, -1.12);
+  // her monitor stands to her left so her face stays visible from the office
+  const bm = makeMonitor(bs, M, new THREE.MeshBasicMaterial({ map: TX.spreadsheetTex(), toneMapped: false }), -0.42, -0.9);
+  bm.group.rotation.y = 0.45;
+  makeKeyboard(bs, M, -0.05, -0.55, true);
+  makeMouse(bs, M, 0.27, -0.55);
+  const violets = new THREE.Group(); violets.position.set(0.5, DESK_H, -1.02); bs.add(violets);
   [[0, 0, 0x8e44ad], [0.12, 0.02, 0xd6457a]].forEach(([dx, dz, c]) => {
     cyl(violets, 0.045, 0.035, 0.08, std(0xb85c38, 0.8), dx, 0.04, dz);
     for (let i = 0; i < 8; i++) add(violets, new THREE.SphereGeometry(0.03, 8, 6), std(0x2f6b33, 0.8), dx + Math.cos(i) * 0.035, 0.1, dz + Math.sin(i) * 0.035).scale.set(1, 0.35, 1);
     for (let i = 0; i < 5; i++) add(violets, new THREE.SphereGeometry(0.012, 6, 5), std(c, 0.6), dx + Math.cos(i * 1.7) * 0.015, 0.125, dz + Math.sin(i * 1.7) * 0.015);
   });
-  const vase = new THREE.Group(); vase.position.set(-1.18, DESK_H, -1.02); scene.add(vase);
+  const vase = new THREE.Group(); vase.position.set(0.25, DESK_H, -1.05); bs.add(vase);
   add(vase, new THREE.CylinderGeometry(0.025, 0.035, 0.16, 16), new THREE.MeshPhysicalMaterial({ color: 0xcfe6ef, transparent: true, opacity: 0.5, roughness: 0.05 }), 0, 0.08, 0);
   cyl(vase, 0.003, 0.003, 0.3, std(0x2f6b33, 0.6), 0, 0.2, 0, 6);
   add(vase, new THREE.SphereGeometry(0.03, 12, 10), std(0xc2183a, 0.5), 0, 0.36, 0).scale.set(1, 0.8, 1);
-  const mirror = new THREE.Group(); mirror.position.set(-2.05, DESK_H, -0.42); mirror.rotation.y = 0.6; scene.add(mirror);
+  const mirror = new THREE.Group(); mirror.position.set(-0.3, DESK_H, -0.42); bs.add(mirror);
   cyl(mirror, 0.045, 0.045, 0.008, std(0xc9a44a, 0.3, 0.8), 0, 0.004, 0);
   cyl(mirror, 0.04, 0.04, 0.002, std(0xdfe8ee, 0.05, 1), 0, 0.009, 0);
-  refs.bossMug = makeMug(scene, M, -1.22, -0.42, 0xf2d6de);
-  const frame = new THREE.Group(); frame.position.set(-2.2, DESK_H, -0.82); frame.rotation.y = 0.5; scene.add(frame);
+  refs.bossMug = makeMug(bs, M, 0.62, -0.42, 0xf2d6de);
+  const frame = new THREE.Group(); frame.position.set(0.05, DESK_H, -1.02); frame.rotation.y = -0.2; bs.add(frame);
   box(frame, 0.15, 0.12, 0.012, std(0xc9a44a, 0.4, 0.6), 0, 0.06, 0).rotation.x = -0.2;
   plane(frame, 0.13, 0.1, new THREE.MeshStandardMaterial({ map: TX.photoTex() }), 0, 0.061, 0.008).rotation.x = -0.2;
-  for (let k = 0; k < 6; k++) box(scene, 0.21, 0.004, 0.297, M.paper, -1.12, DESK_H + 0.002 + k * 0.004, -0.72).rotation.y = (k % 3 - 1) * 0.1;
-  refs.bossPhone = makePhone(scene, M, -2.3, -0.55, -0.45);
+  for (let k = 0; k < 6; k++) box(bs, 0.21, 0.004, 0.297, M.paper, 0.64, DESK_H + 0.002 + k * 0.004, -0.72).rotation.y = (k % 3 - 1) * 0.1;
+  refs.bossPhone = makePhone(bs, M, -0.62, -0.5, 0.9);
   refs.bossCup = makeCup(M);
-  refs.bossCup.position.set(-1.0, DESK_H, -0.45);
+  refs.bossCup.position.set(0.3, DESK_H, -0.42);
   refs.bossCup.visible = false;
-  scene.add(refs.bossCup);
-  makeChair(scene, M, -1.75, 0, 0.15);
-  refs.boss = makeBoss(scene, M, -1.75, 0);
+  bs.add(refs.bossCup);
+  makeChair(bs, M, 0, 0, 0);
+  refs.boss = makeBoss(bs, M, 0, 0);
+  refs.bossStation = bs;
   reg(refs.boss.group, 'boss', 'Алёна Владимировна');
-  col(-2.15, -0.34, -1.35, 0.4);
-
-  // ---------- empty desk (right) ----------
-  const off = makeMonitor(scene, M, std(0x0b0c0e, 0.15, 0.2), 1.75, -0.9);
-  plane(off.group, 0.075, 0.075, new THREE.MeshStandardMaterial({ map: TX.stickyTex('место\nсвободно', '#ffe66b', 1) }), 0.24, 0.43, 0.034).rotation.z = -0.1;
-  makeKeyboard(scene, M, 1.75, -0.55, true);
-  const emptyChair = makeChair(scene, M, 1.8, 0.2, -0.5);
-  reg(emptyChair, 'emptydesk', 'Пустое место');
-  col(1.45, -0.15, 2.15, 0.55);
+  col(-2.42, -1.08, -1.58, 0.58);       // her desk
+  col(x0, -0.62, -2.38, 0.12);          // her chair
+  // visitor chair in front of her desk: sit here to talk
+  refs.visitChair = makeVisitorChair(scene, M, -1.22, -0.25, Math.PI / 2);
+  reg(refs.visitChair, 'visitchair', 'Стул у начальницы');
+  col(-1.48, -0.52, -0.96, 0.02);
+  // a floor plant where the third desk used to be
+  const palm = new THREE.Group(); palm.position.set(2.6, 0, -0.9); scene.add(palm);
+  cyl(palm, 0.22, 0.17, 0.42, std(0x3d4148, 0.6), 0, 0.21, 0);
+  const pr = TX.rng(77);
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2, lf = add(palm, new THREE.SphereGeometry(0.09, 8, 6), std(0x3b7a3a, 0.7), Math.cos(a) * 0.3, 0.95 + pr() * 0.4, Math.sin(a) * 0.3);
+    lf.scale.set(3.2, 0.25, 0.8); lf.rotation.set(0, -a, 0.5);
+  }
+  cyl(palm, 0.025, 0.04, 0.9, std(0x6b5234, 0.8), 0, 0.8, 0, 8);
+  col(2.3, -1.2, 2.9, -0.6);
 
   // ---------- player chair + body ----------
   refs.playerChair = makeChair(scene, M, 0, 0, 0);
@@ -526,8 +543,8 @@ export function buildWorld(scene, { screenTex }) {
   // walkable areas (doorways overlap the rooms so you can pass)
   refs.walk = [
     { ...ROOM }, { ...CORR }, { ...KITCH },
-    { x0: DOOR1.x0, x1: DOOR1.x1, z0: 2.5, z1: 3.7, door: true },
-    { x0: DOOR2.x0, x1: DOOR2.x1, z0: 4.4, z1: 5.6, door: true },
+    { x0: DOOR1.x0, x1: DOOR1.x1, z0: 2.5, z1: 3.7, door: 0 },
+    { x0: DOOR2.x0, x1: DOOR2.x1, z0: 4.4, z1: 5.6, door: 1 },
   ];
   return refs;
 }
@@ -690,10 +707,10 @@ function makePhone(scene, M, x, z, ry = 0.55) {
   const cordAnchor = new THREE.Vector3(-0.1, 0.02, 0.09);
   const cord = new THREE.Mesh(new THREE.BufferGeometry(), cordMat);
   cord.castShadow = true;
-  scene.add(cord);
+  let root = scene; while (root.parent) root = root.parent;
+  root.add(cord); // the cord is built in world coordinates
   const updateCord = () => {
-    hs.updateMatrixWorld(true);
-    g.updateMatrixWorld(true);
+    g.updateWorldMatrix(true, true);
     const a = new THREE.Vector3(0, -0.02, 0.1).applyMatrix4(hs.matrixWorld);
     const b = cordAnchor.clone().applyMatrix4(g.matrixWorld);
     cord.geometry.dispose();
@@ -735,6 +752,17 @@ function makeLamp(scene, M, x, z) {
   g.add(light); g.add(light.target);
   interact(g, 'lamp', 'Настольная лампа');
   return { group: g, bulb, light, on: false };
+}
+
+// a plain low-backed visitor chair, so it doesn't hide the boss from your desk
+function makeVisitorChair(scene, M, x, z, yaw = 0) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw; scene.add(g);
+  const frame = std(0x2a2c30, 0.4, 0.6);
+  rbox(g, 0.44, 0.06, 0.42, 0.02, M.chair, 0, 0.46, 0);
+  rbox(g, 0.42, 0.22, 0.04, 0.015, M.chair, 0, 0.72, 0.2).rotation.x = 0.08;
+  [[-0.19, -0.18], [0.19, -0.18], [-0.19, 0.18], [0.19, 0.18]].forEach(([a, b]) => cyl(g, 0.012, 0.012, 0.44, frame, a, 0.22, b, 8));
+  [-0.19, 0.19].forEach((a) => cyl(g, 0.01, 0.01, 0.34, frame, a, 0.66, 0.2, 8));
+  return g;
 }
 
 export function makeChair(scene, M, x, z, yaw = 0) {
@@ -784,8 +812,6 @@ function makeBoss(scene, M, x, z) {
   add(g, new THREE.CapsuleGeometry(0.11, 0.14, 4, 14), blouse, 0, 0.76, 0.07).scale.set(1.12, 1, 0.78);
   const chest = add(g, new THREE.CapsuleGeometry(0.13, 0.12, 4, 14), blouse, 0, 0.95, 0.06);
   chest.scale.set(1.12, 1, 0.78); chest.rotation.x = -0.06;
-  add(g, new THREE.SphereGeometry(0.06, 12, 10), blouse, -0.06, 0.93, -0.03).scale.set(1, 0.85, 0.8);
-  add(g, new THREE.SphereGeometry(0.06, 12, 10), blouse, 0.06, 0.93, -0.03).scale.set(1, 0.85, 0.8);
   // V-neckline
   cyl(g, 0.038, 0.042, 0.12, skin, 0, 1.1, 0.05, 12);
   const vgeo = new THREE.CircleGeometry(0.045, 3); const v = add(g, vgeo, skin, 0, 1.04, -0.045, { cast: false });

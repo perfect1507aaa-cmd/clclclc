@@ -56,7 +56,8 @@
   .stats .err b { color: var(--bad); }
 
   #hud-right { top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; display: flex; gap: 8px; }
-  #side { top: calc(58px + env(safe-area-inset-top, 0px)); right: 16px; width: min(284px, calc(100vw - 32px)); display: grid; gap: 8px; max-height: calc(100% - 140px); grid-template-rows: auto minmax(0, 1fr); }
+  #side { top: calc(58px + env(safe-area-inset-top, 0px)); right: 16px; width: min(284px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 8px; max-height: calc(100% - 140px); }
+  #side > section { min-height: 0; }
   #tasks { padding: 10px 12px; display: grid; gap: 8px; }
   .side-h { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 400; }
   #task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
@@ -66,6 +67,17 @@
   .timer.hot { color: var(--bad); }
   #call-log { padding: 10px 12px; display: grid; gap: 8px; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
   #log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; overflow-y: auto; align-content: start; font-size: 14px; line-height: 1.35; min-height: 0; max-height: 46vh; }
+  #sheet { background: #f5f2e9; color: #23201a; border: 1px solid #d9d2bf; border-radius: 3px; padding: 10px 12px; display: grid; gap: 6px; grid-template-rows: auto minmax(0, 1fr); min-height: 0; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }
+  #sheet header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; cursor: pointer; pointer-events: auto; }
+  #sheet h2 { margin: 0; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+  #sheet-count { font-family: var(--mono); font-size: 13px; color: #6b5e3c; }
+  #sheet-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; max-height: 42vh; font-size: 13px; line-height: 1.3; pointer-events: auto; }
+  #sheet-list li { padding: 4px 0; border-bottom: 1px dashed #cfc6ae; }
+  #sheet-list li b { font-family: var(--mono); }
+  #sheet-list li span { color: #4d4636; }
+  #sheet-list li.done { color: #9a927d; text-decoration: line-through; }
+  #sheet-list li.done span { color: #aaa38f; }
+  #sheet.collapsed #sheet-list { display: none; }
   #log-list b { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 400; }
   #log-list li.me b { color: var(--good); }
   #log-list li.me { color: #cfe8d2; }
@@ -147,7 +159,7 @@
     <div class="card">
       <div class="eyebrow">ОАО «Хлебзавод №2» · отдел заявок · смена 08:00</div>
       <h1>Отдел заявок</h1>
-      <p>Вы оператор хлебозавода. Магазины и столовые звонят с заказами на завтра: код клиента, сверка фамилии по 1Ц, диктовка — «десять белого, чёрного четырнадцать…», и в конце вы называете сумму. За смену 10 заявок, потом сводка на принтер и начальнице. Алёна Владимировна следит за ошибками и даёт поручения.</p>
+      <p>Вы оператор хлебозавода. Утром — 20 постоянных заказов с листа А4. Потом звонят магазины: код клиента, сверка фамилии по 1Ц, диктовка «десять белого… угу… чёрного четырнадцать…», в конце вы называете сумму. После 10 звонков — сводка на принтер и начальнице. Алёна Владимировна сидит у окна, тоже принимает заявки, следит за ошибками и вызывает на стул для разговора. Двери за собой закрывайте.</p>
       <ul class="controls">
         <li><span>Мышь</span><span>осмотреться</span></li>
         <li><span>ЛКМ / <kbd>E</kbd></span><span>действие: телефон, монитор, окно, кофемашина…</span></li>
@@ -163,15 +175,20 @@
 
   <div id="hud-left" class="hud">
     <div class="plate panel"><b>Хлебзавод №2 · Отдел заявок</b><span id="hud-time">--:--</span></div>
-    <div class="stats panel"><span>Заявки <b id="st-orders">0/10</b></span><span class="err">Ошибки <b id="st-err">0</b></span><span class="err">Выговоры <b id="st-rep">0</b></span></div>
+    <div class="stats panel"><span>Утро <b id="st-standing">0/20</b></span><span>Звонки <b id="st-orders">0/10</b></span><span class="err">Ошибки <b id="st-err">0</b></span><span class="err">Выговоры <b id="st-rep">0</b></span></div>
   </div>
   <div id="hud-right" class="hud">
+    <button id="tts" class="ghost" aria-pressed="false">Озвучка: выкл.</button>
     <button id="mute" class="ghost" aria-pressed="false">Звук вкл.</button>
   </div>
   <aside id="side" class="hud">
     <section id="tasks" class="panel" hidden>
       <h2 class="side-h">Задачи</h2>
       <ul id="task-list"></ul>
+    </section>
+    <section id="sheet" class="collapsed" hidden>
+      <header id="sheet-head"><h2>Лист: постоянные заказы</h2><span id="sheet-count">0/20</span></header>
+      <ul id="sheet-list"></ul>
     </section>
     <section id="call-log" class="panel" hidden>
       <h2 class="side-h" id="log-title">Звонок</h2>

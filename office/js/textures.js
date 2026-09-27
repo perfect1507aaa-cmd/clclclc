@@ -456,3 +456,18 @@ export const coffeeScreenTex = () => canvasTex(128, 64, (g, w, h, st = 'idle') =
   g.font = `bold 18px ${SANS}`; g.textAlign = 'center';
   g.fillText(st === 'brew' ? 'ГОТОВИМ…' : st === 'ready' ? 'ГОТОВО' : 'КАПУЧИНО', w / 2, 38);
 }, { aniso: 2 });
+
+// the morning A4 sheet: a printed table of standing orders
+export const standingSheetTex = (rows) => canvasTex(512, 724, (g, w, h) => {
+  g.fillStyle = '#fbfbf7'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#111'; g.font = `bold 20px ${SANS}`; g.textAlign = 'center';
+  g.fillText('ПОСТОЯННЫЕ ЗАКАЗЫ', w / 2, 42);
+  g.font = `13px ${SANS}`; g.fillText('отдел заявок · ввести в 1Ц до начала звонков', w / 2, 62);
+  g.textAlign = 'left';
+  rows.forEach((r, i) => {
+    const y = 96 + i * 30;
+    g.strokeStyle = '#999'; g.lineWidth = 1; g.strokeRect(24, y - 20, w - 48, 30);
+    g.font = `bold 14px ${SANS}`; g.fillText(r[0], 32, y);
+    g.font = `13px ${SANS}`; g.fillText(r[1].slice(0, 52), 96, y);
+  });
+});

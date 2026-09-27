@@ -232,6 +232,17 @@ export class PC {
     this.focusProd('');
   }
   newOrder() { this.form = this.blankForm(); this.focusCode(''); }
+  // an order entered by someone else in the same base (the boss)
+  addExternalOrder(code, rows, op) {
+    this.counter++;
+    const order = { num: `ЗК-${pad(this.counter, 6)}`, time: new Date(), code, rows: rows.map((r) => ({ ...r })), op };
+    order.total = order.rows.reduce((s, r) => s + r.qty * productByCode(r.code).price, 0);
+    this.orders.push(order);
+    this.report.state = 'idle';
+    if (this.appRunning) this.toast(`Новая заявка (${op})`, `${order.num} · ${shortFio(clientByCode(code).fio)} · ${fmt(order.total)} ₽`);
+    this.dirty = true;
+    return order;
+  }
   saveOrder() {
     const F = this.form;
     if (this.edit) this.commitEdit();
@@ -249,7 +260,7 @@ export class PC {
       Object.assign(order, { code: F.client.code, rows: F.rows.map((r) => ({ ...r })), total: this.formTotal() });
     } else {
       this.counter++;
-      order = { num: `ЗК-${pad(this.counter, 6)}`, time: new Date(), code: F.client.code, rows: F.rows.map((r) => ({ ...r })), total: this.formTotal() };
+      order = { num: `ЗК-${pad(this.counter, 6)}`, time: new Date(), code: F.client.code, rows: F.rows.map((r) => ({ ...r })), total: this.formTotal(), op: 'Вы' };
       this.orders.push(order);
     }
     this.toast('Заявка записана', `${order.num} · ${shortFio(F.client.fio)} · ${fmt(order.total)} ₽`);
@@ -752,7 +763,7 @@ export class PC {
     }
     const rows = this.listRows(key);
     const cols = {
-      journal: [['Время', 90, (o) => fmtTime(o.time)], ['Номер', 140, (o) => o.num], ['Код', 90, (o) => o.code], ['Клиент', 210, (o) => shortFio(clientByCode(o.code).fio)], ['Точка', 0, (o) => clientByCode(o.code).shop], ['Позиций', 100, (o) => String(o.rows.length), 'right'], ['Сумма', 150, (o) => fmt(o.total), 'right']],
+      journal: [['Время', 70, (o) => fmtTime(o.time)], ['Номер', 120, (o) => o.num], ['Код', 90, (o) => o.code], ['Клиент', 190, (o) => shortFio(clientByCode(o.code).fio)], ['Точка', 0, (o) => clientByCode(o.code).shop], ['Принял', 100, (o) => o.op || 'Вы'], ['Позиций', 80, (o) => String(o.rows.length), 'right'], ['Сумма', 120, (o) => fmt(o.total), 'right']],
       clients: [['Код', 80, (c) => c.code], ['ФИО', 290, (c) => c.fio], ['Точка', 240, (c) => c.shop], ['Адрес', 0, (c) => c.addr], ['Маршрут', 100, (c) => `№${c.route}`]],
       goods: [['Код', 90, (p) => p.code], ['Наименование', 0, (p) => p.name], ['Ед.', 80, (p) => p.unit], ['Цена', 150, (p) => fmt(p.price), 'right']],
     }[key];
@@ -798,6 +809,11 @@ export class PC {
       this.text('Отчет формируется…', cx, cy + 44, { align: 'center', color: '#666', size: 15 });
       return;
     }
+    // the sheet scrolls: a day easily has 30+ orders
+    const contentH = 120 + (this.orders.length + 2) * 27;
+    R.scroll = Math.max(0, Math.min(R.scroll || 0, contentH - rh + 20));
+    this.wheels.push({ x: C.x + 20, y: ry, w: C.w - 40, h: rh, fn: (d) => { R.scroll = Math.max(0, Math.min(contentH - rh + 20, (R.scroll || 0) + d * 18)); } });
+    g.save(); g.beginPath(); g.rect(C.x + 21, ry + 1, C.w - 42, rh - 2); g.clip(); g.translate(0, -R.scroll);
     const X = C.x + 40;
     let y = ry + 30;
     this.text(`Сводка заявок на ${fmtDate(new Date(Date.now() + 86400000))}`, X, y, { size: 19, bold: true, color: '#222' });
@@ -833,6 +849,8 @@ export class PC {
       g.fillStyle = '#e9e6da'; g.fillRect(X2, y + 27, 320, 1);
       y += 27;
     });
+    g.restore();
+    if (contentH > rh) this.text('колесо мыши — прокрутка', C.x + C.w - 30, ry + rh - 14, { align: 'right', size: 12, color: '#aaa' });
   }
 
   drawMenu(C) {

@@ -46,6 +46,18 @@ export const CLIENTS = [
   ['53190', 'Комаров Денис Андреевич', 'кофейня «Зерно»', 'ул. Центральная, 1', false],
   ['31564', 'Орлова Вера Константиновна', 'магазин «Ромашка»', 'ул. Цветочная, 16', true],
   ['44421', 'Киселёв Пётр Семёнович', 'магазин «Гастроном №1»', 'пл. Победы, 3', false],
+  ['37712', 'Гусева Анна Павловна', 'столовая завода «Прибор»', 'ул. Приборная, 9', true],
+  ['28459', 'Ковалёв Игорь Васильевич', 'магазин «Хлеб да соль»', 'ул. Кирова, 44', false],
+  ['49530', 'Лаврова Зинаида Петровна', 'детский сад №12 «Ёлочка»', 'ул. Хвойная, 3', true],
+  ['35268', 'Ефимов Степан Аркадьевич', 'кафе «Пельменная №1»', 'ул. Советская, 15', false],
+  ['42607', 'Жукова Тамара Ильинична', 'магазин «Уголок»', 'пер. Тихий, 2', true],
+  ['26184', 'Андреев Павел Олегович', 'АЗС «Трасса» (буфет)', 'Шоссе, 18 км', false],
+  ['50871', 'Макарова Людмила Сергеевна', 'магазин «Кулинария»', 'ул. Мира, 60', true],
+  ['33045', 'Зуев Григорий Павлович', 'столовая колледжа', 'ул. Студенческая, 5', false],
+  ['47796', 'Никифорова Ольга Дмитриевна', 'магазин «Добрый»', 'ул. Добрая, 1', true],
+  ['24367', 'Кудрявцев Артём Сергеевич', 'кафе «Бублик»', 'ул. Бубличная, 8', false],
+  ['39123', 'Соболева Екатерина Андреевна', 'магазин «Свежесть»', 'ул. Озёрная, 27', true],
+  ['52988', 'Рябов Николай Фёдорович', 'магазин «Сельпо»', 'д. Васильево, 1', false],
 ].map(([code, fio, shop, addr, f], i) => ({ code, fio, surname: fio.split(' ')[0], shop, addr, female: f, route: 1 + (i % 6) }));
 export const clientByCode = (c) => CLIENTS.find((k) => k.code === c);
 export const shortFio = (fio) => { const [s, n, p] = fio.split(' '); return `${s} ${n[0]}. ${p[0]}.`; };
@@ -101,3 +113,22 @@ export function sayItem(item, rnd = Math.random) {
 function pick(a, rnd) { return a[Math.floor(rnd() * a.length)]; }
 
 export const orderTotal = (items) => items.reduce((s, it) => s + it.qty * (productByCode(it.code)?.price || 0), 0);
+
+// ---------- morning standing orders (one A4 sheet) ----------
+export const STANDING_COUNT = 20;
+export const standingClients = () => CLIENTS.slice(0, STANDING_COUNT);
+export const phoneClients = () => CLIENTS.slice(STANDING_COUNT);
+export function makeStandingOrders(seed = 7) {
+  let t = seed;
+  const rnd = () => { t = (t * 16807) % 2147483647; return (t - 1) / 2147483646; };
+  const pool = ['101', '102', '103', '105', '201', '202', '203'];
+  return standingClients().map((client) => {
+    const n = 2 + Math.floor(rnd() * 2);
+    const codes = ['101', '102', ...pool.slice(2).sort(() => rnd() - 0.5)].slice(0, n);
+    const items = codes.map((code) => {
+      const kind = productByCode(code).kind;
+      return { code, qty: kind === 'bun' ? 5 * (2 + Math.floor(rnd() * 5)) : 4 + Math.floor(rnd() * 20) };
+    });
+    return { client, items, entered: false, errors: [] };
+  });
+}
