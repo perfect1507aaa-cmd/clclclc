@@ -381,9 +381,9 @@ const visionN = p => RANGE[tierN(p)];
 const rangeN = p => RANGE[tierN(p)];
 const GROW_SPEED = 230;
 const DIFF = {
-  easy:   { apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5 },
-  normal: { apm: 16, react: 1.1, think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45 },
-  hard:   { apm: 24, react: 0.8, think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45 },
+  easy:   { apm: 10, react: 1.6, think: 3.4, actions: 1, defend: true,  supply: false, reserve: 6, minV: 12, noise: 0.7,  margin: 1.0, hunt: 0.3, v2: true, depth: 1, reflex: 0.5, plans: ['expand', 'rush', 'turtle'], planT: 1.4 },
+  normal: { apm: 16, react: 1.1, think: 2.1, actions: 2, defend: true,  supply: true,  reserve: 5, minV: 10, noise: 0.3,  margin: 1.15, smart: true, hunt: 0.7, v2: true, depth: 3, reflex: 0.45, plans: ['expand', 'rush', 'turtle', 'decap', 'cut', 'vulture'], planT: 1.1 },
+  hard:   { apm: 24, react: 0.8, think: 1.15, actions: 3, defend: true, supply: true,  reserve: 4, minV: 8,  noise: 0.1,  margin: 1.2, smart: true, hunt: 1.1, v2: true, depth: 4, reflex: 0.45, plans: ['expand', 'rush', 'turtle', 'decap', 'cut', 'vulture'], planT: 0.9 },
 };
 /* A bot plays with human hands: apm orders a minute at most (a group strike counts as one), up to AI_HANDS_MAX saved up,
    and it notices an incoming bundle only after it has been on its way for `react` seconds. */
@@ -1936,9 +1936,62 @@ function aiReach(o, gates, depth) {
   }
   return reach;
 }
+/* ---------- AI plans ----------
+   A bot is not a machine doing the same thing all game. Like a person it follows a plan for a while and then changes
+   it as the game turns: early on it grabs land; ahead, it goes for your datacenter; behind, it digs in; it cuts a
+   stretched network, picks at fights between others, or just rushes. When its datacenter is threatened it drops
+   everything to guard it. Each bot has its own taste for some plans, so no two bots play alike.
+   A plan only weighs the bot's choices (targets, margins, reserves, building, supply); the moves stay the same. */
+const PLAN0 = { grey: 1, foe: 1, you: 1, hq: 1, near: 0, cut: 1, fight: 1, empty: 1, home: 0, margin: 0, reserve: 1, actions: 0, build: 2.5, supply: 0 };
+const PLANS = {
+  expand:  { grey: 1.8, foe: 0.6, build: 1.5, reserve: 0.7, actions: 1 },                     // grab the free nodes
+  rush:    { grey: 0.6, foe: 1.6, you: 1.3, margin: -0.04, reserve: 0.6, actions: 1, build: 3 }, // hit hard and often
+  turtle:  { grey: 0.9, foe: 0.9, margin: 0.05, reserve: 1, build: 3, supply: 1 },              // dig in, strike only for sure
+  decap:   { grey: 0.7, foe: 1.5, hq: 3, near: 0.5, reserve: 0.6, actions: 1, build: 2 },       // make for the enemy datacenter
+  cut:     { foe: 1.35, cut: 1.6, reserve: 0.7, actions: 1, build: 2 },                        // take the joints of a network
+  vulture: { foe: 1.4, fight: 2.2, empty: 2, reserve: 0.7, actions: 1, build: 2.5 },           // pick at fights and emptied nodes
+  guard:   { grey: 0.5, foe: 0.8, reserve: 1.5, home: 3, supply: 1, build: 4 },                 // the datacenter is in danger
+};
+function aiPlan(ai) {
+  const o = ai.o, D = ai.d, N = G.nodes, H = hqOf(o);
+  if (!ai.taste) { ai.taste = {}; for (const k in PLANS) ai.taste[k] = 0.6 + Math.random() * 0.9; }
+  // the datacenter first: an enemy bundle on its way or strong enemy nodes next to it
+  if (H && D.guard !== false) {
+    const th = incomingArmies(H.i, a => a.o !== o).reduce((s, a) => s + a.n, 0)
+      + H.nb.reduce((s, e) => { const q = N[other(e, H.i)]; return s + (e.state === 'up' && q.owner && q.owner !== o ? q.v * 0.6 : 0); }, 0);
+    if (th > 15 && th > H.v * 0.7) { if (ai.plan !== 'guard') ai.plan = 'guard'; ai.planUntil = G.time + 10; return; }
+  }
+  if (ai.plan && G.time < (ai.planUntil || 0)) return;
+  const mine = N.filter(p => p.owner === o), foes = [1].concat(G.ais.map(a => a.o)).filter(k => k !== o && alive(k));
+  const ratio = power(o) / Math.max(1, ...foes.map(power));
+  const reach = mine.filter(p => tierN(p) > 0), near = q => reach.some(A => Math.hypot(q.x - A.x, q.y - A.y) < rangeN(A) * 1.3);
+  const greys = N.filter(q => q.owner === 0 && near(q)).length;
+  const front = new Set(); for (const A of mine) for (const e of A.nb) { const q = N[other(e, A.i)]; if (e.state === 'up' && q.owner && q.owner !== o) front.add(q); }
+  const joints = [...front].filter(q => cutValue(q) > 0).length;
+  const fights = N.filter(q => q.owner && q.owner !== o && q.assault && q.assault.some(a => a.o !== o && a.o !== q.owner)).length;
+  const hqClose = N.some(q => q.hq && q.owner && q.owner !== o && near(q));
+  const w = {
+    expand: (0.5 + Math.min(2, greys * 0.25)) * (G.time < 90 ? 1.8 : 1),
+    rush: front.size ? 1.1 * clamp(ratio, 0.5, 2) : 0.2,
+    turtle: ratio < 0.8 ? 1.5 : 0.35,
+    decap: hqClose ? (ratio > 1.15 ? 2.2 : 0.7) : 0.15,
+    cut: joints ? 0.8 + joints * 0.3 : 0.15,
+    vulture: fights ? 1.2 : 0.15,
+  };
+  let tot = 0; const opts = (D.plans || ['expand', 'rush', 'turtle']).map(k => { const x = w[k] * ai.taste[k] * (k === ai.plan ? 0.45 : 1); tot += x; return [k, x]; });
+  let r = Math.random() * tot, pick = opts[0][0];
+  for (const [k, x] of opts) { if ((r -= x) <= 0) { pick = k; break; } }
+  ai.plan = pick; ai.planUntil = G.time + (22 + Math.random() * 28) * (D.planT || 1);
+}
 function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const N = G.nodes, mine = N.filter(p => p.owner === o && p.infect <= 0);
   if (!mine.length) return;
+  if (ai.o) aiPlan(ai);
+  // the plan's weights (a level or a test may adjust them through D.planMod)
+  const S = Object.assign({}, PLAN0, PLANS[ai.plan], D.planMod && D.planMod[ai.plan]), home = hqOf(o);
+  const foeHq = N.filter(q => q.hq && q.owner && q.owner !== o);
+  const nearFoeHq = T => { let d = 1e9; for (const q of foeHq) d = Math.min(d, Math.hypot(T.x - q.x, T.y - q.y)); return Math.max(0, 1 - d / 1600); };
+  const byHome = T => home && T.nb.some(e => other(e, T.i) === home.i);
   const sum = arr => arr.reduce((s, a) => s + a.n, 0);
   const freeOf = A => A.v - (A.held || 0);
   // what it has noticed coming; one order = one bundle it sends, if it has a free hand
@@ -1947,9 +2000,13 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   const order = (e, i, n, dest) => { if (ai.hands < 1 || !send1(e, i, n, dest)) return false; ai.hands--; return true; };
   // an experienced player keeps a guard on the nodes that hold its network together
   // (the node the network masses on keeps no extra guard: it gathers precisely to strike)
-  const reserveOf = A => { const th = sum(seen(A.i)); if (th > 0) return th * 1.1; return D.smart && A.i !== ai.massHub ? Math.max(D.reserve, Math.min(freeOf(A) * 0.5, cutValue(A) * 0.25)) : D.reserve; };
+  const reserveOf = A => {
+    const th = sum(seen(A.i)); if (th > 0) return th * 1.1;
+    if (S.home && A === home) return freeOf(A) * 0.7;
+    return (D.smart && A.i !== ai.massHub ? Math.max(D.reserve, Math.min(freeOf(A) * 0.5, cutValue(A) * 0.25)) : D.reserve) * S.reserve;
+  };
   const avail = new Map(mine.map(A => [A.i, Math.max(0, Math.floor(freeOf(A) - reserveOf(A)))]));
-  let actions = D.actions;
+  let actions = D.actions + S.actions;
   // the same rule as for the player: one bundle in the air at a time, and a laptop never launches
   const fly = { own: flyingOf(o, 'own'), out: flyingOf(o, 'out') };
   const slotOk = (A, kind, f = fly) => tierN(A) > 0 && f[kind] < MAX_FLYING;
@@ -2017,7 +2074,7 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     const guard = T.v + (T.owner ? TIERS[tierN(T)].regen * eta : 0) + sum(incomingArmies(ti, a => a.o === T.owner && T.owner));
     // the margin covers regeneration and timing; in a big battle a few percent is enough, and a flat 20% would leave
     // two equal stockpiles staring at each other forever
-    const margin = 1.03 + (D.margin - 1.03) * Math.min(1, 50 / Math.max(1, guard));
+    const margin = 1.03 + (D.margin + S.margin - 1.03) * Math.min(1, 50 / Math.max(1, guard)) + Math.max(0, S.margin) * 0.3;
     const need = Math.ceil(guard * Math.sqrt(T.owner ? defMult(T) : 1 + HOME[tierN(T)]) * margin + 2 - mineInc);
     if (need <= 0) continue;
     if (D.v2 && need < 6 && T.owner) continue;                                         // measured play: no crumbs thrown at enemy nodes
@@ -2025,13 +2082,17 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
     // a bigger bundle, so the price counts only weakly
     let score = (T.cap / 40) * (T.owner ? 1.3 : 1) / Math.pow(need + 8, 0.4) * (1 + (Math.random() - 0.5) * D.noise);
     if (T.owner === 1) score *= 1 + (D.hunt || 0);                                   // it is you it wants
+    score *= T.owner ? S.foe * (T.owner === 1 ? S.you : 1) : S.grey;                 // what the plan is after
+    if (T.hq && T.owner) score *= 1.6 * S.hq;                                        // a datacenter taken wins against that enemy
+    if (S.near) score *= 1 + S.near * nearFoeHq(T);                                  // on the way to the enemy datacenter
+    if (S.home && byHome(T)) score *= 1 + S.home;                                    // clear the enemy from the datacenter's door
     if (T.lostFrom === o && G.time - (T.lostAt || -99) < 40) score *= 1.6;           // take back what was just lost
     if (T.kind) score *= 1.3;
-    if (D.v2 && T.owner && G.time - (T.sentAt ?? -99) < 3 && T.v < T.cap * 0.35) score *= 1.5;       // it has just emptied itself: punish it
+    if (D.v2 && T.owner && G.time - (T.sentAt ?? -99) < 3 && T.v < T.cap * 0.35) score *= 1.5 * S.empty; // it has just emptied itself: punish it
     if (D.smart) {
       const cut = cutValue(T);
-      if (cut > 0) score *= 1 + cut / (need + 20);                                  // a chokepoint: taking it cuts off a part of the enemy
-      if (T.assault && T.assault.some(a => a.o !== o)) score *= 1.3;               // someone else is already grinding it down
+      if (cut > 0) score *= 1 + S.cut * cut / (need + 20);                          // a chokepoint: taking it cuts off a part of the enemy
+      if (T.assault && T.assault.some(a => a.o !== o)) score *= 1.3 * S.fight;     // someone else is already grinding it down
     }
     // with one bundle in the air there are no joint strikes: one node has to be able to do it alone.
     // A target too strong for any single node is remembered: the network masses its packets on the node
@@ -2061,28 +2122,31 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
   let built = false;
   for (const A of mine.slice().sort(() => Math.random() - 0.5)) {
     // a channel is worth it only with an order to spare for the strike along it
-    if (actions <= 0 || ai.hands < 2.5) break;
+    if (actions <= 0 || ai.hands < S.build) break;
     if (A.v < D.minV + 6) continue;
     const cands = [];
     for (const T of N) {
       if (T === A || T.owner === o || (T.owner && tierN(A) < 2) || edgeBetween(A.i, T.i)) continue;
       const d = Math.hypot(T.x - A.x, T.y - A.y); if (d > rangeN(A)) continue;
       const cost = costOf(Math.max(80, d * 1.15 - 60)); if (A.v - cost < D.reserve + T.v * 0.5) continue;
-      cands.push({ T, score: (T.cap / 40) * (T.owner ? 1.2 : 1) * (T.owner === 1 ? 1 + (D.hunt || 0) : 1) * (T.kind ? 1.3 : 1) * (D.v2 && T.owner ? 1 + cutValue(T) / 60 : 1) / (cost + T.v + 6) * (1 + (Math.random() - 0.5) * D.noise) });
+      const plan = (T.owner ? S.foe * (T.owner === 1 ? S.you : 1) * (T.hq ? 1.6 * S.hq : 1) : S.grey) * (1 + S.near * nearFoeHq(T)) * (S.home && byHome(T) ? 1 + S.home : 1);
+      cands.push({ T, score: plan * (T.cap / 40) * (T.owner ? 1.2 : 1) * (T.owner === 1 ? 1 + (D.hunt || 0) : 1) * (T.kind ? 1.3 : 1) * (D.v2 && T.owner ? 1 + S.cut * cutValue(T) / 60 : 1) / (cost + T.v + 6) * (1 + (Math.random() - 0.5) * D.noise) });
     }
     cands.sort((a, b) => b.score - a.score);
     for (const c of cands.slice(0, 3)) if (build(A.i, c.T.i, o, false)) { ai.hands--; actions--; built = true; break; }
   }
   // 4. supply: the fullest rear node sends a big bundle to the front, when nothing else is in the air;
   //    while the network masses for a strike nothing single node can make, it goes to that node
-  if (D.supply && ai.hands >= 1) {
+  if ((D.supply || S.supply) && ai.hands >= 1) {
     const front = new Map(), q = [];
     for (const p of mine) if (p.nb.some(e => N[other(e, p.i)].owner !== o)) { front.set(p.i, 0); q.push(p.i); }
     while (q.length) { const i = q.shift(); for (const e of N[i].nb) { if (e.state !== 'up') continue; const j = other(e, i); if (N[j].owner === o && !front.has(j)) { front.set(j, front.get(i) + 1); q.push(j); } } }
     const rear = mine.filter(A => { const f = front.get(A.i); return f != null && f >= 1 && A.v >= A.cap * 0.8 && freeOf(A) * 0.75 >= 25; }).sort((x, y) => y.v / y.cap - x.v / x.cap).slice(0, 1);
     let goal = mass && N[mass.i].owner === o ? mass.i : null, best = mass ? Infinity : -1;
     // the front node under the most pressure: what it can see coming plus the enemy nodes next to it
-    if (D.v2) for (const [k, d] of front) if (d === 0) { const th = sum(seen(k)) + N[k].nb.filter(x => N[other(x, k)].owner && N[other(x, k)].owner !== o).length * 10; if (th > best) { best = th; goal = k; } }
+    if (D.v2) for (const [k, d] of front) if (d === 0) { const th = (sum(seen(k)) + N[k].nb.filter(x => N[other(x, k)].owner && N[other(x, k)].owner !== o).length * 10) * (1 + S.near * nearFoeHq(N[k])); if (th > best) { best = th; goal = k; } }
+    // guarding: everything goes home
+    if (S.home && home && front.has(home.i)) goal = home.i;
     let sent = false;
     for (const A of rear) {
       const f = front.get(A.i), n = Math.floor(freeOf(A) * 0.75);
