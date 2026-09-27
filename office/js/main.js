@@ -276,7 +276,7 @@ function lookYaw() {
   boss.group.worldToLocal(_v);
   return THREE.MathUtils.clamp(Math.atan2(-_v.x, -(_v.z - 0.05)), -1.15, 1.15);
 }
-const bossS = { wave: 0, waveT: 0, phone: 0, onPhone: false, summon: null, task: null, typing: true, pause: 0, nextTask: 0, nextCall: 0, lookUntil: 0, clients: new Set() };
+const bossS = { wave: 0, waveT: 0, phone: 0, onPhone: false, summon: null, task: null, typing: true, pause: 0, nextCall: 0, lookUntil: 0, clients: new Set() };
 const bossSayReal = (...a) => bossSay(...a);
 function bossSay(text, o = {}) {
   bossS.lookUntil = performance.now() + 6000;
@@ -382,8 +382,8 @@ async function scold() {
     await bossSay(q);
     await round(opts);
     if (score >= 3 && day.forgiven < 1) { day.forgiven++; await bossSay(pick(SCOLD.close.forgive)); notify('Начальница простила — без выговора'); }
-    else if (score < 0) { await bossSay(pick(SCOLD.close.harsh)); reprimand('ошибка в заявке'); reprimand('отговорки'); }
-    else { await bossSay(pick(SCOLD.close.normal)); reprimand('ошибка в заявке'); }
+    else if (score < 0) { await bossSay(pick(SCOLD.close.harsh)); reprimand('ошибка в заявке'); reprimand('отговорки'); await punishChore(); }
+    else { await bossSay(pick(SCOLD.close.normal)); reprimand('ошибка в заявке'); if (Math.random() < 0.6) await punishChore(); }
   } finally { S.scolding = false; }
 }
 // too many «повторите» in one call: a talk without a reprimand, sometimes a chore
@@ -403,8 +403,18 @@ const EDU = {
   point: [`Клиент диктовал тебе два раза. Он занятой человек.`, 'Когда переспрашиваешь постоянно, клиент думает, что мы тут спим.', 'Переспросить можно. Но не на каждой строчке.'],
   replies: [['Понятно, Алёна Владимировна.', 'sorry'], ['Они очень быстро диктуют.', 'excuse'], ['Связь плохая, не слышно.', 'blame'], ['Буду вводить быстрее.', 'fix']],
   tips: ['Вводи код товара: сто один — белый, сто два — чёрный. Так быстрее, чем искать по названию.', 'Сначала дослушай строчку, потом вводи. И говори «угу», только когда записал.', 'Держи руку на Enter: товар, Enter, количество, Enter. Не надо мышкой.'],
-  chores: [['coffee', 'А чтобы проснуться — сделай-ка мне кофе. Капучино.'], ['sweep', 'А пока иди подмети крошки в коридоре. Проветришься.'], ['window', 'И открой, пожалуйста, окно — душно, голова не варит.']],
+  chores: [['coffee', 'А чтобы проснуться — сделай-ка мне кофе. Капучино. Кухня по коридору налево.'], ['sweep', 'А в наказание иди подмети крошки в коридоре. Веник в конце коридора.'], ['window', 'И открой окно у меня за спиной — тебе проветриться не помешает.']],
 };
+// chores are only ever a punishment for careless listening or typing
+async function punishChore() {
+  if (bossS.task) return;
+  const [kind, line] = pick(EDU.chores.filter(([k]) => k !== day.lastChore));
+  day.lastChore = kind;
+  await bossSay(kind === 'window' && world.window.open ? 'А в наказание — закрой окно, дует.' : line);
+  giveBossTask(kind, true);
+  await ask(['Понятно, Алёна Владимировна.'], { timeout: 12 });
+  await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
+}
 async function educate() {
   const { call } = bossS.summon;
   bossS.summon = null;
@@ -422,13 +432,7 @@ async function educate() {
     await bossSay(pick(EDU.tips));
     await ask(['Понятно, Алёна Владимировна.'], { timeout: 12 });
     await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
-    if (!bossS.task && Math.random() < 0.45) {
-      const opts = EDU.chores.filter(([k]) => k === 'window' || !day.used.has(k));
-      const [kind, line] = pick(opts.length ? opts : EDU.chores);
-      await bossSay(kind === 'window' && world.window.open ? 'И закрой, пожалуйста, окно — дует.' : line);
-      giveBossTask(kind, true);
-      await ask(['Понятно, Алёна Владимировна.'], { timeout: 12 });
-    }
+    if (Math.random() < 0.5) await punishChore();
     await bossSay(pick(['Всё, иди работай.', 'Иди. И внимательнее.']));
   } finally { S.scolding = false; }
   void call;
@@ -452,10 +456,6 @@ async function briefing() {
       await bossSay('Переспроси: «повторите, пожалуйста». Но не злоупотребляй — клиенты этого не любят.');
       await ok();
     } else await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
-    const [kind, line] = pick([['coffee', 'И сделай мне, пожалуйста, кофе. Кухня по коридору налево, кофемашина чёрная.'], ['window', 'И открой, пожалуйста, окно у меня за спиной — душно с утра.']]);
-    await bossSay(line);
-    giveBossTask(kind, true);
-    await ok();
     await bossSay('Всё. Иди работай. Пароль от 1Ц — на стикере.');
     day.briefed = true;
     addTask('standing', `Утренние заказы с листа: ${STANDING_COUNT - standingLeft()}/${STANDING_COUNT}`, 0);
@@ -527,7 +527,7 @@ function giveBossTask(forced, quiet = false) {
   const bossSay = quiet ? () => {} : bossSayReal;
   day.used.add(kind);
   bossS.task = kind;
-  const fail = (why) => () => { bossS.task = null; day.bossFailed++; bossS.nextTask = performance.now() + rand(110, 170) * 1000; bossSayReal(why); reprimand('не выполнено поручение'); if (kind === 'sweep') cleanupSweep(false); };
+  const fail = (why) => () => { bossS.task = null; day.bossFailed++; bossSayReal(why); reprimand('не выполнено поручение'); if (kind === 'sweep') cleanupSweep(false); };
   if (kind === 'window') {
     const open = world.window.open;
     bossS.windowWant = !open;
@@ -547,7 +547,6 @@ function bossTaskDone(text) {
   bossS.task = null;
   day.bossDone++;
   notify(`Поручение выполнено: ${text}`);
-  bossS.nextTask = performance.now() + rand(110, 170) * 1000;
 }
 function cleanupSweep(done) {
   world.crumbs.forEach((c) => (c.visible = false));
@@ -891,7 +890,6 @@ pc.onEvent = (type, data) => {
       day.phase = 'calls';
       if (!day.briefed) setTimeout(() => bossSay('1Ц запустил? Хорошо. А теперь подойди ко мне — стул сбоку от моего стола.'), 1500);
       phoneS.nextRing = performance.now() + 150000;
-      bossS.nextTask = performance.now() + rand(90, 130) * 1000;
       bossS.nextCall = performance.now() + rand(50, 80) * 1000;
     }
   } else if (type === 'appClosed') {
@@ -1446,10 +1444,6 @@ function frame() {
 
   // boss
   if (day.phase === 'calls' || day.phase === 'report') {
-    if (!bossS.task && !bossS.summon && bossS.nextTask && now > bossS.nextTask && day.phase === 'calls') {
-      if (S.scolding || phoneS.state === 'call' || bossS.onPhone) bossS.nextTask = now + 15000;
-      else { giveBossTask(); bossS.nextTask = 0; }
-    }
     if (!bossS.onPhone && bossS.nextCall && now > bossS.nextCall && !subCurrent && phoneS.state !== 'call') { bossS.nextCall = now + rand(80, 140) * 1000; bossPhoneCall(); }
   }
   bossS.phone += ((bossS.phoneTarget || 0) - bossS.phone) * Math.min(1, dt * 4);
