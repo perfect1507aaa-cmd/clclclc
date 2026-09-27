@@ -13,11 +13,13 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
 };
 
 const server = http.createServer((req, res) => {
   let filePath = decodeURIComponent(req.url.split('?')[0]);
-  if (filePath === '/') filePath = '/index.html';
+  if (filePath.endsWith('/')) filePath += 'index.html';
   const full = path.join(__dirname, filePath);
   if (!full.startsWith(__dirname)) {
     res.writeHead(403);

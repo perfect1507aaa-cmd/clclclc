@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>ПОГРАНПОСТ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=PT+Mono&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="title-screen" class="screen">
+      <div class="title-inner">
+        <div class="emblem">★</div>
+        <h1>ПОГРАНПОСТ</h1>
+        <p class="sub">КПП «Восточный» · Кордония · 1986</p>
+        <div class="title-buttons">
+          <button id="btn-new" class="btn primary">Новая игра</button>
+          <button id="btn-continue" class="btn hidden">Продолжить</button>
+        </div>
+        <div class="howto">
+          <p><b>Вы — пограничный инспектор.</b> Проверяйте документы въезжающих и решайте: пропустить или отказать.</p>
+          <p>🔍 <b>Проверка</b> (Пробел): выберите два поля — например, имя в паспорте и в разрешении, лицо в окне и фото, дату и срок действия — чтобы найти несоответствие.</p>
+          <p>Ставьте штамп и возвращайте документы. За ошибки — штрафы. Вечером платите за жильё, еду и тепло. Семья ждёт.</p>
+        </div>
+        <p class="small-link"><a href="../">← NETSPLIT</a></p>
+      </div>
+    </section>
+
+    <section id="news-screen" class="screen hidden">
+      <div class="news-wrap">
+        <article id="newspaper" class="newspaper"></article>
+        <button id="btn-start-shift" class="btn primary">Начать смену</button>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen hidden">
+      <header id="topbar">
+        <span class="tb-item">ДЕНЬ <b id="hud-day"></b></span>
+        <span id="hud-date" class="fld tb-item" data-kind="today" data-val=""></span>
+        <span id="hud-clock" class="tb-item"></span>
+        <span class="tb-item">Касса <b id="hud-money"></b></span>
+        <span class="tb-item">Сегодня <b id="hud-earn"></b></span>
+        <span class="tb-item">Штрафы <b id="hud-cit"></b></span>
+        <span class="tb-spacer"></span>
+        <button id="btn-sound" class="icon-btn" title="Звук">🔊</button>
+        <button id="btn-pause" class="icon-btn" title="Пауза (P)">⏸</button>
+      </header>
+
+      <div id="main">
+        <aside id="booth">
+          <div id="outside">
+            <div class="wall"></div>
+            <div id="queue"></div>
+            <div id="queue-count"></div>
+          </div>
+          <div id="window">
+            <div id="entrant" class="fld" data-kind="face" data-val=""></div>
+            <div id="booth-msg"></div>
+          </div>
+          <div id="booth-side">
+            <div id="speech" class="hidden"></div>
+            <div id="booth-buttons">
+              <button id="btn-next" class="btn primary">📢 Следующий!</button>
+              <button id="btn-purpose" class="btn">Цель визита?</button>
+              <button id="btn-duration" class="btn">Срок?</button>
+            </div>
+          </div>
+        </aside>
+
+        <section id="desk-wrap">
+          <div id="desk"></div>
+          <div id="inspect-bar" class="hidden"></div>
+          <footer id="actions">
+            <button id="btn-inspect" class="btn">🔍 Проверка</button>
+            <button id="btn-approve" class="btn stamp-ok">РАЗРЕШИТЬ</button>
+            <button id="btn-deny" class="btn stamp-no">ОТКАЗАТЬ</button>
+            <button id="btn-detain" class="btn stamp-detain hidden">⛓ ЗАДЕРЖАТЬ</button>
+            <button id="btn-return" class="btn">↩ Вернуть документы</button>
+          </footer>
+        </section>
+      </div>
+      <svg id="inspect-overlay"></svg>
+    </section>
+
+    <section id="summary-screen" class="screen hidden">
+      <div id="summary" class="sheet"></div>
+    </section>
+
+    <section id="end-screen" class="screen hidden">
+      <div id="end" class="sheet"></div>
+    </section>
+
+    <div id="pause-overlay" class="overlay hidden">
+      <div class="sheet small-sheet">
+        <h2>ПАУЗА</h2>
+        <button id="btn-resume" class="btn primary">Продолжить</button>
+        <button id="btn-quit" class="btn">Выйти в меню</button>
+        <p class="small">Прогресс сохраняется в начале каждого дня.</p>
+      </div>
+    </div>
+
+    <div id="toast" class="hidden"></div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
