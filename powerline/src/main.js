@@ -83,8 +83,9 @@ function handleEvent(ev, silent) {
   if (s.isPlayer) {
     onPlayerDeath(ev);
   } else if (k && k.isPlayer) {
-    sound.kill();
-    hud.showNotice(`Вы уничтожили ${s.name}!`, world.time);
+    sound.kill(k.kills);
+    renderer.addShake(8 + Math.min(12, s.score / 60));
+    hud.showNotice(k.kills >= 3 ? `Вы уничтожили ${s.name}! Серия x${k.kills}` : `Вы уничтожили ${s.name}!`, world.time);
   }
   // kill feed: anything involving you or the top of the leaderboard
   const big = s.score > 250 || (k && world.rankOf(k) <= 3);

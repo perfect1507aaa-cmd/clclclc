@@ -2,7 +2,8 @@ import { CFG, FOOD_COLORS } from './config.js';
 import { PointGrid } from './grid.js';
 import { rand, pick } from './util.js';
 
-const radiusFor = (v) => Math.min(13, 3.6 + Math.sqrt(v) * 2.1);
+// Ambient crumbs stay small; big chunks from dead snakes grow up to twice that.
+const radiusFor = (v) => Math.min(20, 3.6 + Math.sqrt(v) * 2.1);
 
 export class FoodField {
   constructor(size) {
@@ -57,7 +58,8 @@ export class FoodField {
   // Scatter a dead snake's body into pellets.
   dropBody(snake) {
     const total = snake.score * CFG.DEATH_DROP;
-    const count = Math.max(8, Math.min(240, Math.round(snake.score / 3)));
+    // few, rich chunks rather than a carpet of crumbs
+    const count = Math.max(3, Math.min(24, Math.round(snake.score / 30)));
     const v = total / count;
     const step = Math.max(6, snake.curLen / count);
     const jitter = snake.w * 1.1 + 6;

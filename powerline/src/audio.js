@@ -59,19 +59,20 @@ export class Sound {
     o.stop(t + dur + 0.02);
   }
 
-  // Bright bell-like "ting"; quick pickups in a row climb in pitch.
+  // Soft glassy "tink": mostly the fundamental, just a hint of metallic partial.
+  // Quick pickups in a row climb in pitch.
   eat() {
     if (!this.ctx) return;
     const now = performance.now();
     if (now - this.lastEat < 40) return;
     this.combo = now - this.lastEat < 450 ? Math.min((this.combo || 0) + 1, 12) : 0;
     this.lastEat = now;
-    const f = 1568 * 2 ** (this.combo / 6); // whole-tone steps from G6
+    const f = 1320 * 2 ** (this.combo / 6);
     const t = this.ctx.currentTime;
     const partials = [
-      [1, 0.05, 0.45],
-      [2.76, 0.018, 0.22], // inharmonic partial gives the metallic ring
-      [5.4, 0.008, 0.1],
+      [1, 0.05, 0.16],
+      [2, 0.012, 0.08],
+      [2.76, 0.004, 0.05],
     ];
     for (const [mul, vol, dur] of partials) {
       const o = this.ctx.createOscillator();
@@ -87,8 +88,54 @@ export class Sound {
     }
   }
 
-  kill() {
-    [660, 880, 1320].forEach((f, i) => setTimeout(() => this._tone(f, 0.12, 'square', 0.04), i * 70));
+  // Meaty kill: low thump with a pitch drop, a crunchy noise burst, then a short
+  // bright sting that climbs with the kill streak.
+  kill(streak = 1) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+
+    const thump = ctx.createOscillator();
+    const tg = ctx.createGain();
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(170, t);
+    thump.frequency.exponentialRampToValueAtTime(42, t + 0.28);
+    tg.gain.setValueAtTime(0.0001, t);
+    tg.gain.linearRampToValueAtTime(0.5, t + 0.008);
+    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+    thump.connect(tg).connect(this.master);
+    thump.start(t);
+    thump.stop(t + 0.4);
+
+    const len = Math.floor(ctx.sampleRate * 0.22);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2400, t);
+    lp.frequency.exponentialRampToValueAtTime(300, t + 0.2);
+    const ng = ctx.createGain();
+    ng.gain.value = 0.35;
+    noise.connect(lp).connect(ng).connect(this.master);
+    noise.start(t);
+
+    const grit = ctx.createOscillator();
+    const gg = ctx.createGain();
+    grit.type = 'square';
+    grit.frequency.setValueAtTime(95, t);
+    grit.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    gg.gain.setValueAtTime(0.07, t);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    grit.connect(gg).connect(this.master);
+    grit.start(t);
+    grit.stop(t + 0.16);
+
+    const base = 520 * 2 ** (Math.min(streak - 1, 8) / 12);
+    setTimeout(() => this._tone(base, 0.09, 'triangle', 0.05), 70);
+    setTimeout(() => this._tone(base * 1.5, 0.14, 'triangle', 0.045), 140);
   }
 
   death() {

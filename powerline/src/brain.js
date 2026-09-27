@@ -485,7 +485,8 @@ export class Brain {
   bestFeast(now) {
     const s = this.s;
     const h = s.head;
-    const maxR = 250 + 650 * this.p.greed;
+    // greed decides how far you'll go for it, experience how early you notice it
+    const maxR = (250 + 650 * this.p.greed) * (0.55 + 0.6 * this.p.skill);
     const worth = 40 + s.score * 0.15; // small scraps aren't worth a detour for a big snake
     let best = null;
     let bestV = 0;
@@ -773,7 +774,7 @@ export class Brain {
       const foods = this.w.food.grid.query(Math.min(c.px, ex) - reach, Math.min(c.py, ey) - reach, Math.max(c.px, ex) + reach, Math.max(c.py, ey) + reach, this._fq);
       let n = 0;
       for (const f of foods) if (!f.dead && Math.abs(f.x - midx) <= span / 2 + reach && Math.abs(f.y - midy) <= span / 2 + reach) n++;
-      if (n < 3) continue;
+      if (n < 1) continue;
       const lateral = horiz ? Math.abs(h.y - c.a.y) : Math.abs(h.x - c.a.x);
       const aligned = lateral < reach * 0.6 && (horiz ? DX[s.dir] !== 0 : DY[s.dir] !== 0);
       return aligned ? { x: ex, y: ey } : { x: c.px, y: c.py };
@@ -821,6 +822,7 @@ export class Brain {
       const rx = f.x - h.x;
       const ry = f.y - h.y;
       let v = f.v / (Math.abs(rx) + Math.abs(ry) + 60);
+      v *= 1 + (1 - this.p.skill) * rand(-0.7, 0.7); // beginners misjudge what's worth grabbing
       if (preferAhead && rx * DX[d] + ry * DY[d] < 0) v *= 0.45;
       if (others) {
         let n = 0;

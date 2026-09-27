@@ -13,6 +13,7 @@ export class Renderer {
     this.cam = { x: CFG.MAP / 2, y: CFG.MAP / 2, z: 1 };
     this.particles = [];
     this.ghosts = [];
+    this.shake = 0; // screen shake strength in CSS px, decays over time
     this.foodSprites = new Map();
     this.headSprites = new Map();
     this._fq = [];
@@ -131,6 +132,10 @@ export class Renderer {
     }
   }
 
+  addShake(px) {
+    this.shake = Math.min(28, this.shake + px);
+  }
+
   // ---------- camera ----------
 
   updateCamera(tx, ty, zoom, dt, snap) {
@@ -158,6 +163,19 @@ export class Renderer {
     const z = cam.z;
     const time = world.time;
     const size = world.size;
+
+    // screen shake: nudge the camera for this frame only
+    let shx = 0;
+    let shy = 0;
+    if (this.shake > 0.3) {
+      shx = rand(-1, 1) * this.shake;
+      shy = rand(-1, 1) * this.shake;
+      this.shake *= Math.exp(-dt * 9);
+    } else {
+      this.shake = 0;
+    }
+    cam.x += shx / z;
+    cam.y += shy / z;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = OUTSIDE;
@@ -298,9 +316,16 @@ export class Renderer {
           ctx.textAlign = 'center';
         }
       }
-      if (s === king && world.snakes.length > 1) drawCrown(ctx, sx, sy - 34 - s.w * z, time);
+      let top = sy - 34 - s.w * z;
+      if (s.kills >= 3) {
+        drawStreak(ctx, sx, top, s.kills, time);
+        top -= 30;
+      }
+      if (s === king && world.snakes.length > 1) drawCrown(ctx, sx, top, time);
       if (s.emote && time < s.emoteUntil) this._drawEmote(ctx, s, sx, sy, time);
     }
+    cam.x -= shx / z;
+    cam.y -= shy / z;
   }
 
   _drawGlow(visible, S, ox, oy) {
@@ -456,4 +481,51 @@ function drawCrown(ctx, x, y, t) {
   ctx.fillStyle = '#d9b400';
   ctx.fillRect(-16, 6, 32, 4);
   ctx.restore();
+}
+
+// Blue skull with the kill streak next to it ("x3", "x4", ...).
+function drawStreak(ctx, x, y, kills, t) {
+  const label = `x${kills}`;
+  ctx.save();
+  ctx.font = '900 15px Roboto, "Segoe UI", Arial, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const total = 22 + 4 + tw;
+  const pulse = 1 + Math.max(0, Math.sin(t * 5)) * 0.06;
+  ctx.translate(x - total / 2 + 11, y);
+  ctx.scale(pulse, pulse);
+  ctx.shadowColor = 'rgba(60,160,255,0.95)';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#5ab8ff';
+  // cranium and jaw
+  ctx.beginPath();
+  ctx.arc(0, -2, 9, Math.PI * 0.85, Math.PI * 2.15);
+  ctx.lineTo(6, 6);
+  ctx.lineTo(-6, 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(-5, 5, 10, 5);
+  ctx.shadowBlur = 0;
+  // eye sockets, nose, teeth gaps
+  ctx.fillStyle = '#04202c';
+  ctx.beginPath();
+  ctx.arc(-3.6, -1.5, 2.7, 0, Math.PI * 2);
+  ctx.arc(3.6, -1.5, 2.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, 1.5);
+  ctx.lineTo(-1.4, 4);
+  ctx.lineTo(1.4, 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillRect(-2.2, 7, 1.2, 3);
+  ctx.fillRect(1, 7, 1.2, 3);
+  // streak count
+  ctx.shadowColor = 'rgba(60,160,255,0.9)';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#bfe4ff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 14, 1);
+  ctx.restore();
+  ctx.textAlign = 'center';
 }
