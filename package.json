@@ -1,10 +1,11 @@
 {
   "name": "netsplit",
   "version": "1.0.0",
-  "description": "NETSPLIT — real-time network conquest strategy",
+  "description": "NETSPLIT and Powerline (powerline.io clone) \u2014 browser games",
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "balance": "node powerline/tools/headless.mjs 300"
   }
 }

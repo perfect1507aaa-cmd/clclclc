@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Powerline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="netinfo"></div>
+    <div id="lb">
+      <div class="lb-title">Лидеры</div>
+      <ol id="lb-list"></ol>
+    </div>
+    <div id="feed"></div>
+    <div id="notice"></div>
+    <div id="stats">
+      <div><span class="k">Длина</span> <b id="st-len">0</b></div>
+      <div><span class="k">Место</span> <b id="st-rank">—</b></div>
+      <div><span class="k">Убийства</span> <b id="st-kills">0</b></div>
+    </div>
+    <canvas id="minimap"></canvas>
+    <div class="emote-bar">
+      <button>LOL</button><button>gg</button><button>Hi!</button><button>ez</button>
+      <button>rip</button><button>wow</button><button>oops</button><button>run!</button>
+    </div>
+  </div>
+
+  <div id="menu" class="overlay">
+    <div class="panel">
+      <h1 class="logo">power<span>line</span></h1>
+      <div id="online" class="online"></div>
+      <input id="nick" maxlength="16" placeholder="Ваш ник" autocomplete="off" spellcheck="false" />
+      <div id="colors" class="colors"></div>
+      <select id="servers"></select>
+      <button id="play" class="play">ИГРАТЬ</button>
+      <div class="controls">
+        <span>Управление:</span>
+        <button data-control="keys">Клавиатура</button>
+        <button data-control="mouse">Мышь</button>
+      </div>
+      <div class="help">
+        <p><b>Стрелки / WASD</b> — поворот · <b>свайп</b> на телефоне · <b>1–8</b> — эмоции · <b>M</b> — звук</p>
+        <p>Держитесь вплотную к чужим линиям — вы <b class="glow">заряжаетесь</b> и разгоняетесь. Заставьте соперника врезаться в вашу линию и соберите его останки.</p>
+      </div>
+      <div class="best">Рекорд: <b id="best">0</b></div>
+    </div>
+    <button id="mute" class="mute" title="Звук (M)">🔊</button>
+  </div>
+
+  <div id="death" class="overlay hidden">
+    <div class="panel death-panel">
+      <h2 id="death-title"></h2>
+      <div class="death-stats">
+        <div><b id="d-score">0</b><span>макс. длина</span></div>
+        <div><b id="d-kills">0</b><span>убийств</span></div>
+        <div><b id="d-time">0:00</b><span>время</span></div>
+        <div><b id="d-rank">—</b><span>лучшее место</span></div>
+      </div>
+      <div class="best">Рекорд: <b id="d-best">0</b></div>
+      <button id="again" class="play">ЕЩЁ РАЗ</button>
+      <button id="to-menu" class="ghost">В меню</button>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

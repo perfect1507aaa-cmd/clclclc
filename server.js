@@ -17,7 +17,7 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   let filePath = decodeURIComponent(req.url.split('?')[0]);
-  if (filePath === '/') filePath = '/index.html';
+  if (filePath.endsWith('/')) filePath += 'index.html';
   const full = path.join(__dirname, filePath);
   if (!full.startsWith(__dirname)) {
     res.writeHead(403);
@@ -25,6 +25,11 @@ const server = http.createServer((req, res) => {
     return;
   }
   fs.readFile(full, (err, data) => {
+    if (err && err.code === 'EISDIR') {
+      res.writeHead(301, { Location: `${req.url.split('?')[0]}/` });
+      res.end();
+      return;
+    }
     if (err) {
       res.writeHead(404);
       res.end('not found');
@@ -37,5 +42,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, () => {
-  console.log(`NETSPLIT dev server: http://localhost:${port}`);
+  console.log(`dev server: http://localhost:${port}  (NETSPLIT: /, Powerline: /powerline/)`);
 });
