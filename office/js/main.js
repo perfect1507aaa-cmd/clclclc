@@ -474,7 +474,7 @@ function enterWork() {
   $('crosshair').hidden = true;
 }
 function leaveWork() {
-  if (S.mode !== 'work') return;
+  if (S.mode !== 'work' && S.mode !== 'toWork') return;
   onec.pointerLeave();
   if (onec.edit) onec.commitEdit();
   S.mode = 'toLook';
