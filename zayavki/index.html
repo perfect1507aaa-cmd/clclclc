@@ -50,10 +50,10 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 @keyframes floatup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-40px)}}
 
 /* ---------- stage ---------- */
-.stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:14px}
+.stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(330px,420px) minmax(0,1fr);gap:14px}
 .booth{display:flex;flex-direction:column;gap:10px;min-height:0}
 
-.window{position:relative;height:270px;flex:none;border-radius:3px;overflow:hidden;background:
+.window{position:relative;height:222px;flex:none;border-radius:3px;overflow:hidden;background:
   repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 2px,transparent 2px 5px),var(--wall);border:1px solid #3a3027}
 .queue{position:absolute;top:0;left:0;right:0;height:30px;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:11px;color:var(--ink-dim);letter-spacing:.5px;text-transform:uppercase}
 .queue .people{display:flex;gap:3px;align-items:flex-end;height:18px}
@@ -79,7 +79,8 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .counter span{font-family:var(--f-pixel);font-size:8px;letter-spacing:1px;color:#f3dfb2;background:#231a12;padding:6px 10px;border:1px solid #7d5f45}
 .window .closed{position:absolute;inset:30px 16px 46px;display:grid;place-items:center;font-family:var(--f-pixel);font-size:9px;color:#9fb0a8;letter-spacing:1px;text-align:center;line-height:1.8}
 
-.dialog{flex:1;min-height:120px;overflow:auto;background:#1a1612;border:1px solid #3a3027;border-radius:3px;padding:10px 12px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:6px}
+.dialog{flex:1;min-height:150px;overflow:hidden;background:#1a1612;border:1px solid #3a3027;border-radius:3px;padding:10px 12px;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:8px}
+.log{flex:1;min-height:36px;overflow:auto;display:flex;flex-direction:column;gap:6px}
 .ln{margin:0;animation:lnin .25s ease-out}
 .ln .who{display:inline-block;font-size:10px;letter-spacing:1px;color:var(--ink-dim);margin-right:6px;text-transform:uppercase}
 .ln.v{color:var(--ink)}
@@ -88,10 +89,84 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .ln.sys{color:var(--lamp);font-size:12px}
 @keyframes lnin{from{opacity:0;transform:translateY(4px)}}
 
-.desk{flex:none;max-height:42%;min-height:96px;overflow:auto;border-radius:3px;padding:12px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;
+.desk{flex:1.25;min-height:250px;border-radius:3px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) 94px;gap:10px;
   background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 3px,transparent 3px 11px),linear-gradient(#5e4633,#4c3828);border:1px solid #2c2017}
-.desk .empty{color:#c9ae8a;opacity:.55;font-size:11px;letter-spacing:1px;text-transform:uppercase;align-self:center;margin:auto}
-.docs,.slips{display:contents}
+.docs{min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:2px 4px 8px 2px}
+.desk .empty{color:#c9ae8a;opacity:.55;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin:auto}
+.tools{display:flex;flex-direction:column;gap:8px}
+.tool{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:4px;border:1.5px dashed transparent;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#ecd6b0;user-select:none;position:relative;transition:background .15s}
+body.dragging-any .tool{border-color:rgba(240,216,154,.35)}
+.tool.over,.window.over{border-color:var(--lamp);background:rgba(240,216,154,.14)}
+.window.over{outline:3px dashed var(--lamp);outline-offset:-3px}
+.scan-bed{width:78px;height:52px;border-radius:4px;position:relative;overflow:hidden;background:linear-gradient(#55595c,#303335);border:2px solid #1c1e1f;box-shadow:inset 0 0 0 5px #3d4043}
+.scan-bed::after{content:"";position:absolute;inset:8px;background:linear-gradient(135deg,#6c8584,#4f6463)}
+.scan-bed i{position:absolute;left:6px;right:6px;top:8px;height:3px;z-index:1;background:#c9fff3;box-shadow:0 0 10px 2px #8ff5e0;opacity:0}
+.scanner.busy .scan-bed i{opacity:1;animation:scan 1.1s ease-in-out}
+@keyframes scan{from{top:8px}to{top:40px}}
+.folder{width:80px;height:58px;margin-top:8px;position:relative;background:linear-gradient(#e0b46a,#c99648);border-radius:2px 4px 4px 4px;box-shadow:0 3px 0 #8d6526;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a3a0e}
+.folder::before{content:"";position:absolute;left:0;top:-8px;width:34px;height:10px;background:#d6a85b;border-radius:3px 3px 0 0}
+.folder em{font-style:normal;font-weight:700;font-size:11px;letter-spacing:1.5px}
+.folder small{font-size:8px;letter-spacing:.5px;text-transform:none}
+.archive b{position:absolute;top:0;right:4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#b8432c;color:#fff;font-size:11px;display:grid;place-items:center;font-family:var(--f-mono);letter-spacing:0}
+.archive.bump .folder{animation:bump .35s ease-out}
+@keyframes bump{40%{transform:scale(1.08)}}
+.traybox{width:80px;height:30px;background:linear-gradient(#a6acb0,#6b7074);border:2px solid #4b5053;border-top:0;border-radius:0 0 10px 10px;box-shadow:inset 0 6px 8px rgba(0,0,0,.25)}
+.drag{touch-action:none;cursor:grab;user-select:none}
+.drag.dragging{opacity:.25}
+.ghost{position:fixed;z-index:300;pointer-events:none;margin:0;animation:none!important;transform:rotate(-3deg) scale(1.03)!important;box-shadow:0 20px 44px rgba(0,0,0,.55)!important;cursor:grabbing}
+.paper.copy{width:156px;font-family:var(--f-mono);font-size:10px;background:#e2ded4;color:#4d4a44;padding:8px 10px 10px;display:flex;flex-direction:column;gap:3px;filter:grayscale(1)}
+.paper.copy b{letter-spacing:3px;font-size:11px;color:#333}
+.paper.copy i{display:block;height:3px;background:#bdb8ad;margin-top:3px}
+.paper.copy i:nth-of-type(2){width:80%}.paper.copy i:nth-of-type(3){width:60%}
+.paper .p-f{font-size:11px;color:#5a4f40;margin:1px 0 3px;display:flex;gap:6px;align-items:baseline}
+.paper .hand,.paper .fix{font-family:var(--f-hand);color:#233a7a;font-size:19px;line-height:.9;font-weight:700}
+.paper s{color:#8a7d64;text-decoration-thickness:2px;text-decoration-color:#233a7a}
+.paper .blank{letter-spacing:2px;color:#9c917a}
+.paper.note .ncode{font-size:20px}
+.paper.note .nshop{font-size:18px;color:#55607a;margin-bottom:2px}
+.zoomov{cursor:zoom-out}
+#zoomBox .paper{zoom:1.7;transform:none;animation:none;cursor:zoom-out}
+@media (max-width:520px){ #zoomBox .paper{zoom:1.35} }
+
+/* replies */
+.replies{flex:none;display:flex;flex-direction:column;gap:5px;border-top:1px dashed #3a3027;padding-top:8px;max-height:60%;overflow:auto}
+.replies:empty{display:none}
+.rep{display:block;width:100%;text-align:left;background:#2a231c;color:#f3e1b6;border:1px solid #574838;border-radius:3px;padding:7px 10px;font-family:var(--f-mono);font-size:13px;line-height:1.35}
+.rep:hover{background:#3a2f24;border-color:#a88b5f}
+.rep kbd{font-family:var(--f-mono);font-size:11px;color:#b39b72;margin-right:8px;border:1px solid #574838;border-radius:2px;padding:0 4px}
+.rep.rude{color:#d9a48f}
+.rep.refuse{color:#f0b3a0}
+.rep.sub{margin-left:18px;width:calc(100% - 18px);color:#f3c9b9;font-size:12.5px}
+.sumrep{display:flex;flex-wrap:wrap;align-items:center;gap:6px;cursor:default;border-color:#a88b5f}
+.suminp{width:112px;font:inherit;background:#f5ecd3;color:#2a1b08;border:1px solid #a58a5f;border-radius:2px;padding:3px 6px;text-align:right}
+.saybtn{margin-left:auto;background:#e0b451;color:#2a1b08;border:0;border-bottom:3px solid #8f6a1f;border-radius:2px;padding:4px 10px;font-family:var(--f-mono);font-size:12px}
+.todo{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#e3cfa6}
+.todo li::before{content:"☐  ";color:#a88b5f}
+.todo li.done{color:#93a86e;text-decoration:line-through}
+.todo li.done::before{content:"☑  ";color:#93a86e}
+
+/* сверка в карточке */
+.card dl{grid-template-columns:auto minmax(0,1fr) auto!important;align-items:start}
+.card dd small{display:block;color:var(--c-dim);font-size:11.5px}
+.chk{display:flex;gap:3px;min-width:47px;justify-content:flex-end}
+.ck{width:22px;height:20px;border:1px solid var(--c-line-dk);border-radius:3px;background:linear-gradient(#fff,#eceae5);font-size:12px;line-height:1;padding:0;font-weight:700;font-family:var(--f-ui)}
+.ck.ok{color:var(--c-green)}.ck.no{color:var(--c-red)}
+.ck.ok:hover{background:#dff0da;border-color:var(--c-green)}.ck.no:hover{background:#fbe0dc;border-color:var(--c-red)}
+.mk{width:22px;height:20px;display:grid;place-items:center;border-radius:3px;font-style:normal;font-weight:700;font-size:12px;font-family:var(--f-ui)}
+.mk.ok{background:var(--c-green);color:#fff}.mk.no{background:var(--c-red);color:#fff}
+.card h3{display:flex;justify-content:space-between;gap:8px}
+.card h3 .cnt{font-weight:400;color:#8a6d1e}
+.card h3 .cnt.full{color:var(--c-green)}
+.badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:2px;font-weight:700;vertical-align:3px;margin-left:10px}
+.badge.ok{background:#e1f0dc;color:var(--c-green);border:1px solid #a9d3a0}
+.badge.no{background:#fbe0dc;color:var(--c-red);border:1px solid #efb1a8}
+.onec.posted .grid .x button,.onec.refused .grid .x button{visibility:hidden}
+.onec.refused .tablewrap{opacity:.5}
+.totals .docsum{font-size:15px}
+.onec.posted .totals .docsum b{background:var(--c-yellow);padding:0 5px;outline:2px solid var(--c-yellow-2)}
+.f7grid{display:grid;grid-template-columns:auto 110px minmax(0,1fr);gap:8px;align-items:center}
+#f7 .f7grid .inp{width:100%;font-size:18px;letter-spacing:1px}
+.pname{font-size:13px;color:var(--c-dim);display:flex;gap:8px;align-items:center;min-width:0}
 
 /* papers */
 .paper{position:relative;background:var(--paper);color:var(--paper-ink);width:250px;max-width:100%;padding:12px 14px 14px;box-shadow:0 3px 0 rgba(0,0,0,.25),0 8px 18px rgba(0,0,0,.35);font-family:var(--f-ui);font-size:12px;line-height:1.35;transform:rotate(-1.2deg);animation:paperin .35s ease-out}
@@ -107,7 +182,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .paper .p-sign{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:12px;font-size:10.5px;color:#5a4f40}
 .paper .sig{font-family:var(--f-hand);font-size:22px;color:#233a7a;line-height:1;transform:rotate(-6deg)}
 .paper.official{padding-bottom:56px}
-.paper .stamp{position:absolute;right:14px;bottom:-4px;width:92px;height:92px;opacity:.78;mix-blend-mode:multiply;pointer-events:none}
+.paper .stamp{position:absolute;right:10px;bottom:-4px;width:92px;height:92px;opacity:.78;mix-blend-mode:multiply;pointer-events:none}
 .paper.note{font-family:var(--f-hand);font-size:22px;line-height:1.15;width:210px;color:#1f2f6e;padding:10px 14px 12px 30px;
   background:linear-gradient(90deg,transparent 22px,rgba(200,70,60,.45) 22px 23px,transparent 23px),repeating-linear-gradient(180deg,#f5f1d6 0 24px,#c7cfe0 24px 25px);background-color:#f5f1d6}
 .paper.note .nh{font-size:17px;color:#55607a;margin-bottom:2px}
@@ -120,12 +195,12 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 /* ---------- monitor + 1C ---------- */
 .pc{min-height:0;min-width:0;display:flex}
 .monitor{flex:1;min-width:0;display:flex;position:relative;background:linear-gradient(#2e2924,#221e1a);padding:12px;border-radius:9px;box-shadow:inset 0 0 0 1px #3d352d,0 10px 30px rgba(0,0,0,.4)}
-.sticker{position:absolute;top:-6px;right:26px;z-index:3;width:150px;background:#f7e36b;color:#3b3413;font-family:var(--f-hand);font-size:17px;line-height:1.05;padding:8px 10px 10px;transform:rotate(3deg);box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.sticker{position:absolute;bottom:34px;right:26px;z-index:3;width:150px;background:#f7e36b;color:#3b3413;font-family:var(--f-hand);font-size:17px;line-height:1.05;padding:8px 10px 10px;transform:rotate(3deg);box-shadow:0 4px 10px rgba(0,0,0,.35)}
 .sticker b{font-weight:700;display:inline-block;min-width:40px}
 .sticker .t{font-size:15px;opacity:.75;margin-bottom:2px}
 
 .onec{color-scheme:light;flex:1;min-width:0;display:flex;flex-direction:column;background:var(--c-bg);color:var(--c-text);font-family:var(--f-ui);font-size:13px;position:relative;border:1px solid #7b7770;overflow:hidden}
-.o-title{display:flex;align-items:center;gap:8px;height:30px;flex:none;padding:0 170px 0 10px;background:linear-gradient(#fff6cc,#f5dc79);border-bottom:1px solid #d3b54b;white-space:nowrap;overflow:hidden}
+.o-title{display:flex;align-items:center;gap:8px;height:30px;flex:none;padding:0 10px;background:linear-gradient(#fff6cc,#f5dc79);border-bottom:1px solid #d3b54b;white-space:nowrap;overflow:hidden}
 .o-logo{width:20px;height:20px;flex:none;border-radius:50%;background:var(--c-red);color:#fff;font-weight:700;font-size:10px;display:grid;place-items:center;letter-spacing:-.5px}
 .o-title .t1{font-weight:700}.o-title .t2{color:#5a5140;overflow:hidden;text-overflow:ellipsis}
 .o-menu{display:flex;gap:16px;flex:none;padding:4px 10px;background:var(--c-panel);border-bottom:1px solid var(--c-line);font-size:12.5px;color:#444;overflow:hidden;white-space:nowrap}
@@ -207,7 +282,6 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 .dlg .dh button{border:0;background:none;font-size:14px;color:#6b5d2d;padding:0 6px}
 .dlg .db{padding:10px;display:flex;flex-direction:column;gap:8px}
 #f7{left:24px;bottom:62px;width:min(380px,calc(100% - 48px))}
-#f7 .inp{width:100%;font-size:18px;letter-spacing:1px}
 #f7 .msg{font-size:12.5px;min-height:18px;color:var(--c-dim)}
 #f7 .msg.err{color:var(--c-red)}#f7 .msg.ok{color:var(--c-green)}
 #f7 .help{font-size:11.5px;color:var(--c-dim)}
@@ -272,8 +346,8 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 @media (max-width:920px){
   #app{height:auto;min-height:100%}
   .stage{grid-template-columns:minmax(0,1fr)}
-  .dialog{max-height:220px}
-  .desk{max-height:none}
+  .dialog{max-height:340px}
+  .desk{min-height:300px;max-height:560px}
   .monitor{padding:8px}
   .o-form{grid-template-columns:minmax(0,1fr)}
   .tablewrap{min-height:200px;max-height:340px}
@@ -308,7 +382,7 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 
   <main class="stage">
     <section class="booth" aria-label="Окошко приёма">
-      <div class="window">
+      <div class="window" data-drop="return">
         <div class="queue">очередь <span class="people" id="queue"></span></div>
         <div class="glass">
           <div class="door"></div>
@@ -320,11 +394,17 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
         <div class="closed" id="closedSign" hidden>ОКНО ЗАКРЫТО</div>
         <div class="counter"><span>ПРИЁМ ЗАЯВОК · ОКНО 2</span></div>
       </div>
-      <div class="dialog" id="dialog" aria-live="polite"></div>
+      <div class="dialog">
+        <div class="log" id="log" aria-live="polite"></div>
+        <div class="replies" id="replies"></div>
+      </div>
       <div class="desk" id="desk">
-        <div class="docs" id="docs"></div>
-        <div class="slips" id="slips"></div>
-        <div class="empty" id="deskEmpty">стол</div>
+        <div class="docs" id="docs"><div class="empty" id="deskEmpty">стол</div></div>
+        <div class="tools">
+          <div class="tool scanner" id="scanner" data-drop="scan"><div class="scan-bed"><i></i></div><span>сканер</span></div>
+          <div class="tool archive" id="archive" data-drop="archive"><div class="folder"><em>АРХИВ</em><small>заявки</small></div><b id="archN">0</b></div>
+          <div class="tool tray" id="tray" data-drop="return"><div class="traybox"></div><span>в окошко</span></div>
+        </div>
       </div>
     </section>
 
@@ -341,7 +421,6 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
             <button class="b primary" id="bAccept"><kbd>F9</kbd>Провести</button>
             <button class="b" id="bAdd"><kbd>F7</kbd>Добавить позицию</button>
             <button class="b danger" id="bRefuse"><kbd>F8</kbd>Отказ</button>
-            <button class="b" id="bAsk"><kbd>F3</kbd>Уточнить</button>
             <button class="b" id="bDir"><kbd>F4</kbd>Справочник</button>
           </div>
           <div class="o-hint" id="hint" hidden></div>
@@ -372,11 +451,15 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
           <div class="dlg" id="f7" hidden role="dialog" aria-label="Ввод позиции">
             <div class="dh"><span>Подбор номенклатуры</span><button id="f7x" aria-label="Закрыть">✕</button></div>
             <div class="db">
-              <div class="frow" style="flex-wrap:nowrap"><input class="inp" id="f7in" autocomplete="off" inputmode="decimal" spellcheck="false" placeholder="391-10"><button class="b primary" id="f7ok">OK</button></div>
+              <div class="f7grid">
+                <label for="f7code">Код товара</label><input class="inp" id="f7code" autocomplete="off" inputmode="numeric" spellcheck="false" placeholder="391"><span class="pname" id="f7name"></span>
+                <label for="f7qty">Количество</label><input class="inp" id="f7qty" autocomplete="off" inputmode="numeric" spellcheck="false" placeholder="10"><span class="pname">шт <button class="b primary" id="f7ok">OK</button></span>
+              </div>
               <div class="msg" id="f7msg"></div>
-              <div class="help">Формат: <b>код-количество</b>, Enter. Окно остаётся открытым. Esc — закрыть.</div>
+              <div class="help">Код <b>Enter</b> → количество <b>Enter</b>. Окно остаётся открытым. <b>Esc</b> — закрыть.</div>
             </div>
           </div>
+</div>
         </div>
       </div>
     </section>
@@ -402,6 +485,8 @@ table.grid{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <div class="db rules" id="rulesBody"></div>
   </div>
 </div>
+
+<div class="overlay zoomov" id="zoomOv" hidden><div id="zoomBox"></div></div>
 
 <div class="pause" id="pauseOv" hidden><div><h2>ПАУЗА</h2><button class="gbtn" id="btnResume">ПРОДОЛЖИТЬ</button></div></div>
 
@@ -455,32 +540,25 @@ const ROLES = {
 };
 const RANKS = ['старшина','прапорщик','лейтенант','капитан'];
 
-const SAY = {
-  '391':[q=>`белого ${q}`, q=>`${q} ${pl(q,'буханку','буханки','буханок')} белого`, q=>`белый — ${q}`],
-  '286':[q=>`чёрного ${q}`, q=>`${q} ${pl(q,'буханку','буханки','буханок')} чёрного`, q=>`чёрный — ${q}`],
-  '46': [q=>`${q} ${pl(q,'батон','батона','батонов')}`, q=>`батоны — ${q}`],
-  '841':[q=>`${q} ${pl(q,'крендель','кренделя','кренделей')} с маком`, q=>`кренделя с маком — ${q}`],
-  '33': [q=>`${q} ${pl(q,'ласунку','ласунки','ласунок')}`, q=>`булочки «Ласунка» — ${q}`],
-  '5320':[q=>`${q} ${pl(q,'круассан','круассана','круассанов')} с шоколадом`, q=>`шоколадные круассаны — ${q}`],
-  '5318':[q=>`${q} ${pl(q,'круассан','круассана','круассанов')} со сгущёнкой`, q=>`круассаны со сгущёнкой — ${q}`],
-};
-const GEN = {'391':'белого','286':'чёрного','46':'батонов','841':'кренделей','33':'ласунок','5320':'круассанов с шоколадом','5318':'круассанов со сгущёнкой'};
 const NOTE = {'391':['белый','хлеб бел.','бел.'],'286':['чёрный','хлеб чёрн.','черн.'],'46':['батон','батоны'],'841':['крендель мак','кренд. с маком'],'33':['ласунка','ласунки','бул. ласунка'],'5320':['круас. шоколад','круасс. шок.'],'5318':['круас. сгущ.','круасс. сгущёнка']};
 
 const RULES = [
-  {day:1, text:'Заявку вносим на того клиента, чей код и фамилию назвал посетитель. Количество — строго как в заказе.'},
-  {day:2, text:'Сверяйте фамилию и организацию посетителя с карточкой. Не совпадает — <kbd>F3</kbd> «Уточнить». Не помнит код — ищите в справочнике <kbd>F4</kbd>.'},
+  {day:1, text:'Заявки принимаем только письменные. Код клиента переписываем из заявки в 1С.'},
+  {day:1, text:'Каждое отмеченное поле карточки сверяем с заявкой: <b>✓</b> — совпадает, <b>✗</b> — не совпадает. Статус: ✓ — активен, ✗ — стоп-лист.'},
+  {day:1, text:'Позиции: <kbd>F7</kbd>, код <kbd>Enter</kbd>, количество <kbd>Enter</kbd>. Количество — строго как в заявке.'},
+  {day:1, text:'После проведения (<kbd>F9</kbd>) называем клиенту сумму из 1С. Заявку — на сканер, копию — в архив, оригинал — вернуть в окошко.'},
+  {day:2, text:'В заявках бывают ошибки в коде или код не указан. Карточка не совпадает с заявкой — уточните код у посетителя (<kbd>F3</kbd>). Кода нет — ищите в справочнике <kbd>F4</kbd>.'},
   {day:3, text:'Круассаны 5320 и 5318 (слоёное тесто) — не больше остатка на табло. Не хватает — вносим остаток. Остаток 0 — позицию не вносим.'},
-  {day:3, text:'Клиент может изменить заказ, пока вы вносите. Действует последнее слово клиента.'},
-  {day:4, text:'Статус «СТОП-ЛИСТ» в карточке — отказ <kbd>F8</kbd>.'},
-  {day:4, text:'Больницам (1xxxx) — только хлеб: 391, 286, 46. Остальные позиции не вносим, заявку проводим.'},
-  {day:5, text:'Военные части (2xxxx) — только по письменной заявке с печатью. Нет печати — отказ.'},
-  {day:6, text:'Номер части на печати должен совпадать с карточкой клиента. Не совпадает — отказ.'},
+  {day:3, text:'Исправления в заявке: зачёркнутое не вносим, вносим исправленное число.'},
+  {day:4, text:'Статус «СТОП-ЛИСТ» — отказ. Отказ — реплика «Отказать» (<kbd>F8</kbd>) с верной причиной.'},
+  {day:4, text:'Больницам (1xxxx) — только хлеб: 391, 286, 46. Остальное не вносим, заявку проводим.'},
+  {day:5, text:'Военные части (2xxxx): на заявке должна быть печать части. Нет печати — отказ. Сверяйте поле «Печать В/Ч».'},
+  {day:6, text:'Номер части на печати должен совпадать с карточкой. Не совпадает — отказ.'},
   {day:6, text:'Торговые сети (5xxxx): заказ меньше 100 шт. суммарно — отказ.'},
   {day:7, text:'Проверка из головного офиса: предупреждений нет, каждая ошибка — штраф 40 грн.'},
 ];
 const BRIEF = {
-  1:'Вас приняли оператором в отдел заявок. Клиенты подходят к окошку и диктуют заказы на завтра, вы вносите их в 1С. За каждую верно обработанную заявку — 25 грн. Две ошибки за смену прощаются, дальше — штраф 30 грн.',
+  1:'Вас приняли оператором в отдел заявок. Клиенты подходят к окошку и подают бумажные заявки на завтра, вы вносите их в 1С, называете сумму, снимаете копию в архив и возвращаете оригинал. За каждого посетителя без ошибок — 25 грн. Две ошибки за смену прощаются, дальше — штраф 30 грн.',
   2:'Вчера три машины уехали не по тем адресам: клиенты путают свои коды, а оператор не сверил фамилии. С сегодняшнего дня — сверка обязательна.',
   3:'Цех слоёного теста работает на пределе. Круассаны печём днём и строго по плану — остаток на табло справа. Клиенты часто передумывают прямо у окна.',
   4:'Бухгалтерия закрыла отгрузки должникам. С больницами подписан новый договор: кормим хлебом, без сладкого.',
@@ -633,7 +711,7 @@ const G = {
   screen:'title', day:1, money:80, hunger:0, cold:0, sick:false, sickDays:0, totalErrors:0, totalServed:0, totalCorrect:0, seed:0, docNo:1,
   minutes:SHIFT_START, running:false, paused:false, shiftOver:false, t:0, clockAcc:0, timers:[], event12:false,
   stock:{}, stockMax:{}, stop:new Set(), debts:{}, servedToday:new Set(),
-  visitor:null, vIdx:0, queue:3, rows:[], sel:-1, loaded:null,
+  visitor:null, vIdx:0, queue:3, rows:[], sel:-1, loaded:null, marks:{}, posted:false, archived:0,
   dServed:0, dCorrect:0, dErrors:0, dEarn:0, dFines:0,
 };
 const SAVE_KEY = 'otdel-zayavok-save-v1';
@@ -645,6 +723,7 @@ function later(ms, fn){ G.timers.push({at:G.t+ms, fn}); }
 
 /* ================= генерация посетителя ================= */
 function qtyFor(cat, code){ const [a,b,s]=QTY[cat][code]; return rstep(a,b,s); }
+function sortOrder(o){ const out={}; PCODES.forEach(c=>{ if(o[c]) out[c]=o[c]; }); return out; }
 function genOrder(cat, o={}){
   const ord = {};
   if(cat==='private'){
@@ -674,26 +753,7 @@ function genOrder(cat, o={}){
       ['841','33','5320','5318'].forEach(c=>{ if(chance(c==='5318'?.6:.7)) ord[c]=qtyFor(cat,c); });
     }
   }
-  const out = {}; PCODES.forEach(c=>{ if(ord[c]) out[c]=ord[c]; });
-  return out;
-}
-function genChange(v){
-  const codes = Object.keys(v.order), cat=v.client.cat;
-  const types = ['qty','qty','add'];
-  if(cat!=='network' && codes.filter(c=>!PRODUCTS[c].layer).length>=2) types.push('remove');
-  let t = pick(types);
-  const missing = PCODES.filter(c=>!v.order[c] && !(cat==='hospital' && G.day>=4 && !PRODUCTS[c].bread));
-  if(t==='add' && !missing.length) t='qty';
-  if(t==='qty'){
-    const c=pick(codes), from=v.order[c], sc=from>=50?10:from>=20?5:1;
-    let to; let guard=0;
-    do{ to = from + sc*pick(cat==='network'?[1,2,3]:[-2,-1,1,2,3]); }while((to<=0||to===from) && ++guard<20);
-    if(to<=0||to===from) to=from+sc;
-    return {type:'qty', code:c, from, to};
-  }
-  if(t==='add'){ const c=pick(missing); return {type:'add', code:c, to:qtyFor(cat,c)}; }
-  const cand = codes.filter(c=> PRODUCTS[c].layer || codes.filter(x=>x!==c && !PRODUCTS[x].layer).length>=1);
-  return {type:'remove', code:pick(cand)};
+  return sortOrder(ord);
 }
 function wrongCodeFor(c){
   if(chance(.5)){
@@ -717,10 +777,10 @@ function weightedCat(){
 }
 function makeVisitor(){
   const d=G.day, first = G.vIdx===0; G.vIdx++;
-  let trap=null, codeMode='said', wantChange=false;
+  let trap=null, codeMode='said', wantCorr=false;
   if(first){
     if(d===2) codeMode='wrong';
-    if(d===3) wantChange=true;
+    if(d===3) wantCorr=true;
     if(d===4) trap='stop';
     if(d===5) trap='nostamp';
     if(d===6) trap='wrongstamp';
@@ -730,8 +790,8 @@ function makeVisitor(){
     if(d>=5) opts.push(['nostamp',d>=6?.04:.07]);
     if(d>=6) opts.push(['wrongstamp',.05],['small',.05]);
     let r=rnd(); for(const [k,p] of opts){ if(r<p){trap=k;break;} r-=p; }
-    if(d>=2){ const r2=rnd(); codeMode = r2<.17?'wrong':r2<.31?'none':'said'; }
-    if(d>=3) wantChange = chance(.28);
+    if(d>=2){ const r2=rnd(); codeMode = r2<.16?'wrong':r2<.28?'none':'said'; }
+    if(d>=3) wantCorr = chance(.25);
   }
   let cat = trap==='nostamp'||trap==='wrongstamp' ? 'military' : trap==='small' ? 'network' : trap==='sweets' ? 'hospital' : ((d===3||d===1)&&first ? 'private' : weightedCat());
   const fresh = c => !G.servedToday.has(c.code);
@@ -743,72 +803,55 @@ function makeVisitor(){
     client = pick(pool);
   }
   cat = client.cat;
-  let sweets = trap==='sweets' || (cat==='hospital' && d>=4 && chance(.45));
-  let small = trap==='small' || (cat==='network' && d>=6 && chance(.08));
-  const v = {client, codeMode, corrected:false, trap, asked:0, done:false};
+  const sweets = trap==='sweets' || (cat==='hospital' && d>=4 && chance(.45));
+  const small = trap==='small' || (cat==='network' && d>=6 && chance(.08));
+  const v = {id:G.vIdx, client, codeMode, corrected:false, trap, asked:0, named:0, phase:'arrive', errs:[], scanned:false, archived:false, accepted:false, refused:false, showRefuse:false};
   v.order = genOrder(cat, {sweets, small});
-  if(d===1 && first){ v.order={'391':rint(5,15),'46':rint(3,10)}; }
-  if(d===3 && first){ v.order['5320']=v.order['5320']||rint(8,15); }
-  // бумага
-  let paper=null;
-  const plain = d===1 && first;
-  if(cat==='military' && d>=5){
-    let stamp = true;
-    if(trap==='nostamp' || (!trap && chance(.12))) stamp=false;
-    else if(d>=6 && (trap==='wrongstamp' || (!trap && chance(.1)))) stamp='wrong';
-    paper={kind:'official', stamp};
-  } else if(plain){
-  } else if((cat==='network' && chance(.5)) || ((cat==='hospital'||cat==='edu'||cat==='military') && chance(.25))) paper={kind:'official', stamp:true};
-  else if(cat==='private' && chance(.25)) paper={kind:'note'};
-  if(paper){
-    paper.items = Object.entries(v.order);
-    paper.noteNames = {}; paper.items.forEach(([c])=>paper.noteNames[c]=pick(NOTE[c]));
-    if(paper.stamp==='wrong'){ const u=client.unit; let w; do{ const dd=u.slice(1).split(''); const j=rint(0,3); dd[j]=String((+dd[j]+rint(1,9))%10); w='А'+dd.join(''); }while(w===u); paper.stampUnit=w; }
-    paper.rot = rint(-18,18);
+  if(d===1 && first) v.order={'391':rint(5,15),'46':rint(3,10)};
+  if(d===3 && first && !v.order['5320']) v.order['5320']=rint(8,15);
+  let corr=null;
+  if(wantCorr){
+    const c=pick(Object.keys(v.order)), from=v.order[c], sc=from>=50?10:from>=20?5:1;
+    let to = from + sc*pick(cat==='network'?[1,2,3]:[-2,-1,1,2,3]);
+    if(to<=0 || to===from) to = from+sc;
+    corr={code:c, old:from}; v.order[c]=to;
   }
-  v.paper = paper;
-  if(v.codeMode==='wrong') v.saidCode = wrongCodeFor(client);
-  if(wantChange) v.change = genChange(v);
-  v.lines = buildLines(v);
+  v.order = sortOrder(v.order);
+  const p = {kind: cat==='private'?'note':'official', stamp: cat==='private'?null:true, corr, rot:rint(-18,18)};
+  if(cat==='military' && d>=5){
+    if(trap==='nostamp' || (!trap && chance(.12))) p.stamp=false;
+    else if(d>=6 && (trap==='wrongstamp' || (!trap && chance(.1)))) p.stamp='wrong';
+  }
+  if(p.stamp==='wrong'){ const u=client.unit; let w; do{ const dd=u.slice(1).split(''); const j=rint(0,3); dd[j]=String((+dd[j]+rint(1,9))%10); w='А'+dd.join(''); }while(w===u); p.stampUnit=w; }
+  p.code = codeMode==='said' ? client.code : codeMode==='wrong' ? wrongCodeFor(client) : '';
+  // порядок строк: хлеб → булочки → круассаны (ключи-числа в объекте сортируются сами, поэтому идём по PCODES)
+  p.items = PCODES.filter(c=>v.order[c]).map(c=>[c, v.order[c]]);
+  p.noteNames = {}; p.items.forEach(([c])=>p.noteNames[c]=pick(NOTE[c]));
+  v.paper = p;
   return v;
-}
-function spokenCode(c){ return chance(.3) ? c.slice(0,2)+' '+c.slice(2) : c; }
-function orderPhrase(o){ return joinRu(Object.entries(o).map(([c,q])=>pick(SAY[c])(q))); }
-function buildLines(v){
-  const c=v.client, p=c.person, mil=c.cat==='military';
-  const nm = mil ? `${cap(c.rank)} ${p.sur}` : p.sur;
-  const greet = mil ? pick(['Здравия желаю!','Добрый день.']) : pick(G.minutes<660?['Доброе утро!','Здравствуйте!','Добрый день.']:['Добрый день!','Здравствуйте.','Здрасьте.']);
-  let who;
-  if(v.codeMode==='none') who = pick([`Код не помню, извините. ${cap(c.short)}, ${p.sur}.`, `${nm}, ${c.short}. Код где-то был записан… не помню.`]);
-  else { const code=spokenCode(v.codeMode==='wrong'?v.saidCode:c.code); who = pick([`${nm}, ${c.short}. Код ${code}.`, `Код ${code} — ${c.short}, ${p.sur}.`, `Я ${p.sur}, ${c.short}, код ${code}.`]); }
-  let order;
-  if(v.paper) order = pick(['Вот заявка.','Заявка — вот, держите.','Всё в заявке, посмотрите.']);
-  else order = cap(pick(mil?['на часть: ','запишите: ']:['запишите: ','мне, пожалуйста, ','значит так: ','на завтра: ','как обычно: ','нам нужно: '])) + orderPhrase(v.order) + '.';
-  return {intro:`${greet} ${who}`, order};
 }
 
 /* ================= DOM ================= */
 const dom = {
-  visitor:$('#visitor'), dialog:$('#dialog'), docs:$('#docs'), slips:$('#slips'), deskEmpty:$('#deskEmpty'),
+  visitor:$('#visitor'), log:$('#log'), replies:$('#replies'), docs:$('#docs'), deskEmpty:$('#deskEmpty'),
   code:$('#codeInput'), found:$('#found'), rows:$('#rows'), totals:$('#totals'), card:$('#card'), stockRows:$('#stockRows'), stock:$('#stock'),
-  status:$('#status'), statusText:$('#statusText'), hint:$('#hint'), f7:$('#f7'), f7in:$('#f7in'), f7msg:$('#f7msg'),
-  tableWrap:$('#tableWrap'), screen:$('#screen'), queue:$('#queue'),
+  status:$('#status'), statusText:$('#statusText'), hint:$('#hint'), f7:$('#f7'), f7code:$('#f7code'), f7qty:$('#f7qty'), f7name:$('#f7name'), f7msg:$('#f7msg'),
+  tableWrap:$('#tableWrap'), screen:$('#screen'), queue:$('#queue'), onec:$('#onec'), archN:$('#archN'), scanner:$('#scanner'),
 };
 
 function say(text, who='v'){
   const p=document.createElement('p'); p.className='ln '+who;
   const label = who==='v' ? 'посетитель' : who==='me' ? 'вы' : '';
   p.innerHTML = (label?`<span class="who">${label}</span>`:'') + esc(text);
-  dom.dialog.appendChild(p); dom.dialog.scrollTop = dom.dialog.scrollHeight;
+  dom.log.appendChild(p); dom.log.scrollTop = dom.log.scrollHeight;
 }
-function status(text, kind=''){
-  dom.statusText.textContent = text; dom.status.className = 'o-status '+kind;
-}
+function status(text, kind=''){ dom.statusText.textContent = text; dom.status.className = 'o-status '+kind; }
 function floatText(text, neg, anchor){
   const r=(anchor||$('#hEarn')).getBoundingClientRect();
   const f=document.createElement('div'); f.className='float'+(neg?' neg':''); f.textContent=text;
   f.style.left=(r.left)+'px'; f.style.top=(r.top-6)+'px'; document.body.appendChild(f); setTimeout(()=>f.remove(),1500);
 }
+function setMood(v, m){ v.client.look.mood=m; if(G.visitor===v && dom.visitor.classList.contains('in')) dom.visitor.innerHTML=portrait(v.client.look); }
 
 /* ---------- HUD ---------- */
 function renderHud(){
@@ -826,67 +869,98 @@ function renderHud(){
 function renderQueue(){ dom.queue.innerHTML = '<span></span>'.repeat(G.queue); }
 function renderDocHead(){
   const dt=dayDate(G.day), nx=dayDate(G.day+1);
-  $('#docTitle').textContent = `Заявка покупателя № ${String(G.docNo).padStart(6,'0')}`;
+  const badge = G.posted===true ? '<span class="badge ok">Проведён</span>' : G.posted==='refused' ? '<span class="badge no">Отказ</span>' : '';
+  $('#docTitle').innerHTML = `Заявка покупателя № ${String(G.docNo).padStart(6,'0')}${badge}`;
   $('#docSub').textContent = `от ${fmtDate(dt)} ${hhmm(G.minutes)} · отгрузка на ${fmtDate(nx)}`;
 }
 
-/* ---------- карточка ---------- */
+/* ---------- карточка и сверка ---------- */
+const FIELD_LABEL = {code:'Код', org:'Контрагент', contact:'Контакт', status:'Статус', stamp:'Печать В/Ч'};
+function checkFields(c){ return c.cat==='military' ? ['code','org','contact','status','stamp'] : ['code','org','contact','status']; }
+function marksDone(){ return !!G.loaded && checkFields(G.loaded).every(f=>f in G.marks); }
+function truth(f){
+  const c=G.loaded, v=G.visitor, real=v.client, p=v.paper;
+  switch(f){
+    case 'code': return p.code===c.code;
+    case 'org': return c===real;
+    case 'contact': return c.person.fio===real.person.fio;
+    case 'status': return !G.stop.has(c.code);
+    case 'stamp': { const u = !p.stamp ? null : p.stamp==='wrong' ? p.stampUnit : (real.cat==='military'?real.unit:null); return u===c.unit; }
+  }
+  return true;
+}
+function markErrors(){
+  const errs=[];
+  for(const f of checkFields(G.loaded)){
+    const m=G.marks[f], t=truth(f);
+    if(m!==t) errs.push(`Сверка «${FIELD_LABEL[f]}»: отмечено ${m?'✓':'✗'}, а должно быть ${t?'✓':'✗'}.`);
+  }
+  return errs;
+}
 function renderCard(){
   const c=G.loaded;
   if(!c){
-    const bad = G.lastLookup && G.lastLookup!=='';
+    const bad = !!G.lastLookup;
     dom.card.innerHTML = `<h3>Контрагент</h3><div class="ph ${bad?'bad':''}">${bad?`Код ${esc(G.lastLookup)} не найден в справочнике`:'Клиент не выбран'}</div>`;
     return;
   }
   const stop = G.stop.has(c.code), debt = G.debts[c.code]||0;
+  const shop = c.point.split(', ')[0], addr = c.cat==='private' ? c.point.split(', ').slice(1).join(', ') : c.point;
   const rows = [
-    ['Код', `<b>${c.code}</b>`],
-    ['Вид', CATS[c.code[0]].name],
-    ['Контрагент', esc(c.org)],
-    [c.cat==='private'?'Точка':'Адрес', esc(c.point)],
-    ['Контакт', esc(c.person.fio)],
-    ['Должность', esc(c.cat==='military'?`${c.role}, ${c.rank}`:c.role)],
-    ['Телефон', esc(c.phone)],
-    ['Долг', debt?`<span class="debt">${money(debt)} грн</span>`:'0,00'],
-    ['Статус', stop?'<span class="pill stop">СТОП-ЛИСТ</span>':'<span class="pill ok">Активен</span>'],
+    ['code','Код', `<b>${c.code}</b>`],
+    [null,'Вид', CATS[c.code[0]].name],
+    ['org', c.cat==='private'?'Точка':'Контрагент', c.cat==='private'?`${esc(shop)}<small>${esc(c.org)}</small>`:esc(c.org)],
+    [null,'Адрес', esc(addr)],
+    ['contact','Контакт', esc(c.person.fio)],
+    [null,'Должность', esc(c.cat==='military'?`${c.role}, ${c.rank}`:c.role)],
+    [null,'Телефон', esc(c.phone)],
+    [null,'Долг', debt?`<span class="debt">${money(debt)} грн</span>`:'0,00'],
+    ['status','Статус', stop?'<span class="pill stop">СТОП-ЛИСТ</span>':'<span class="pill ok">Активен</span>'],
   ];
-  dom.card.innerHTML = `<h3>Контрагент</h3><dl>${rows.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
+  if(c.cat==='military') rows.push(['stamp','Печать В/Ч', `<b>${c.unit}</b>`]);
+  const fields=checkFields(c), done=fields.filter(f=>f in G.marks).length;
+  const chk = f => {
+    if(!f) return '<span class="chk"></span>';
+    if(f in G.marks){ const m=G.marks[f]; return `<span class="chk"><i class="mk ${m?'ok':'no'}" title="${m?'Совпадает':'Не совпадает'}">${m?'✓':'✗'}</i></span>`; }
+    if(G.posted) return '<span class="chk"></span>';
+    return `<span class="chk"><button class="ck ok" data-f="${f}" data-v="1" title="Совпадает с заявкой" aria-label="${FIELD_LABEL[f]}: совпадает">✓</button><button class="ck no" data-f="${f}" data-v="0" title="Не совпадает" aria-label="${FIELD_LABEL[f]}: не совпадает">✗</button></span>`;
+  };
+  dom.card.innerHTML = `<h3>Контрагент<span class="cnt ${done===fields.length?'full':''}">сверено ${done}/${fields.length}</span></h3><dl>${rows.map(([f,a,b])=>`<dt>${a}</dt><dd>${b}</dd>${chk(f)}`).join('')}</dl>`;
 }
 function loadClient(raw){
+  if(G.posted){ status('Документ уже закрыт. Новый — после ухода посетителя.', 'info'); return; }
   const code = String(raw).replace(/\D/g,'');
   dom.code.value = code;
-  if(!code){ return; }
+  if(!code) return;
   const c = CL.byCode[code] || null;
-  G.loaded = c; G.lastLookup = c?null:code;
+  G.loaded = c; G.lastLookup = c?null:code; G.marks = {};
   dom.found.textContent = c ? (c.cat==='private'?c.point.split(',')[0]:c.org) : 'не найден';
   dom.found.className = 'found'+(c?'':' bad');
   renderCard();
-  if(c){ status(`Контрагент: ${c.org}`, 'ok'); sfx('add'); }
+  if(c){ status(`Контрагент: ${c.org}. Сверьте данные с заявкой.`, 'ok'); sfx('add'); }
   else { status(`Контрагент с кодом ${code} не найден`, 'err'); sfx('err'); }
   updateHint();
 }
 
 /* ---------- табличная часть ---------- */
 function sumRows(){ const s={}; G.rows.forEach(r=>s[r.code]=(s[r.code]||0)+r.qty); return s; }
+function docSum(){ return Math.round(G.rows.reduce((a,r)=>a+r.qty*PRODUCTS[r.code].price,0)*100)/100; }
 function renderRows(flashLast){
   if(!G.rows.length){ dom.rows.innerHTML = `<tr class="emptyrow"><td colspan="8">Табличная часть пуста. <b>F7</b> — добавить позицию</td></tr>`; }
   else dom.rows.innerHTML = G.rows.map((r,i)=>{ const P=PRODUCTS[r.code]; return `<tr data-i="${i}" class="${i===G.sel?'sel':''}${flashLast&&i===G.rows.length-1?' new':''}"><td class="n">${i+1}</td><td class="code">${r.code}</td><td>${esc(P.name)}</td><td class="n"><b>${r.qty}</b></td><td>шт</td><td class="n">${money(P.price)}</td><td class="n">${money(P.price*r.qty)}</td><td class="x"><button data-del="${i}" aria-label="Удалить строку" tabindex="-1">✕</button></td></tr>`; }).join('');
-  const q=G.rows.reduce((a,r)=>a+r.qty,0), sum=G.rows.reduce((a,r)=>a+r.qty*PRODUCTS[r.code].price,0);
-  dom.totals.innerHTML = `<span>Позиций: <b>${G.rows.length}</b></span><span>Кол-во: <b>${q}</b> шт</span><span>Сумма: <b>${money(sum)}</b> грн</span>`;
+  const q=G.rows.reduce((a,r)=>a+r.qty,0);
+  dom.totals.innerHTML = `<span>Позиций: <b>${G.rows.length}</b></span><span>Кол-во: <b>${q}</b> шт</span><span class="docsum">Сумма: <b>${money(docSum())}</b> грн</span>`;
 }
-function addRow(code, qty){
-  G.rows.push({code, qty}); G.sel = G.rows.length-1; renderRows(true); sfx('add');
-  const v=G.visitor;
-  if(v && v.change && !v.change.scheduled && !v.done){ v.change.scheduled=true; later(rint(1300,2800), ()=>fireChange(v)); }
-  updateHint();
-}
+function addRow(code, qty){ G.rows.push({code, qty}); G.sel = G.rows.length-1; renderRows(true); sfx('add'); updateHint(); }
 function deleteSel(){
-  if(G.sel<0 || G.sel>=G.rows.length) return;
+  if(G.posted || G.sel<0 || G.sel>=G.rows.length) return;
   const r=G.rows.splice(G.sel,1)[0]; G.sel=Math.min(G.sel,G.rows.length-1); renderRows();
   status(`Строка удалена: ${r.code} ${PRODUCTS[r.code].name} — ${r.qty}`, 'info');
 }
 function resetForm(){
-  G.rows=[]; G.sel=-1; G.loaded=null; G.lastLookup=null; dom.code.value=''; dom.found.textContent=''; renderRows(); renderCard(); closeF7();
+  G.rows=[]; G.sel=-1; G.loaded=null; G.lastLookup=null; G.marks={}; G.posted=false;
+  dom.onec.classList.remove('posted','refused'); dom.code.disabled=false;
+  dom.code.value=''; dom.found.textContent=''; renderRows(); renderCard(); closeF7(); renderDocHead();
 }
 
 /* ---------- остатки ---------- */
@@ -897,37 +971,45 @@ function renderStock(){
   }).join('');
 }
 
-/* ---------- F7 ---------- */
+/* ---------- F7: код ↵ количество ↵ ---------- */
 function openF7(){
-  if(!G.visitor){ status('Окошко пустое — ждём посетителя', 'info'); return; }
+  const v=G.visitor;
+  if(!v){ status('Окошко пустое — ждём посетителя', 'info'); return; }
+  if(v.phase!=='work'){ status(G.posted?'Документ проведён — позиции не добавить':'Сначала поговорите с посетителем и возьмите заявку', 'info'); return; }
   if(!G.loaded){ status('Сначала укажите клиента: код и Enter', 'err'); sfx('err'); dom.code.focus(); return; }
   closeOverlays();
-  dom.f7.hidden=false; dom.f7in.value=''; dom.f7msg.textContent=''; dom.f7msg.className='msg'; dom.f7in.focus(); updateHint();
+  dom.f7.hidden=false; dom.f7code.value=''; dom.f7qty.value=''; dom.f7name.textContent=''; dom.f7msg.textContent=''; dom.f7msg.className='msg'; dom.f7code.focus(); updateHint();
 }
 function closeF7(){ if(dom.f7.hidden) return false; dom.f7.hidden=true; if(G.screen==='shift') dom.tableWrap.focus({preventScroll:true}); updateHint(); return true; }
-function submitF7(){
-  const raw = dom.f7in.value.trim();
+function f7Err(t){ dom.f7msg.textContent=t; dom.f7msg.className='msg err'; sfx('err'); }
+function f7CodeEnter(){
+  const raw=dom.f7code.value.replace(/\D/g,'');
   if(!raw) return;
-  const m = raw.match(/^(\d{1,5})\s*[-–*.,/+\s]\s*(\d{1,5})$/);
-  if(!m){ dom.f7msg.textContent='Формат: код-количество, например 391-10'; dom.f7msg.className='msg err'; sfx('err'); return; }
-  const code=String(+m[1]), qty=+m[2];
-  if(!PRODUCTS[code]){ dom.f7msg.textContent=`Номенклатура с кодом ${code} не найдена`; dom.f7msg.className='msg err'; sfx('err'); dom.f7in.select(); return; }
-  if(qty<=0){ dom.f7msg.textContent='Количество должно быть больше нуля'; dom.f7msg.className='msg err'; sfx('err'); return; }
-  addRow(code, qty);
-  dom.f7msg.textContent=`Добавлено: ${PRODUCTS[code].name} — ${qty} шт`; dom.f7msg.className='msg ok';
-  dom.f7in.value=''; dom.f7in.focus();
+  const code=String(+raw);
+  if(!PRODUCTS[code]){ dom.f7name.textContent=''; f7Err(`Номенклатура с кодом ${code} не найдена`); dom.f7code.select(); return; }
+  dom.f7code.value=code; dom.f7name.textContent=PRODUCTS[code].name; dom.f7msg.textContent=''; dom.f7msg.className='msg';
+  dom.f7qty.focus(); dom.f7qty.select();
+}
+function f7QtyEnter(){
+  const code=dom.f7code.value.trim();
+  if(!PRODUCTS[code] || !dom.f7name.textContent){ dom.f7code.focus(); f7CodeEnter(); return; }
+  const q=parseInt(dom.f7qty.value.replace(/\D/g,''),10);
+  if(!q || q<=0){ f7Err('Укажите количество больше нуля'); return; }
+  addRow(code, q);
+  dom.f7msg.textContent=`Добавлено: ${PRODUCTS[code].name} — ${q} шт`; dom.f7msg.className='msg ok';
+  dom.f7code.value=''; dom.f7qty.value=''; dom.f7name.textContent=''; dom.f7code.focus();
 }
 
 /* ---------- справочник ---------- */
 let dirSel=0, dirItems=[];
 function openDir(){
   if(G.screen!=='shift') return;
-  closeF7(); $('#rulesOv').hidden=true; $('#dirOv').hidden=false; const q=$('#dirQ'); q.value=''; renderDir(); q.focus();
+  closeF7(); $('#rulesOv').hidden=true; $('#dirOv').hidden=false; const q=$('#dirQ'); q.value=''; dirSel=0; renderDir(); q.focus();
 }
 function renderDir(){
   const q=$('#dirQ').value.trim().toLowerCase();
   dirItems = CL.list.filter(c=>!q || (c.code+' '+c.org+' '+c.point+' '+c.person.fio+' '+c.short).toLowerCase().includes(q)).sort((a,b)=>a.code.localeCompare(b.code));
-  dirSel = Math.min(dirSel, Math.max(0,dirItems.length-1)); if(q) dirSel=Math.min(dirSel,dirItems.length-1);
+  dirSel = Math.max(0, Math.min(dirSel, dirItems.length-1));
   $('#dirRows').innerHTML = dirItems.length ? dirItems.map((c,i)=>`<tr data-code="${c.code}" class="${i===dirSel?'sel':''}"><td class="code">${c.code}</td><td>${esc(c.org)}</td><td>${esc(c.point)}</td><td>${esc(c.person.fio)}</td></tr>`).join('') : `<tr class="emptyrow"><td colspan="4">Ничего не найдено</td></tr>`;
   const s=$('#dirRows tr.sel'); if(s) s.scrollIntoView({block:'nearest'});
 }
@@ -941,11 +1023,12 @@ function openRules(){
   $('#rulesBody').innerHTML = `
 <h4>Порядок работы</h4>
 <ol>
-<li>Посетитель называет код клиента и заказ (или отдаёт письменную заявку — она ляжет на стол).</li>
-<li>Введите код в поле «Код клиента» и нажмите <kbd>Enter</kbd>. Сверьте карточку справа.</li>
-<li><kbd>F7</kbd> — окно ввода позиций. Наберите <kbd>391-10</kbd> и <kbd>Enter</kbd>: позиция появится в заявке, окно останется открытым для следующей. <kbd>Esc</kbd> — закрыть.</li>
-<li>Ошибочная строка: выделите её мышью или стрелками и нажмите <kbd>Del</kbd> (или ✕ в строке).</li>
-<li><kbd>F9</kbd> — провести заявку. <kbd>F8</kbd> — отказать. <kbd>F3</kbd> — уточнить у посетителя. <kbd>F4</kbd> — справочник клиентов.</li>
+<li>Посетитель здоровается — ответьте, нажав на реплику. Он отдаёт бумажную заявку, она ляжет на стол. Клик по заявке — открыть крупно.</li>
+<li>Перепишите «Код клиента» из заявки в поле 1С и нажмите <kbd>Enter</kbd>. Сверьте каждое поле карточки с заявкой: <b>✓</b> — совпадает, <b>✗</b> — нет.</li>
+<li><kbd>F7</kbd> — окно ввода: код товара <kbd>Enter</kbd>, количество <kbd>Enter</kbd>. Позиция появится в заявке, окно останется открытым для следующей. <kbd>Esc</kbd> — закрыть. Ошибочную строку: выделить и <kbd>Del</kbd> (или ✕).</li>
+<li><kbd>F9</kbd> — провести. Затем назовите клиенту сумму документа — впишите её в реплику.</li>
+<li>Перетащите заявку на <b>сканер</b>, копию — в папку <b>«Архив»</b>, оригинал — обратно <b>в окошко</b>.</li>
+<li>Отказ — реплика «Отказать» (<kbd>F8</kbd>) с верной причиной, затем вернуть заявку в окошко. <kbd>F3</kbd> — уточнить код, <kbd>F4</kbd> — справочник.</li>
 </ol>
 <h4>Коды клиентов</h4>
 <table><tr><th>Код</th><th>Клиент</th></tr><tr><td>1xxxx</td><td>больницы</td></tr><tr><td>2xxxx</td><td>военные части</td></tr><tr><td>3xxxx</td><td>частники (больше всего клиентов)</td></tr><tr><td>4xxxx</td><td>образовательные учреждения</td></tr><tr><td>5xxxx</td><td>торговые сети, большие магазины</td></tr></table>
@@ -954,64 +1037,268 @@ function openRules(){
 <h4>Распоряжения</h4>
 <ul>${act.map(r=>`<li>${r.text}${r.day===d&&d>1?'<span class="new">новое</span>':''}</li>`).join('')}</ul>
 <h4>Оплата</h4>
-<ul><li>${PAY} грн за каждую верно обработанную заявку (или верный отказ).</li><li>${d===LAST_DAY?'Сегодня предупреждений нет: каждая ошибка — штраф 40 грн.':'Две ошибки за смену — предупреждения, дальше штраф 30 грн за каждую.'}</li><li>Смена без ошибок (от 5 заявок) — премия 40 грн.</li></ul>`;
+<ul><li>${PAY} грн за каждого посетителя, обслуженного без единой ошибки.</li><li>${d===LAST_DAY?'Сегодня предупреждений нет: каждая ошибка — штраф 40 грн.':'Две ошибки за смену — предупреждения, дальше штраф 30 грн за каждую.'}</li><li>Смена без ошибок (от 5 посетителей) — премия 40 грн.</li></ul>`;
   $('#rulesOv').hidden=false; $('#rulesX').focus();
 }
-function closeOverlays(){ let c=false; if(!$('#dirOv').hidden){$('#dirOv').hidden=true;c=true;} if(!$('#rulesOv').hidden){$('#rulesOv').hidden=true;c=true;} return c; }
+function closeOverlays(){ let c=false; ['#dirOv','#rulesOv','#zoomOv'].forEach(s=>{ if(!$(s).hidden){ $(s).hidden=true; c=true; } }); return c; }
 
 /* ---------- подсказки (день 1) ---------- */
 function updateHint(){
   const h=dom.hint;
-  if(!(G.screen==='shift' && G.day===1 && G.dCorrect<2 && G.dServed<3)){ h.hidden=true; return; }
+  if(!(G.screen==='shift' && G.day===1 && G.dServed<2)){ h.hidden=true; return; }
   const v=G.visitor; let t;
-  if(!v || v.done) t='Ждём посетителя…';
-  else if(!G.loaded) t='Посетитель назвал код. Введите его в поле «Код клиента» и нажмите <b>Enter</b>.';
-  else if(dom.f7.hidden && !G.rows.length) t='Клиент найден, его данные справа. Нажмите <b>F7</b>, чтобы вносить позиции.';
-  else if(!dom.f7.hidden && !G.rows.length) t='Наберите код товара и количество через дефис, например <b>391-10</b>, и нажмите <b>Enter</b>.';
-  else if(!dom.f7.hidden) t='Позиция в заявке, окно ввода осталось открытым. Внесите остальное, затем <b>Esc</b>.';
-  else t='Сверьте заявку с заказом посетителя. <b>F9</b> — провести. Лишнюю строку: выделить и <b>Del</b>.';
+  if(!v || v.phase==='arrive' || v.phase==='leaving') t='Ждём посетителя…';
+  else if(v.phase==='greet') t='Посетитель поздоровался. Ответьте — нажмите на реплику под окошком.';
+  else if(v.phase==='wait' || v.phase==='wait2') t='Посетитель говорит…';
+  else if(v.phase==='work'){
+    if(!G.loaded) t='Заявка на столе (клик — открыть крупно). Перепишите «Код клиента» в поле 1С и нажмите <b>Enter</b>.';
+    else if(!marksDone()) t='Сверьте поля карточки справа с заявкой: <b>✓</b> — совпадает, <b>✗</b> — нет.';
+    else if(dom.f7.hidden && !G.rows.length) t='Нажмите <b>F7</b>, чтобы вносить позиции.';
+    else if(!dom.f7.hidden && !G.rows.length) t='Наберите код товара и <b>Enter</b>, затем количество и <b>Enter</b>. Например: 391 ↵ 10 ↵.';
+    else if(!dom.f7.hidden) t='Позиция в заявке, окно ввода осталось открытым. Внесите остальное, затем <b>Esc</b>.';
+    else t='Сверьте позиции с бумажной заявкой. <b>F9</b> — провести документ.';
+  }
+  else if(v.phase==='sum') t='Документ проведён. Назовите сумму: впишите в реплику число из поля «Сумма» внизу 1С.';
+  else if(v.phase==='return'){
+    if(v.accepted && !v.scanned) t='Перетащите заявку со стола на <b>сканер</b>.';
+    else if(v.accepted && !v.archived) t='Перетащите копию в папку <b>«Архив»</b>.';
+    else t='Верните оригинал: перетащите заявку <b>в окошко</b> (или в лоток на столе).';
+  }
   h.innerHTML = `<span>${t}</span>`; h.hidden=false;
 }
 
+/* ---------- реплики ---------- */
+const GREETS = [
+  {t:'Здравствуйте! Слушаю вас.'},
+  {t:'Добрый день. Давайте вашу заявку.'},
+  {t:'Следующий!', rude:true},
+];
+const REASONS = [
+  {id:'stop', day:4, short:'стоп-лист', say:'Не могу принять: вы в стоп-листе, есть задолженность.'},
+  {id:'nostamp', day:5, short:'нет печати', say:'Не могу принять: на заявке нет печати части.'},
+  {id:'wrongstamp', day:6, short:'чужая печать', say:'Не могу принять: печать не совпадает с номером вашей части.'},
+  {id:'small', day:6, short:'меньше 100 шт.', say:'Не могу принять: заказ меньше 100 штук — только через ваш склад.'},
+];
+const activeReasons = () => REASONS.filter(r=>r.day<=G.day);
+function repBtn(text, fn, cls='', key=''){
+  const b=document.createElement('button'); b.type='button'; b.className='rep '+cls;
+  b.innerHTML=(key?`<kbd>${key}</kbd>`:'')+esc(text); b.addEventListener('click', fn); return b;
+}
+function renderReplies(){
+  const R=dom.replies; R.innerHTML='';
+  const v=G.visitor;
+  if(!v || G.screen!=='shift') return;
+  if(v.phase==='greet'){
+    GREETS.forEach((g,i)=>R.appendChild(repBtn(g.t, ()=>replyGreet(g), g.rude?'rude':'', String(i+1))));
+  } else if(v.phase==='work'){
+    if(!v.showRefuse){
+      R.appendChild(repBtn('Уточните, пожалуйста, код клиента.', askCode, '', 'F3'));
+      R.appendChild(repBtn('Представьтесь, пожалуйста.', askName));
+    }
+    if(activeReasons().length){
+      R.appendChild(repBtn(v.showRefuse?'◂ Назад':'Отказать ▸', toggleRefuse, 'refuse', 'F8'));
+      if(v.showRefuse) activeReasons().forEach(r=>R.appendChild(repBtn(r.say, ()=>doRefuse(r.id), 'sub')));
+    }
+  } else if(v.phase==='sum'){
+    const w=document.createElement('form'); w.className='rep sumrep';
+    w.innerHTML=`<span>Сумма вашего заказа составляет</span><input id="sumIn" class="suminp" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Сумма заказа" placeholder="0,00"><span>грн.</span><button type="submit" class="saybtn">Сказать ↵</button>`;
+    w.addEventListener('submit', e=>{ e.preventDefault(); saySum($('#sumIn').value); });
+    R.appendChild(w); setTimeout(()=>{ const i=$('#sumIn'); if(i) i.focus({preventScroll:true}); },0);
+  } else if(v.phase==='return'){
+    const items = v.accepted ? [['Снять копию заявки на сканере', v.scanned],['Копию — в папку «Архив»', v.archived],['Вернуть заявку в окошко', false]] : [['Вернуть заявку в окошко', false]];
+    const ul=document.createElement('ul'); ul.className='todo';
+    ul.innerHTML = items.map(([t,d])=>`<li class="${d?'done':''}">${t}</li>`).join('');
+    R.appendChild(ul);
+  }
+}
+function toggleRefuse(){ const v=G.visitor; if(!v || v.phase!=='work' || !activeReasons().length) return; v.showRefuse=!v.showRefuse; renderReplies(); }
+function replyGreet(g){
+  const v=G.visitor; if(!v || v.phase!=='greet') return;
+  say(g.t,'me'); v.phase='wait'; renderReplies(); updateHint();
+  later(750, ()=>{
+    if(G.visitor!==v) return;
+    const c=v.client, p=c.person, nm = c.cat==='military' ? `${cap(c.rank)} ${p.sur}` : p.sur;
+    if(g.rude){ setMood(v,'angry'); say('Могли бы и поздороваться…'); later(2500, ()=>{ if(G.visitor===v && v.phase!=='leaving') setMood(v,'neutral'); }); }
+    say(`${nm}, ${c.short}. ${pick(['Вот заявка.','Заявка — вот, держите.','Вот, всё в заявке.'])}`);
+    showPaper(v); v.phase='work'; renderReplies(); updateHint();
+  });
+}
+function askCode(){
+  const v=G.visitor; if(!v || v.phase!=='work') return;
+  v.asked++; say('Уточните, пожалуйста, код клиента.','me');
+  const c=v.client, fem=c.person.female;
+  later(700, ()=>{
+    if(G.visitor!==v || v.phase!=='work') return;
+    if(v.asked>4){ say(`Я же всё сказал${fem?'а':''}! Сколько можно?`); setMood(v,'angry'); return; }
+    if(v.codeMode==='wrong' && !v.corrected){ v.corrected=true; say(`Ой, в заявке ошибка, извините. Правильный код — ${c.code}.`); return; }
+    if(v.codeMode==='wrong'){ say(`Я же говорил${fem?'а':''}: ${c.code}.`); return; }
+    if(v.codeMode==='none'){ say(`Кода не помню, правда. Посмотрите в справочнике: ${c.short}, ${c.person.sur}.`); return; }
+    say('В заявке всё правильно написано.');
+  });
+}
+function askName(){
+  const v=G.visitor; if(!v || v.phase!=='work') return;
+  v.named++; say('Представьтесь, пожалуйста.','me');
+  const c=v.client;
+  later(650, ()=>{
+    if(G.visitor!==v || v.phase!=='work') return;
+    if(v.named>2){ say('Я уже представлялся.'); return; }
+    say(`${c.person.fio}. ${cap(c.cat==='military'?`${c.rank}, ${c.role.toLowerCase()}`:c.role.toLowerCase())}, ${c.short}.`);
+  });
+}
+
 /* ---------- бумаги на столе ---------- */
-function refreshDesk(){ dom.deskEmpty.hidden = dom.docs.children.length + dom.slips.children.length > 0; }
+function refreshDesk(){ dom.deskEmpty.hidden = !!dom.docs.querySelector('.paper'); }
+function qtyCell(p, code, q){ return p.corr && p.corr.code===code ? `<s>${p.corr.old}</s> <span class="fix">${q}</span>` : String(q); }
 function showPaper(v){
-  const p=v.paper, c=v.client;
+  const p=v.paper, c=v.client, nx=dayDate(G.day+1);
   const el=document.createElement('div');
+  el.dataset.vid=v.id;
   if(p.kind==='note'){
-    el.className='paper note';
-    el.innerHTML = `<div class="nh">${esc(c.short)}</div>${p.items.map(([code,q])=>`<div>${esc(p.noteNames[code])} — ${q}</div>`).join('')}<div class="ns">${esc(c.person.sur)}</div>`;
+    el.className='paper note orig';
+    el.innerHTML = `<div class="nh">Заявка на ${fmtDate(nx).slice(0,5)}</div><div class="ncode">Код: ${p.code?esc(p.code):'<span class="blank">______</span>'}</div><div class="nshop">${esc(c.point.split(',')[0])}</div>${p.items.map(([code,q])=>`<div>${esc(p.noteNames[code])} — ${qtyCell(p,code,q)}</div>`).join('')}<div class="ns">${esc(c.person.sur)}</div>`;
   } else {
     const codes = c.cat==='network';
-    const nx=dayDate(G.day+1);
     let st='';
     if(p.stamp){
       if(c.cat==='military'){ const u = p.stamp==='wrong' ? p.stampUnit : c.unit; st = stampSVG(`ВОЙСКОВАЯ ЧАСТЬ ${u} • ДЛЯ ПАКЕТОВ •`, u, 'штаб', 'var(--stamp-blue)', p.rot); }
       else st = stampSVG(`${c.org.toUpperCase().replace(/[«»]/g,'"').slice(0,34)} •`, c.cat==='network'?'СКЛАД':'№ 1', 'для документов', c.cat==='network'?'var(--stamp-violet)':'var(--stamp-blue)', p.rot);
     }
-    el.className='paper official';
+    el.className='paper official orig';
     el.innerHTML = `<div class="p-org">${esc(c.org)}</div><div class="p-title">ЗАЯВКА</div><div class="p-sub">на поставку хлебобулочных изделий на ${fmtDate(nx)}</div>
-<table><tr><th>№</th>${codes?'<th>Код</th>':''}<th>Наименование</th><th>Кол-во</th></tr>${p.items.map(([code,q],i)=>`<tr><td>${i+1}</td>${codes?`<td>${code}</td>`:''}<td>${esc(PRODUCTS[code].name)}</td><td class="n">${q}</td></tr>`).join('')}</table>
+<div class="p-f"><span>Код клиента:</span> ${p.code?`<b class="hand">${esc(p.code)}</b>`:'<span class="blank">__________</span>'}</div>
+<div class="p-f"><span>Контактное лицо:</span> ${esc(c.person.short)}</div>
+<table><tr><th>№</th>${codes?'<th>Код</th>':''}<th>Наименование</th><th>Кол-во</th></tr>${p.items.map(([code,q],i)=>`<tr><td>${i+1}</td>${codes?`<td>${code}</td>`:''}<td>${esc(PRODUCTS[code].name)}</td><td class="n">${qtyCell(p,code,q)}</td></tr>`).join('')}</table>
 <div class="p-sign"><span>${esc(c.role)}</span><span class="sig">${esc(c.person.sur)}</span><span>${esc(c.person.short)}</span></div>${st}`;
   }
-  dom.docs.appendChild(el); refreshDesk(); sfx('paper');
+  const slip=dom.docs.querySelector('.citation');
+  if(slip) dom.docs.insertBefore(el, slip); else dom.docs.appendChild(el);
+  makeDraggable(el,'orig'); refreshDesk(); sfx('paper');
 }
 function cite(reasons, penalty, free){
+  dom.docs.querySelectorAll('.citation').forEach(x=>x.remove());
   const slip=document.createElement('div'); slip.className='paper citation';
-  slip.innerHTML = `<div class="c-h">ЗАМЕЧАНИЕ № ${G.totalErrors}</div><ul>${reasons.slice(0,3).map(r=>`<li>${esc(r)}</li>`).join('')}</ul><div class="c-f"><span>${hhmm(G.minutes)}</span><span>${penalty?`Штраф ${penalty} грн`:`Предупреждение ${G.dErrors} из ${free}`}</span></div>`;
-  dom.slips.prepend(slip); while(dom.slips.children.length>2) dom.slips.lastChild.remove();
-  refreshDesk(); sfx('print');
+  slip.innerHTML = `<div class="c-h">ЗАМЕЧАНИЕ № ${G.totalErrors}</div><ul>${reasons.slice(0,4).map(r=>`<li>${esc(r)}</li>`).join('')}</ul><div class="c-f"><span>${hhmm(G.minutes)}</span><span>${penalty?`Штраф ${penalty} грн`:`Предупреждение ${G.dErrors} из ${free}`}</span></div>`;
+  dom.docs.appendChild(slip); refreshDesk(); sfx('print');
+}
+
+/* ---------- перетаскивание ---------- */
+let drag=null;
+function makeDraggable(el, kind){
+  el.classList.add('drag'); el.dataset.kind=kind;
+  el.addEventListener('pointerdown', e=>{
+    if(e.button!==0 || G.paused || G.screen!=='shift') return;
+    e.preventDefault();
+    const r=el.getBoundingClientRect();
+    drag={el, kind, sx:e.clientX, sy:e.clientY, dx:e.clientX-r.left, dy:e.clientY-r.top, w:r.width, moved:false, ghost:null, over:null};
+  });
+}
+function dropTargetAt(x,y){
+  for(const t of document.querySelectorAll('[data-drop]')){ const r=t.getBoundingClientRect(); if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) return t; }
+  return null;
+}
+function endDrag(){ if(!drag) return null; const d=drag; drag=null; if(d.ghost) d.ghost.remove(); d.el.classList.remove('dragging'); document.body.classList.remove('dragging-any'); if(d.over) d.over.classList.remove('over'); return d; }
+document.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  if(!drag.moved){
+    if(Math.hypot(e.clientX-drag.sx, e.clientY-drag.sy)<6) return;
+    drag.moved=true;
+    const g=drag.el.cloneNode(true); g.classList.remove('drag'); g.classList.add('ghost'); g.style.width=drag.w+'px';
+    document.body.appendChild(g); drag.ghost=g; drag.el.classList.add('dragging'); document.body.classList.add('dragging-any');
+  }
+  drag.ghost.style.left=(e.clientX-drag.dx)+'px'; drag.ghost.style.top=(e.clientY-drag.dy)+'px';
+  const t=dropTargetAt(e.clientX,e.clientY);
+  if(t!==drag.over){ if(drag.over) drag.over.classList.remove('over'); if(t) t.classList.add('over'); drag.over=t; }
+});
+document.addEventListener('pointerup', e=>{
+  if(!drag) return;
+  const d=endDrag();
+  if(!d.moved){ if(d.kind==='orig') zoomPaper(d.el); return; }
+  if(d.over) onDrop(d.kind, d.over.dataset.drop, d.el);
+});
+document.addEventListener('pointercancel', endDrag);
+function zoomPaper(el){
+  const box=$('#zoomBox'); box.innerHTML='';
+  const c=el.cloneNode(true); c.classList.remove('drag','dragging'); box.appendChild(c);
+  $('#zoomOv').hidden=false;
+}
+function onDrop(kind, target, el){
+  if(kind==='orig'){
+    if(target==='scan') return scanPaper(el);
+    if(target==='return') return returnPaper(el);
+    if(target==='archive'){ status('В архив кладём копию. Оригинал возвращаем клиенту.', 'err'); sfx('err'); }
+  } else if(kind==='copy'){
+    if(target==='archive') return archiveCopy(el);
+    status('Копия остаётся у нас — её место в папке «Архив».', 'err'); sfx('err');
+  }
+}
+let scanBusy=false;
+function scanPaper(el){
+  const v=G.visitor;
+  if(!v || +el.dataset.vid!==v.id){ return; }
+  if(scanBusy) return;
+  if(v.scanned){ status('Копия этой заявки уже снята.', 'info'); return; }
+  scanBusy=true; dom.scanner.classList.add('busy'); sfx('print'); status('Сканирование…', 'info');
+  later(1150, ()=>{
+    scanBusy=false; dom.scanner.classList.remove('busy');
+    if(G.visitor!==v) return;
+    v.scanned=true;
+    const c=v.client, cp=document.createElement('div');
+    cp.className='paper copy'; cp.dataset.vid=v.id;
+    cp.innerHTML=`<b>КОПИЯ</b><span>${esc(c.short)}</span><span>${fmtDate(dayDate(G.day))} · № ${String(G.docNo).padStart(6,'0')}</span><i></i><i></i><i></i>`;
+    const slip=dom.docs.querySelector('.citation');
+    if(slip) dom.docs.insertBefore(cp, slip); else dom.docs.appendChild(cp);
+    makeDraggable(cp,'copy'); refreshDesk(); sfx('paper');
+    status('Копия снята. Положите её в папку «Архив».', 'ok');
+    renderReplies(); updateHint();
+  });
+}
+function archiveCopy(el){
+  const v=G.visitor;
+  el.remove(); G.archived++; dom.archN.textContent=G.archived; sfx('paper');
+  const a=$('#archive'); a.classList.remove('bump'); void a.offsetWidth; a.classList.add('bump');
+  if(v && +el.dataset.vid===v.id){ v.archived=true; status('Копия в архиве.', 'ok'); }
+  refreshDesk(); renderReplies(); updateHint();
+}
+function returnPaper(el){
+  const v=G.visitor;
+  if(!v || +el.dataset.vid!==v.id) return;
+  if(v.phase!=='return'){
+    status(v.phase==='sum' ? 'Сначала назовите клиенту сумму заказа.' : 'Сначала проведите заявку (F9) или откажите — потом верните бумагу.', 'err'); sfx('err'); return;
+  }
+  if(v.accepted){
+    if(!v.scanned) v.errs.push('Оригинал отдан без копии: заявку не отсканировали.');
+    else if(!v.archived) v.errs.push('Копия заявки не сдана в архив.');
+  }
+  dom.docs.querySelectorAll(`.copy[data-vid="${v.id}"]`).forEach(x=>x.remove());
+  el.remove(); refreshDesk(); sfx('paper');
+  v.phase='leaving'; renderReplies(); updateHint();
+  judge(v.errs);
+  const mood = v.refused ? 'angry' : 'happy';
+  later(250, ()=>{
+    setMood(v, mood);
+    say(v.refused ? pick(['Ладно… До свидания.','Ну и ладно.','Разберёмся.']) : pick(v.client.cat==='military'?['Благодарю. Разрешите идти.','Спасибо, до завтра.']:['Спасибо, до свидания!','Благодарю, до завтра.','Спасибо, хорошего дня.','Всего доброго.']));
+  });
+  later(1500, ()=>{ dom.visitor.classList.remove('in'); dom.visitor.classList.add('out'); });
+  later(2300, ()=>{
+    v.client.look.mood='neutral';
+    G.visitor=null; G.docNo++; resetForm(); dom.replies.innerHTML='';
+    if(G.shiftOver){ endShift(); return; }
+    G.queue = Math.max(1, Math.min(7, G.queue + rint(-1,1)));
+    renderQueue(); updateHint();
+    later(rint(700,1600), spawnVisitor);
+  });
 }
 
 /* ================= проверка ================= */
 function expected(v){
   const d=G.day, c=v.client;
-  if(d>=4 && G.stop.has(c.code)) return {refuse:true, why:'Клиент в стоп-листе'};
+  if(d>=4 && G.stop.has(c.code)) return {refuse:true, reason:'stop'};
   if(d>=5 && c.cat==='military'){
-    if(!v.paper || !v.paper.stamp) return {refuse:true, why:'Заявка военной части без печати'};
-    if(d>=6 && v.paper.stamp==='wrong') return {refuse:true, why:`Печать части ${v.paper.stampUnit} не совпадает с карточкой (${c.unit})`};
+    if(!v.paper.stamp) return {refuse:true, reason:'nostamp'};
+    if(d>=6 && v.paper.stamp==='wrong') return {refuse:true, reason:'wrongstamp'};
   }
-  if(d>=6 && c.cat==='network' && total(v.order)<100) return {refuse:true, why:`Заказ сети ${total(v.order)} шт. — меньше 100`};
+  if(d>=6 && c.cat==='network' && total(v.order)<100) return {refuse:true, reason:'small'};
   const items={};
   for(const [code,q] of Object.entries(v.order)){
     if(d>=4 && c.cat==='hospital' && !PRODUCTS[code].bread) continue;
@@ -1020,9 +1307,10 @@ function expected(v){
   }
   return {refuse:false, items};
 }
+const REASON_WHY = {stop:'Клиент в стоп-листе', nostamp:'На заявке военной части нет печати', wrongstamp:'Печать не совпадает с номером части', small:'Заказ сети меньше 100 шт.'};
 function checkAccept(v){
   const exp=expected(v), errs=[], c=v.client;
-  if(exp.refuse){ errs.push(`${exp.why} — заявку следовало отклонить (F8).`); return errs; }
+  if(exp.refuse){ errs.push(`${REASON_WHY[exp.reason]} — заявку следовало отклонить.`); return errs; }
   if(G.loaded.code!==c.code){ errs.push(`Заявка проведена на чужого клиента: ${G.loaded.code} (${G.loaded.person.sur}), а у окна был ${c.code} (${c.person.sur}).`); return errs; }
   const got=sumRows();
   for(const code of PCODES){
@@ -1031,9 +1319,10 @@ function checkAccept(v){
     if(e===0){
       if(asked && G.day>=4 && c.cat==='hospital' && !P.bread) errs.push(`${nm}: больницам вносим только хлеб.`);
       else if(asked && P.layer) errs.push(`${nm}: остаток 0 — позицию не вносить.`);
-      else errs.push(`${nm}: лишняя позиция, клиент её не заказывал.`);
+      else errs.push(`${nm}: лишняя позиция, её нет в заявке.`);
     } else if(n===0) errs.push(`${nm}: не внесено, нужно ${e}.`);
     else if(P.layer && n>e && e<asked) errs.push(`${nm}: внесено ${n}, а в остатке только ${e}.`);
+    else if(v.paper.corr && v.paper.corr.code===code && n===v.paper.corr.old) errs.push(`${nm}: внесено зачёркнутое ${n}, исправлено на ${e}.`);
     else errs.push(`${nm}: внесено ${n}, нужно ${e}.`);
   }
   return errs;
@@ -1042,7 +1331,7 @@ function judge(errs){
   G.dServed++; G.totalServed++;
   if(!errs.length){
     G.dCorrect++; G.totalCorrect++; G.dEarn+=PAY; floatText(`+${PAY}`, false); sfx('ok');
-    status(`Заявка обработана верно. +${PAY} грн`, 'ok');
+    status(`Посетитель обслужен без ошибок. +${PAY} грн`, 'ok');
   } else {
     G.dErrors++; G.totalErrors++;
     const free = G.day===LAST_DAY?0:2; let pen=0;
@@ -1052,85 +1341,79 @@ function judge(errs){
   }
   renderHud();
 }
+function needCard(){
+  if(!G.loaded){ status('Не выбран клиент: введите код из заявки и нажмите Enter', 'err'); sfx('err'); dom.code.focus(); return false; }
+  if(!marksDone()){ status('Сверьте все поля карточки с заявкой: ✓ или ✗ у каждого', 'err'); sfx('err'); return false; }
+  return true;
+}
 function doAccept(){
-  const v=G.visitor; if(!v || v.done) return;
-  if(!G.loaded){ status('Не указан клиент: введите код и нажмите Enter', 'err'); sfx('err'); dom.code.focus(); return; }
+  const v=G.visitor; if(!v || G.screen!=='shift') return;
+  if(v.phase!=='work'){ if(v.phase==='greet'||v.phase==='wait') { status('Сначала поговорите с посетителем', 'err'); sfx('err'); } return; }
+  if(!needCard()) return;
   if(!G.rows.length){ status('Табличная часть пуста — нечего проводить', 'err'); sfx('err'); return; }
   closeF7(); closeOverlays();
-  const errs = checkAccept(v);
+  v.errs.push(...markErrors(), ...checkAccept(v));
   const got=sumRows();
   if(!(G.day>=4 && G.stop.has(G.loaded.code))) LAYER.forEach(c=>{ if(got[c]) G.stock[c]=Math.max(0,G.stock[c]-got[c]); });
   renderStock();
-  say('Заявка принята, отгрузка завтра.', 'me'); sfx('stamp');
-  G.docNo++; resetForm();
-  judge(errs);
-  finishVisitor(errs.length && expected(v).refuse ? 'neutral':'happy', pick(v.client.cat==='military'?['Благодарю. Разрешите идти.','Спасибо, до завтра.']:['Спасибо!','Благодарю, до завтра.','Спасибо, хорошего дня.','Отлично, спасибо.']));
+  G.posted=true; v.accepted=true; v.phase='sum';
+  dom.onec.classList.add('posted'); dom.code.disabled=true;
+  renderDocHead(); renderRows(); renderCard();
+  status(`Документ проведён. Сумма: ${money(docSum())} грн`, 'ok'); sfx('stamp');
+  renderReplies(); updateHint();
 }
-function doRefuse(){
-  const v=G.visitor; if(!v || v.done) return;
-  closeF7(); closeOverlays();
-  const exp=expected(v);
-  say('Извините, заявку принять не могу.', 'me'); sfx('stamp');
-  G.docNo++; resetForm();
-  let react;
-  if(exp.refuse){
-    judge([]);
-    const why=exp.why;
-    react = why.startsWith('Клиент в стоп') ? pick(['Какой ещё долг? Я же платил!.. Ладно, разберусь с бухгалтерией.','Опять эта бухгалтерия. Ладно, завтра занесу.'])
-      : why.includes('без печати') ? pick(['Печать забыли? Эх… вернусь с печатью.','Командир подписал, а печать… Ладно, схожу.'])
-      : why.includes('не совпадает') ? pick(['Как не та печать?! …Ладно, я сейчас.','Хм. Это не наша печать? Разберусь.'])
-      : pick(['Ну мало, и что… Ладно, через склад закажем.','Понял, через центральный склад.']);
-  } else {
-    judge(['Необоснованный отказ: заявку следовало принять.']);
-    react = pick(['За что?! Я буду жаловаться!','Вы серьёзно? Всю жизнь у вас берём!','Где ваш начальник?!']);
-  }
-  finishVisitor('angry', react);
-}
-function askClarify(){
-  const v=G.visitor; if(!v || v.done) return;
-  v.asked++;
-  say(pick(['Уточните, пожалуйста.','Повторите, пожалуйста.','Подождите, давайте уточним.']), 'me');
-  const c=v.client, fem=c.person.female;
-  later(700, ()=>{
-    if(G.visitor!==v || v.done) return;
-    if(v.asked>3){ say('Я же всё сказал'+(fem?'а':'')+'! Сколько можно?'); return; }
-    if(v.codeMode==='wrong' && !v.corrected){ v.corrected=true; say(`Ой, извините, перепутал${fem?'а':''}. Правильно — ${c.code}.`); return; }
-    if(v.codeMode==='none'){ say(`Кода не знаю, правда. Найдите по фамилии: ${c.person.sur}, ${c.short}.`); return; }
-    if(v.paper){ say('Там в заявке всё написано.' + (v.change&&v.change.fired ? ' Только с поправкой, что я сказал'+(fem?'а':'')+'.' : '')); return; }
-    say(`Повторяю: ${orderPhrase(v.order)}.`);
+function saySum(raw){
+  const v=G.visitor; if(!v || v.phase!=='sum') return;
+  const val=parseFloat(String(raw).replace(/[\s ]/g,'').replace(',','.'));
+  if(isNaN(val)){ status('Впишите сумму числом — она внизу 1С, «Сумма».', 'err'); sfx('err'); return; }
+  const s=docSum();
+  say(`Сумма вашего заказа составляет ${money(val)} грн.`, 'me');
+  if(Math.abs(val-s)>0.005) v.errs.push(`Названа сумма ${money(val)} грн, а в документе ${money(s)} грн.`);
+  v.phase='wait2'; renderReplies(); updateHint();
+  later(750, ()=>{
+    if(G.visitor!==v) return;
+    say(pick(['Хорошо, спасибо. Заявку верните, пожалуйста.','Понятно. Бумажку мою верните.','Как обычно. Заявку отдайте, пожалуйста.']));
+    v.phase='return'; renderReplies(); updateHint();
   });
 }
-function fireChange(v){
-  if(G.visitor!==v || v.done || !v.change || v.change.fired) return;
-  const ch=v.change; ch.fired=true; const fem=v.client.person.female;
-  if(ch.type==='qty'){ v.order[ch.code]=ch.to; say(`Ой, подождите! ${cap(GEN[ch.code])} не ${ch.from}, а ${ch.to}.`); }
-  else if(ch.type==='add'){ v.order[ch.code]=ch.to; say(`И ещё, чуть не забыл${fem?'а':''}: ${pick(SAY[ch.code])(ch.to)}.`); }
-  else { delete v.order[ch.code]; say(`Слушайте, ${GEN[ch.code]} не надо. Уберите.`); }
-  sfx('msg');
-}
-function finishVisitor(mood, reaction){
-  const v=G.visitor; v.done=true; updateHint();
-  later(300, ()=>{ v.client.look.mood=mood; dom.visitor.innerHTML=portrait(v.client.look); dom.visitor.firstChild.style.animation='none'; say(reaction); });
-  later(2000, ()=>{ dom.visitor.classList.remove('in'); dom.visitor.classList.add('out'); });
-  later(2800, ()=>{
-    v.client.look.mood='neutral';
-    G.visitor=null; dom.docs.innerHTML=''; refreshDesk();
-    if(G.shiftOver){ endShift(); return; }
-    G.queue = Math.max(1, Math.min(7, G.queue + rint(-1,1)));
-    renderQueue(); updateHint();
-    later(rint(800,1800), spawnVisitor);
+function doRefuse(id){
+  const v=G.visitor; if(!v || v.phase!=='work') return;
+  if(!needCard()) return;
+  closeF7(); closeOverlays();
+  const r=REASONS.find(x=>x.id===id);
+  say(r.say,'me'); sfx('stamp');
+  v.errs.push(...markErrors());
+  const exp=expected(v);
+  if(!exp.refuse) v.errs.push('Необоснованный отказ: заявку следовало принять.');
+  else if(exp.reason!==id) v.errs.push(`Неверная причина отказа. Верная: «${REASONS.find(x=>x.id===exp.reason).short}».`);
+  G.posted='refused'; v.refused=true; v.phase='wait2';
+  dom.onec.classList.add('refused'); dom.code.disabled=true;
+  renderDocHead(); renderCard(); renderReplies(); updateHint();
+  const right = exp.refuse && exp.reason===id;
+  const react = !right ? pick(['За что?! Я буду жаловаться!','Вы серьёзно? Всю жизнь у вас берём!','Где ваш начальник?!'])
+    : id==='stop' ? pick(['Какой ещё долг? Я же платил!.. Ладно, разберусь с бухгалтерией.','Опять эта бухгалтерия. Ладно, завтра занесу.'])
+    : id==='nostamp' ? pick(['Печать забыли? Эх… вернусь с печатью.','Командир подписал, а печать… Ладно, схожу.'])
+    : id==='wrongstamp' ? pick(['Как не та печать?! …Ладно, я сейчас.','Хм. Это не наша печать? Разберусь.'])
+    : pick(['Ну мало, и что… Ладно, через склад закажем.','Понял, через центральный склад.']);
+  later(700, ()=>{
+    if(G.visitor!==v) return;
+    setMood(v,'angry'); say(react);
+    v.phase='return'; renderReplies(); updateHint();
   });
 }
 function spawnVisitor(){
-  if(G.shiftOver || G.screen!=='shift'){ return; }
+  if(G.shiftOver || G.screen!=='shift') return;
   const v = makeVisitor();
   G.visitor=v; G.servedToday.add(v.client.code);
-  dom.dialog.innerHTML=''; renderDocHead();
+  dom.log.innerHTML=''; renderDocHead(); renderReplies();
   const el=dom.visitor; el.style.transition='none'; el.className='visitor'; el.innerHTML=portrait(v.client.look);
   void el.offsetWidth; el.style.transition=''; el.classList.add('in');
   sfx('bell');
-  later(700, ()=>{ if(G.visitor===v && !v.done) say(v.lines.intro); });
-  later(1700, ()=>{ if(G.visitor!==v || v.done) return; say(v.lines.order); if(v.paper) showPaper(v); });
+  later(850, ()=>{
+    if(G.visitor!==v) return;
+    say(v.client.cat==='military' ? pick(['Здравия желаю!','Добрый день.']) : pick(G.minutes<660?['Доброе утро!','Здравствуйте!','Здрасьте.']:['Добрый день!','Здравствуйте.','Здрасьте.']));
+    v.phase='greet'; renderReplies(); updateHint();
+  });
   updateHint();
 }
 
@@ -1153,8 +1436,8 @@ function onMinute(){
   if(G.minutes>=SHIFT_END){
     G.shiftOver=true;
     say('17:00 — смена окончена.', 'sys');
-    if(G.visitor && !G.visitor.done){ status('17:00. Смена окончена — дообслужите посетителя у окна.', 'info'); }
-    else if(!G.visitor){ endShift(); }
+    if(G.visitor){ status('17:00. Смена окончена — дообслужите посетителя у окна.', 'info'); }
+    else endShift();
   }
 }
 function factoryEvent(){
@@ -1172,7 +1455,7 @@ function factoryEvent(){
 function setupDay(){
   const d=G.day;
   G.minutes = G.sick ? 570 : SHIFT_START; G.t=0; G.clockAcc=0; G.timers=[]; G.shiftOver=false; G.event12=false; G.paused=false;
-  G.dServed=0; G.dCorrect=0; G.dErrors=0; G.dEarn=0; G.dFines=0; G.vIdx=0; G.visitor=null; G.servedToday=new Set(); G.queue=rint(2,5);
+  G.archived=0; G.dServed=0; G.dCorrect=0; G.dErrors=0; G.dEarn=0; G.dFines=0; G.vIdx=0; G.visitor=null; G.servedToday=new Set(); G.queue=rint(2,5);
   if(d<=2){ G.stock={'5320':200,'5318':200}; }
   else if(d===3){ G.stock={'5320':rstep(75,90,5),'5318':rstep(60,75,5)}; }
   else { G.stock={'5320':rstep(50,85,5),'5318':rstep(45,80,5)}; }
@@ -1187,7 +1470,7 @@ function setupDay(){
 function startShift(){
   setupDay();
   G.screen='shift'; dom.screen.hidden=true; $('#closedSign').hidden=true;
-  dom.dialog.innerHTML=''; dom.docs.innerHTML=''; dom.slips.innerHTML=''; refreshDesk();
+  dom.log.innerHTML=''; dom.replies.innerHTML=''; dom.docs.querySelectorAll('.paper').forEach(x=>x.remove()); refreshDesk(); dom.archN.textContent='0'; scanBusy=false; dom.scanner.classList.remove('busy');
   dom.visitor.className='visitor'; dom.visitor.innerHTML='';
   resetForm(); renderHud(); renderQueue(); renderStock(); renderDocHead();
   say(`${hhmm(G.minutes)} — окошко открыто.`, 'sys');
@@ -1199,7 +1482,7 @@ function startShift(){
 }
 function endShift(){
   if(!G.running) return;
-  G.running=false; G.screen='end'; closeF7(); closeOverlays(); $('#closedSign').hidden=false; dom.visitor.className='visitor';
+  G.running=false; G.screen='end'; closeF7(); closeOverlays(); endDrag(); dom.replies.innerHTML=''; $('#closedSign').hidden=false; dom.visitor.className='visitor';
   status('Смена закрыта.', '');
   setTimeout(showLedger, 900);
 }
@@ -1219,7 +1502,7 @@ function titleScreen(){
   <div class="num">№ 214-к от ${fmtDate(dayDate(0))} · о приёме на работу</div>
   <p>Принять на должность <b>оператора отдела заявок</b> с ${fmtDate(dayDate(1))} с испытательным сроком 7 дней.</p>
   <p>Обязанности: приём заявок от клиентов через окно №2 и внесение их в 1С без ошибок. Клиенты: больницы, воинские части, частные магазины, школы и детсады, торговые сети.</p>
-  <p>Оплата сдельная — ${PAY} грн за заявку. Из зарплаты оплачиваются аренда комнаты, проезд, еда и отопление.</p>
+  <p>Оплата сдельная — ${PAY} грн за посетителя, обслуженного без ошибок. Из зарплаты оплачиваются аренда комнаты, проезд, еда и отопление.</p>
   <div class="signrow"><span>Директор</span><span class="sig">Гордиенко</span><span>В. П. Гордиенко</span></div>
   ${hqStamp(-14)}
 </div>
@@ -1228,9 +1511,10 @@ function titleScreen(){
   ${sv?`<button class="gbtn ghost" id="sCont">ПРОДОЛЖИТЬ · ДЕНЬ ${sv.day}</button>`:''}
 </div>
 <div class="keys">
-  <span><kbd>Enter</kbd> найти клиента</span><span><kbd>F7</kbd> ввод позиций</span><span><kbd>391-10</kbd> код-кол-во</span>
-  <span><kbd>F9</kbd> провести</span><span><kbd>F8</kbd> отказ</span><span><kbd>F3</kbd> уточнить</span>
+  <span><kbd>Enter</kbd> найти клиента</span><span><kbd>F7</kbd> ввод позиций</span><span><kbd>391↵10↵</kbd> код, кол-во</span>
+  <span><kbd>F9</kbd> провести</span><span><kbd>F8</kbd> отказать</span><span><kbd>F3</kbd> уточнить код</span>
   <span><kbd>F4</kbd> справочник</span><span><kbd>Del</kbd> удалить строку</span><span><kbd>F2</kbd> инструкция</span>
+  <span><kbd>мышь</kbd> реплики, ✓/✗</span><span><kbd>тащить</kbd> скан, архив, окно</span><span><kbd>клик</kbd> заявка крупно</span>
 </div>`);
   $('#sNew').onclick = ()=>{ newGame(); };
   if(sv) $('#sCont').onclick = ()=>{ Object.assign(G, sv); CL=buildClients(G.seed); briefScreen(); };
@@ -1364,23 +1648,27 @@ function finalScreen(){
 function togglePause(){
   if(G.screen!=='shift') return;
   G.paused=!G.paused; $('#pauseOv').hidden=!G.paused; $('#btnPause').textContent=G.paused?'Продолжить':'Пауза';
-  if(G.paused) $('#btnResume').focus(); else { lastTs=performance.now(); dom.code.focus(); }
+  if(G.paused){ endDrag(); $('#btnResume').focus(); } else { lastTs=performance.now(); dom.code.focus(); }
 }
 document.addEventListener('keydown', e=>{
   const k=e.key;
   if(/^F([2-9]|1[0-2])$/.test(k)) e.preventDefault();
   if(G.screen!=='shift') return;
-  if(k==='Escape'){ if(closeF7()||closeOverlays()){ e.preventDefault(); if(dom.f7.hidden) dom.tableWrap.focus({preventScroll:true}); } return; }
+  if(k==='Escape'){ if(closeOverlays()||closeF7()){ e.preventDefault(); } return; }
   if(G.paused) return;
   const typing = e.target && e.target.tagName==='INPUT';
+  const v=G.visitor;
   switch(k){
     case 'F2': $('#rulesOv').hidden ? openRules() : closeOverlays(); break;
-    case 'F3': askClarify(); break;
+    case 'F3': askCode(); break;
     case 'F4': $('#dirOv').hidden ? openDir() : closeOverlays(); break;
     case 'F7': openF7(); break;
-    case 'F8': doRefuse(); break;
+    case 'F8': toggleRefuse(); break;
     case 'F9': doAccept(); break;
     case 'Delete': if(!typing){ e.preventDefault(); deleteSel(); } break;
+    case '1': case '2': case '3':
+      if(!typing && v && v.phase==='greet'){ e.preventDefault(); replyGreet(GREETS[+k-1]); }
+      break;
     case 'ArrowDown': case 'ArrowUp':
       if(e.target===dom.tableWrap && G.rows.length){ e.preventDefault(); G.sel=Math.max(0,Math.min(G.rows.length-1,G.sel+(k==='ArrowDown'?1:-1))); renderRows(); }
       break;
@@ -1389,18 +1677,26 @@ document.addEventListener('keydown', e=>{
 dom.code.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); loadClient(dom.code.value); } });
 dom.code.addEventListener('input', ()=>{ const v=dom.code.value.replace(/\D/g,''); if(v!==dom.code.value) dom.code.value=v; });
 $('#bFind').onclick = ()=>loadClient(dom.code.value);
-dom.f7in.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submitF7(); } });
-$('#f7ok').onclick = submitF7;
+dom.f7code.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); f7CodeEnter(); } });
+dom.f7code.addEventListener('input', ()=>{ dom.f7code.value=dom.f7code.value.replace(/\D/g,''); dom.f7name.textContent=''; });
+dom.f7qty.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); f7QtyEnter(); } else if(e.key==='Backspace' && !dom.f7qty.value){ e.preventDefault(); dom.f7code.focus(); } });
+dom.f7qty.addEventListener('input', ()=>{ dom.f7qty.value=dom.f7qty.value.replace(/\D/g,''); });
+$('#f7ok').onclick = f7QtyEnter;
 $('#f7x').onclick = ()=>closeF7();
-$('#bAdd').onclick = openF7; $('#bAccept').onclick = doAccept; $('#bRefuse').onclick = doRefuse; $('#bAsk').onclick = askClarify; $('#bDir').onclick = openDir;
+$('#bAdd').onclick = openF7; $('#bAccept').onclick = doAccept; $('#bRefuse').onclick = toggleRefuse; $('#bDir').onclick = openDir;
 $('#btnRules').onclick = ()=>{ if(G.screen==='shift') openRules(); };
 $('#rulesX').onclick = ()=>{ $('#rulesOv').hidden=true; };
 $('#dirX').onclick = ()=>{ $('#dirOv').hidden=true; };
+$('#zoomOv').addEventListener('click', ()=>{ $('#zoomOv').hidden=true; });
 $('#btnPause').onclick = togglePause; $('#btnResume').onclick = togglePause;
 $('#btnSound').onclick = ()=>{ soundOn=!soundOn; $('#btnSound').textContent='Звук: '+(soundOn?'вкл':'выкл'); try{localStorage.setItem('otdel-zayavok-sound',soundOn?'1':'0');}catch(e){} };
 dom.rows.addEventListener('click', e=>{
   const del=e.target.closest('[data-del]'); if(del){ G.sel=+del.dataset.del; deleteSel(); return; }
   const tr=e.target.closest('tr[data-i]'); if(tr){ G.sel=+tr.dataset.i; renderRows(); dom.tableWrap.focus({preventScroll:true}); }
+});
+dom.card.addEventListener('click', e=>{
+  const b=e.target.closest('button[data-f]'); if(!b || !G.loaded || G.posted) return;
+  G.marks[b.dataset.f] = b.dataset.v==='1'; sfx('add'); renderCard(); updateHint();
 });
 $('#dirQ').addEventListener('input', ()=>{ dirSel=0; renderDir(); });
 $('#dirQ').addEventListener('keydown', e=>{
