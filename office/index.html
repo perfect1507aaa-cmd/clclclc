@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Рабочее место №2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=PT+Mono&family=PT+Sans:wght@400;700&display=swap" />
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #111317;
+    --panel: rgba(18, 20, 24, 0.8);
+    --panel-solid: #17191e;
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #f0eee7;
+    --muted: #a9a59a;
+    --accent: #ffd24a;
+    --accent-ink: #2b2206;
+    --good: #86cc8d;
+    --bad: #ff7a66;
+    --sans: "PT Sans", "Liberation Sans", Arial, sans-serif;
+    --mono: "PT Mono", "Liberation Mono", monospace;
+  }
+  html, body { height: 100%; margin: 0; overflow: hidden; background: var(--ink); color: var(--text); font-family: var(--sans); font-size: 15px; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  kbd { font-family: var(--mono); font-size: 12px; padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--text); }
+
+  /* ---------- intro ---------- */
+  #intro { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: linear-gradient(180deg, rgba(10, 12, 15, 0.35), rgba(10, 12, 15, 0.7)); z-index: 20; }
+  .card { width: min(520px, calc(100vw - 32px)); box-sizing: border-box; max-height: calc(100% - 8px); overflow-y: auto; background: var(--panel-solid); border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: 6px; padding: 28px 28px 24px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); display: grid; gap: 16px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .card h1 { margin: 0; font-size: 34px; line-height: 1.05; text-wrap: balance; }
+  .card p { margin: 0; color: #d2cfc6; line-height: 1.5; }
+  .controls { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 9px; }
+  .controls li { display: grid; grid-template-columns: 148px 1fr; gap: 12px; align-items: baseline; color: #d7d4cb; }
+  .controls li span:first-child { display: flex; gap: 4px; flex-wrap: wrap; }
+  .primary { justify-self: start; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 4px; padding: 11px 22px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+  .primary:hover { filter: brightness(1.06); }
+  .fineprint { font-size: 13px; color: var(--muted); }
+
+  /* ---------- HUD ---------- */
+  .hud { position: fixed; z-index: 5; pointer-events: none; }
+  .hud button { pointer-events: auto; }
+  #hud-left { top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; display: grid; gap: 10px; max-width: min(360px, calc(100vw - 32px)); }
+  .plate { display: flex; gap: 12px; align-items: baseline; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 7px 12px; backdrop-filter: blur(6px); }
+  .plate b { font-size: 14px; }
+  #hud-time { font-family: var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+  #tasks { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 10px 12px; backdrop-filter: blur(6px); display: grid; gap: 8px; }
+  #tasks header { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  #premium { font-family: var(--mono); color: var(--good); letter-spacing: 0; text-transform: none; font-size: 13px; }
+  #task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  #task-list li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: start; font-size: 14px; line-height: 1.3; }
+  #task-list .box { width: 12px; height: 12px; margin-top: 3px; border: 1.5px solid var(--accent); border-radius: 2px; }
+  #task-list li.done { color: var(--muted); text-decoration: line-through; }
+  #task-list li.done .box { background: var(--good); border-color: var(--good); }
+
+  #hud-right { top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; display: flex; gap: 8px; }
+  .ghost { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 7px 12px; cursor: pointer; font-size: 14px; }
+  .ghost:hover { border-color: rgba(255, 255, 255, 0.3); }
+
+  #help-look { position: fixed; left: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); font-size: 13px; color: rgba(240, 238, 231, 0.75); text-shadow: 0 1px 2px #000; z-index: 4; pointer-events: none; max-width: calc(100vw - 32px); }
+
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45); z-index: 5; pointer-events: none; transition: transform 0.12s; }
+  #crosshair.active { transform: scale(1.8); background: var(--accent); }
+  #hint { position: fixed; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; font-size: 14px; white-space: nowrap; z-index: 6; pointer-events: none; }
+  #hint::before { content: "ЛКМ · "; color: var(--accent); font-family: var(--mono); font-size: 12px; }
+  #hint.at-pointer { transform: translateX(-50%); }
+
+  #ring { top: calc(62px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); background: var(--bad); color: #2a0d08; font-weight: 700; padding: 7px 16px; border-radius: 999px; animation: pulse 0.5s ease-in-out infinite alternate; white-space: nowrap; }
+  @keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.06); } }
+  #notify { position: fixed; top: calc(108px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -8px); opacity: 0; transition: opacity 0.25s, transform 0.25s; background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent); padding: 8px 14px; border-radius: 4px; z-index: 7; pointer-events: none; max-width: calc(100vw - 32px); }
+  #notify.show { opacity: 1; transform: translate(-50%, 0); }
+  #notify.good { border-left-color: var(--good); }
+
+  #subs { position: fixed; left: 50%; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(680px, calc(100vw - 32px)); background: rgba(12, 13, 16, 0.84); border: 1px solid var(--line); border-radius: 6px; padding: 10px 16px 12px; z-index: 8; display: grid; gap: 4px; }
+  #subs-who { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  #subs.phone #subs-who::before { content: "☏  "; }
+  #subs.tip { border-color: rgba(255, 210, 74, 0.45); }
+  #subs.tip #subs-text { color: var(--accent); }
+  #subs-text { font-size: 17px; line-height: 1.4; }
+  #subs-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  #subs-choices:empty { display: none; }
+  .choice { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line); border-radius: 4px; padding: 7px 12px; cursor: pointer; }
+  .choice:hover { border-color: var(--accent); }
+
+  #leave { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 9; display: none; }
+  body.working #leave { display: block; }
+  body.working #hud-left .plate { opacity: 0.35; }
+  body.working #help-look { display: none; }
+  body.working #crosshair, body.working #hint { display: none; }
+  body.working #subs { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: auto; width: min(560px, calc(100vw - 32px)); padding: 7px 14px 9px; }
+  body.working #subs-text { font-size: 15px; }
+  body.working #ring, body.working #notify { left: auto; right: 16px; transform: none; animation: none; }
+  body:not(.started) .hud, body:not(.started) #help-look, body:not(.started) #crosshair { visibility: hidden; }
+
+  #numpad { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 52px); gap: 6px; z-index: 9; background: var(--panel); padding: 8px; border-radius: 6px; border: 1px solid var(--line); }
+  #numpad button { height: 44px; border-radius: 4px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08); font-family: var(--mono); font-size: 18px; }
+  #numpad button.ok { background: var(--accent); color: var(--accent-ink); font-family: var(--sans); font-weight: 700; font-size: 15px; }
+
+  @media (max-width: 600px) {
+    .card { padding: 22px 18px 18px; }
+    .card h1 { font-size: 28px; }
+    .controls li { grid-template-columns: 1fr; gap: 2px; }
+    #tasks { display: none; }
+    #subs-text { font-size: 15px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #ring { animation: none; } #notify { transition: none; } }
+</style>
+</head>
+<body>
+  <canvas id="scene" tabindex="0" aria-label="Трёхмерный офис: вид от первого лица с рабочего места"></canvas>
+
+  <div id="intro">
+    <div class="card">
+      <div class="eyebrow">ООО «Вектор» · бухгалтерия · каб. 214</div>
+      <h1>Рабочее место №2</h1>
+      <p>Вы новый бухгалтер. Кресло, стол, монитор с 1Ц:Предприятием, телефон слева и два соседа: главбух Людмила Петровна и менеджер Серёга. Вставать нельзя — только сидеть, крутиться в кресле и работать.</p>
+      <ul class="controls">
+        <li><span>Мышь</span><span>осмотреться, кресло поворачивается</span></li>
+        <li><span>ЛКМ по монитору <kbd>F</kbd></span><span>работать в 1Ц</span></li>
+        <li><span>ЛКМ по предмету <kbd>E</kbd></span><span>телефон, кружка, лампа, степлер, соседи</span></li>
+        <li><span><kbd>Esc</kbd> <kbd>ПКМ</kbd></span><span>откинуться от монитора</span></li>
+      </ul>
+      <button id="start" class="primary">Сесть за стол</button>
+      <div class="fineprint">Задачи приходят по телефону и от коллег. Звук синтезируется в браузере.</div>
+    </div>
+  </div>
+
+  <div id="hud-left" class="hud">
+    <div class="plate"><b>Место №2 · ООО «Вектор»</b><span id="hud-time">--:--</span></div>
+    <section id="tasks" hidden>
+      <header><span>Задачи</span><span>Премия: <span id="premium">0 ₽</span></span></header>
+      <ul id="task-list"></ul>
+    </section>
+  </div>
+  <div id="hud-right" class="hud">
+    <button id="mute" class="ghost" aria-pressed="false">Звук вкл.</button>
+  </div>
+  <div id="ring" class="hud" hidden>Звонит телефон — слева на столе</div>
+  <div id="notify" role="status"></div>
+  <div id="crosshair" hidden></div>
+  <div id="hint" hidden></div>
+  <div id="help-look"></div>
+  <button id="leave" class="ghost">← Откинуться на спинку <kbd>Esc</kbd></button>
+
+  <div id="subs" hidden aria-live="polite">
+    <div id="subs-who"></div>
+    <div id="subs-text"></div>
+    <div id="subs-choices"></div>
+  </div>
+
+  <div id="numpad" hidden>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="0">0</button><button data-k=",">,</button><button data-k="Backspace">⌫</button>
+    <button data-k="Escape">✕</button><button data-k="Enter" class="ok" style="grid-column: span 2">Готово</button>
+  </div>
+
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  } }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
