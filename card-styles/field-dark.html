@@ -245,6 +245,7 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
     <div class="actions">
       <button class="btn" id="end" type="button">Конец хода</button>
       <button class="btn ghost" id="reset" type="button">Заново</button>
+      <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук: вкл</button>
       <span class="hint" id="hint"></span>
     </div>
   </section>
@@ -286,6 +287,7 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
       </ul></div>
     </div>
   </details>
+  <p class="hint" style="margin-top:10px">Звук: настоящие записи с лицензией CC0 — Kenney.nl и авторы OpenGameArt.org (список в sfx/CREDITS.md).</p>
 
 
   <h2>Иконки</h2>
@@ -472,9 +474,47 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const D = ms => Math.round(ms * (RM ? 0.2 : 0.8));
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
-/* ---------- sound: none for now ----------
-   All sound was removed. The game still calls these hooks, so a new pack can be plugged in here later. */
-const Sfx = {play(){}, hurt(){}, die(){}};
+/* ---------- sound ----------
+   Real recordings only (CC0, see sfx/CREDITS.md): cards, footsteps, bows, blades, hooves, voices, a real dog.
+   Each event has a few takes in sfx/; one is picked at random and nudged slightly in pitch and level. */
+const SFX_TAKES = {"draw":3,"pick":3,"fly":2,"place":2,"camp":2,"move":3,"turn":2,"up":2,"spill":2,"hero":3,"win":1,"lose":1,"peasant":3,"archer":4,"footman":3,"griffin":2,"priest":2,"cavalier":3,"angel":2,"imp":2,"demon":2,"hound":3,"succubus":2,"charger":2,"fiend":2,"devil":2,"pixie":2,"dancer":3,"hunter":4,"druid":2,"unicorn":2,"treant":2,"gdragon":2,"hurt-man":5,"hurt-armor":3,"hurt-beast":3,"hurt-dog":3,"hurt-demon":3,"hurt-fae":2,"hurt-wood":3,"die-man":3,"die-armor":2,"die-beast":2,"die-dog":2,"die-demon":2,"die-fae":2,"die-wood":1};
+const SFX_KIND = {peasant:'man', archer:'man', priest:'man', hunter:'man', druid:'man', dancer:'man', footman:'armor', cavalier:'armor', angel:'armor',
+  griffin:'beast', unicorn:'beast', charger:'beast', gdragon:'beast', hound:'dog', imp:'demon', demon:'demon', fiend:'demon', devil:'demon', pixie:'fae', succubus:'fae', treant:'wood'};
+const Sfx = (() => {
+  let ctx = null, bus = null, on = true;
+  const bufs = {}, last = {};
+  try { on = localStorage.getItem('fieldDarkSound') !== 'off'; } catch (e) {}
+  function init(){
+    if (ctx) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    ctx = new AC(); bus = ctx.createGain(); bus.gain.value = .85; bus.connect(ctx.destination);
+    for (const [k, n] of Object.entries(SFX_TAKES)) for (let i = 1; i <= n; i++) load(`${k}-${i}`);
+    return ctx;
+  }
+  function load(f){
+    return bufs[f] || (bufs[f] = fetch(`sfx/${f}.mp3`).then(r => r.ok ? r.arrayBuffer() : null)
+      .then(a => a && new Promise(res => ctx.decodeAudioData(a, res, () => res(null)))).catch(() => null));
+  }
+  function play(name, vol = 1){
+    const n = SFX_TAKES[name]; if (!on || !n || !init()) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    let i = 1 + Math.floor(Math.random() * n); if (n > 1 && i === last[name]) i = i % n + 1; last[name] = i;
+    const asked = performance.now();
+    load(`${name}-${i}`).then(b => {
+      if (!b || !on || performance.now() - asked > 250) return;   // never play a sound late, out of step with the picture
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = b; src.playbackRate.value = 1 + (Math.random() - .5) * .07; g.gain.value = vol * (.88 + Math.random() * .12);
+      src.connect(g).connect(bus); src.start();
+    });
+  }
+  const kind = u => SFX_KIND[U(u).key] || 'man';
+  addEventListener('pointerdown', () => { if (on && init() && ctx.state === 'suspended') ctx.resume(); }, {capture:true});
+  return {
+    play, hurt: u => play('hurt-' + kind(u)), die: u => play('die-' + kind(u)),
+    get on(){ return on; },
+    toggle(){ on = !on; try { localStorage.setItem('fieldDarkSound', on ? 'on' : 'off'); } catch (e) {} if (on) play('pick'); return on; },
+  };
+})();
 
 /* ---------- state ---------- */
 let S, SHOW_ARROWS = true, uid = 1;
@@ -1261,6 +1301,8 @@ $('#bwrap').addEventListener('click', async e => {
 });
 $('#end').onclick = endTurn;
 $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
+const sndBtn = $('#snd'), sndShow = () => { sndBtn.textContent = 'Звук: ' + (Sfx.on ? 'вкл' : 'выкл'); sndBtn.setAttribute('aria-pressed', Sfx.on); };
+sndBtn.onclick = () => { Sfx.toggle(); sndShow(); }; sndShow();
 
 function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
