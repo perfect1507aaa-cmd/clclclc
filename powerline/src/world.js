@@ -10,6 +10,7 @@ export class World {
     this.time = 0;
     this.snakes = [];
     this.ranked = [];
+    this.feasts = []; // fresh remains that draw greedy players in: {pts, value, t, killer}
     this.nextId = 1;
     this.events = [];
     this.grid = new SegmentGrid(this.size, CFG.SEG_CELL);
@@ -80,6 +81,7 @@ export class World {
     if (!s.alive) return;
     s.alive = false;
     this.food.dropBody(s);
+    this.addFeast(s, null);
     this.events.push({ type: 'leave', snake: s });
   }
 
@@ -87,8 +89,19 @@ export class World {
     if (!s.alive) return;
     s.alive = false;
     this.food.dropBody(s);
+    this.addFeast(s, killer && killer !== s ? killer : null);
     if (killer && killer !== s) killer.kills++;
     this.events.push({ type: 'death', snake: s, killer: killer && killer !== s ? killer : null, reason });
+  }
+
+  addFeast(s, killer) {
+    const value = s.score * CFG.DEATH_DROP;
+    if (value < 25) return;
+    const pts = [];
+    s.sampleBody(Math.max(120, s.curLen / 6), (x, y) => {
+      if (pts.length < 8) pts.push({ x, y });
+    });
+    this.feasts.push({ pts, value, t: this.time, killer, victim: s });
   }
 
   // ---------- queries ----------
@@ -197,6 +210,7 @@ export class World {
     this._rankTimer -= dt;
     if (this._rankTimer <= 0) {
       this._rankTimer = 0.25;
+      if (this.feasts.length) this.feasts = this.feasts.filter((f) => this.time - f.t < 25);
       this.ranked = snakes.slice().sort((a, b) => b.score - a.score);
       for (let i = 0; i < this.ranked.length; i++) {
         const s = this.ranked[i];

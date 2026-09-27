@@ -59,11 +59,32 @@ export class Sound {
     o.stop(t + dur + 0.02);
   }
 
+  // Bright bell-like "ting"; quick pickups in a row climb in pitch.
   eat() {
+    if (!this.ctx) return;
     const now = performance.now();
-    if (now - this.lastEat < 45) return;
+    if (now - this.lastEat < 40) return;
+    this.combo = now - this.lastEat < 450 ? Math.min((this.combo || 0) + 1, 12) : 0;
     this.lastEat = now;
-    this._tone(900 + Math.random() * 500, 0.06, 'sine', 0.035, 1.5);
+    const f = 1568 * 2 ** (this.combo / 6); // whole-tone steps from G6
+    const t = this.ctx.currentTime;
+    const partials = [
+      [1, 0.05, 0.45],
+      [2.76, 0.018, 0.22], // inharmonic partial gives the metallic ring
+      [5.4, 0.008, 0.1],
+    ];
+    for (const [mul, vol, dur] of partials) {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f * mul;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(this.master);
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    }
   }
 
   kill() {

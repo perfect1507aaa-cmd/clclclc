@@ -32,7 +32,7 @@ export function botName(type) {
     const n = pick(NEWBIE);
     return chance(0.2) ? withEmoji(n) : n;
   }
-  if (type === 'pro' || type === 'hunter') {
+  if (type === 'pro' || type === 'killer') {
     let n = pick(PRO_CORE);
     if (chance(0.4)) n = n.toUpperCase();
     if (chance(0.25)) n += Math.floor(Math.random() * 99);
@@ -51,4 +51,9 @@ export function botName(type) {
   if (chance(0.3)) n = withEmoji(n);
   if (chance(0.15)) n = n.toUpperCase();
   return n;
+}
+
+export function regularName() {
+  const n = pick(PRO_CORE);
+  return chance(0.4) ? n.toUpperCase() : n;
 }

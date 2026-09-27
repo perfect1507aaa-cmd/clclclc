@@ -13,7 +13,7 @@ let shown = 0;
 const origKill = world.kill.bind(world);
 world.kill = (s, killer, reason) => {
   const types = want.split(',');
-  if (types.includes(s.owner.persona.type) && shown < 4 && world.time > 5) {
+  if ((types.includes(s.owner.persona.type) || (types.includes('regular') && s.owner.persona.regular)) && shown < 4 && world.time > 5) {
     shown++;
     const h = s.head;
     const C = 18; const W = 70, H = 34;
@@ -34,7 +34,7 @@ world.kill = (s, killer, reason) => {
       if (gx >= 0 && gy >= 0 && gx < W && gy < H) grid[gy][gx] = o === s ? '@' : ch.toUpperCase();
     }
     console.log(`=== ${s.owner.persona.type} (${s.name}) ${reason} killer=${killer && killer !== 'wall' ? letters.get(killer) + ' ' + killer.owner.persona.type : '-'} dir=${s.dir} spd=${s.speed.toFixed(0)} w=${s.w.toFixed(0)} cell=${C}`);
-    console.log(s.brain.log.slice(-5).join('\n'));
+    console.log(s.brain.mode, s.brain.log.slice(-14).join('\n'));
     console.log(grid.map((r) => '|' + r.join('') + '|').join('\n'));
   }
   origKill(s, killer, reason);

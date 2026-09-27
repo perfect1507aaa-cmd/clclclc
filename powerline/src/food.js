@@ -11,6 +11,12 @@ export class FoodField {
     this.moving = [];
     this.ambient = 0;
     this.grid = new PointGrid(size, CFG.FOOD_CELL);
+    // Rich "pastures" that slowly drift; most ambient food appears there, so
+    // players naturally gather instead of spreading evenly over the map.
+    this.zones = Array.from({ length: 4 }, () => {
+      const a = rand(Math.PI * 2);
+      return { x: rand(900, size - 900), y: rand(900, size - 900), r: rand(550, 750), vx: Math.cos(a) * 12, vy: Math.sin(a) * 12 };
+    });
   }
 
   add(x, y, v, color, ambient, vx = 0, vy = 0) {
@@ -24,16 +30,24 @@ export class FoodField {
   spawnAmbient(count) {
     const m = 40;
     for (let i = 0; i < count; i++) {
+      const inZone = Math.random() < 0.75;
+      const z = inZone ? pick(this.zones) : null;
+      const a = rand(Math.PI * 2);
+      const rr = z ? Math.sqrt(Math.random()) * z.r : 0;
       // Slight clustering: a third of ambient food appears in small clumps.
       if (Math.random() < 0.33) {
-        const cx = rand(m, this.size - m);
-        const cy = rand(m, this.size - m);
+        const cx = z ? z.x + Math.cos(a) * rr : rand(m, this.size - m);
+        const cy = z ? z.y + Math.sin(a) * rr : rand(m, this.size - m);
         const color = pick(FOOD_COLORS);
         const n = 3 + Math.floor(rand(5));
         for (let j = 0; j < n; j++) {
           this.add(Math.min(this.size - m, Math.max(m, cx + rand(-70, 70))), Math.min(this.size - m, Math.max(m, cy + rand(-70, 70))), rand(1, 2.2), color, true);
         }
         i += n - 1;
+      } else if (z) {
+        const x = Math.min(this.size - m, Math.max(m, z.x + Math.cos(a) * rr));
+        const y = Math.min(this.size - m, Math.max(m, z.y + Math.sin(a) * rr));
+        this.add(x, y, rand(1, 2.2), pick(FOOD_COLORS), true);
       } else {
         this.add(rand(m, this.size - m), rand(m, this.size - m), rand(1, 2.2), pick(FOOD_COLORS), true);
       }
@@ -78,6 +92,12 @@ export class FoodField {
       this.moving.length = w;
     }
     for (const f of this.items) f.rot += f.spin * dt;
+    for (const z of this.zones) {
+      z.x += z.vx * dt;
+      z.y += z.vy * dt;
+      if (z.x < 800 || z.x > this.size - 800) z.vx = -z.vx;
+      if (z.y < 800 || z.y > this.size - 800) z.vy = -z.vy;
+    }
 
     if (this.items.length < CFG.FOOD_MAX && this.ambient < CFG.FOOD_TARGET) {
       this.spawnAmbient(Math.min(4, CFG.FOOD_TARGET - this.ambient));

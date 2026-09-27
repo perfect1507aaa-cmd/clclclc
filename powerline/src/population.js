@@ -1,14 +1,14 @@
 import { SNAKE_COLORS, CFG } from './config.js';
 import { Brain, makePersona, pickArchetype, adjustForm } from './brain.js';
-import { botName } from './names.js';
-import { rand, pick, chance, gauss } from './util.js';
+import { botName, regularName } from './names.js';
+import { rand, randInt, pick, chance, gauss } from './util.js';
 
-const WARM_SCORE = { newbie: 35, casual: 140, farmer: 260, hunter: 320, pro: 650 };
+const WARM_SCORE = { newbie: 35, casual: 140, grazer: 220, killer: 260, pro: 450 };
 
 export class BotPlayer {
-  constructor(type) {
+  constructor(type, name) {
     this.persona = makePersona(type);
-    this.name = botName(type);
+    this.name = name || botName(type);
     this.color = pick(SNAKE_COLORS);
     this.state = 'joining';
     this.snake = null;
@@ -40,8 +40,29 @@ export class Population {
     this.room = room;
     this.online.pinned = room;
     this.bots = [];
-    const n = Math.max(3, Math.round(room.target ?? room.players));
-    for (let i = 0; i < n; i++) {
+    const n = Math.max(6, Math.round(room.target ?? room.players));
+
+    // Server regulars: a handful of strong players who basically live here,
+    // sit at the top of the board and come straight back after dying.
+    const clan = pick(['[PL]', '[NRG]', '[GOD]', '[VX]', 'ツ']);
+    const regs = randInt(4, 5);
+    const usedNames = new Set();
+    for (let i = 0; i < regs; i++) {
+      let name;
+      const core = (n) => n.replace(/[^A-Za-z]/g, '').replace(/^(PL|NRG|GOD|VX|EU|RU|ZZ|TTV|K)/, '').toLowerCase();
+      do name = i < 2 ? `${clan} ${regularName()}` : botName('pro');
+      while (usedNames.has(core(name)));
+      usedNames.add(core(name));
+      const b = new BotPlayer('pro', name);
+      b.persona.regular = true;
+      b.persona.base = Math.max(b.persona.base, 0.93);
+      b.persona.form = 0;
+      b.persona.lives = Infinity;
+      this.bots.push(b);
+      this.spawn(b, rand(600, 2200) * (1 - i * 0.12));
+    }
+
+    for (let i = regs; i < n; i++) {
       const b = new BotPlayer(pickArchetype());
       this.bots.push(b);
       if (chance(0.12)) {
@@ -61,7 +82,10 @@ export class Population {
     s.brain = new Brain(this.world, s, b.persona);
     b.snake = s;
     b.state = 'alive';
-    if (chance(b.persona.chatty * 0.06)) s.say(pick(['Hi!', 'hello', 'привет', 'hey', 'o/']), this.world.time);
+    if (b.pendingLine) {
+      s.say(b.pendingLine, this.world.time);
+      b.pendingLine = null;
+    } else if (chance(b.persona.chatty * 0.06)) s.say(pick(['Hi!', 'hello', 'привет', 'hey', 'o/']), this.world.time);
     return s;
   }
 
@@ -73,11 +97,15 @@ export class Population {
       b.snake = null;
       b.lives--;
       adjustForm(b.persona, 'death');
-      const quick = b.persona.type === 'pro' || b.persona.type === 'hunter';
-      b.respawnAt = now + (quick ? rand(1.2, 3.5) : rand(2, 10));
-      // getting killed by a real person stings a bit more
-      if (ev.killer && ev.killer.isPlayer && chance(0.12)) b.lives = 0;
-      if (chance(0.03)) b.respawnAt += rand(10, 40); // wandered off to another tab
+      const quick = b.persona.type === 'pro' || b.persona.type === 'killer';
+      b.respawnAt = now + (b.persona.regular ? rand(0.8, 2.2) : quick ? rand(1.2, 3.5) : rand(2, 10));
+      if (!b.persona.regular) {
+        // getting killed by a real person stings a bit more
+        if (ev.killer && ev.killer.isPlayer && chance(0.12)) b.lives = 0;
+        if (chance(0.03)) b.respawnAt += rand(10, 40); // wandered off to another tab
+      } else if (chance(b.persona.chatty * 0.15)) {
+        b.pendingLine = pick(['brb', 'again...', 'lag', 'ugh', 'ok']);
+      }
     }
     const k = ev.killer;
     if (k && k.owner) adjustForm(k.owner.persona, 'kill');
@@ -98,7 +126,7 @@ export class Population {
         else this.spawn(b);
       } else if (b.state === 'alive' && b.snake) {
         // rare disconnects; small snakes that are "leaving" quit mid-round
-        const p = b.leaving ? (b.snake.score < 60 ? 0.03 : 0.004) : 0.0004;
+        const p = b.persona.regular ? 0.00003 : b.leaving ? (b.snake.score < 60 ? 0.03 : 0.004) : 0.0004;
         if (chance(p * dt)) {
           this.world.removeSnake(b.snake);
           b.snake = null;
@@ -121,7 +149,7 @@ export class Population {
     this.leaveTimer -= dt;
     if (present > target + 1 && this.leaveTimer <= 0) {
       this.leaveTimer = rand(3, 12);
-      const candidates = this.bots.filter((b) => !b.leaving);
+      const candidates = this.bots.filter((b) => !b.leaving && !b.persona.regular);
       if (candidates.length) pick(candidates).leaving = true;
     }
 

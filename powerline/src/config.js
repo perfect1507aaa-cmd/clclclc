@@ -3,9 +3,9 @@ export const CFG = {
   MAX_STEP: 1 / 60,
 
   BASE_SPEED: 265,
-  MAX_BOOST: 0.95, // +95% at full charge
+  MAX_BOOST: 0.75, // +75% at full charge
   CHARGE_GAIN: 2.6,
-  CHARGE_DECAY: 0.75,
+  CHARGE_DECAY: 0.28, // slow cool-down: a charge carries you for a few seconds
   CHARGE_RANGE: 70, // extra reach (beyond both half-widths) that still charges you
 
   START_SCORE: 10,
@@ -15,9 +15,9 @@ export const CFG = {
   WIDTH_K: 0.32,
   WIDTH_MAX: 22,
 
-  FOOD_TARGET: 1300,
+  FOOD_TARGET: 1000,
   FOOD_MAX: 3400,
-  DEATH_DROP: 0.8, // fraction of score converted into food on death
+  DEATH_DROP: 0.7, // fraction of score converted into food on death
 
   SEG_CELL: 160,
   FOOD_CELL: 128,
