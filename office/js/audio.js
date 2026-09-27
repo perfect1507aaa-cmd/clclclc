@@ -83,10 +83,40 @@ export class Sfx {
     this.tone(90, 2.4, { type: 'sawtooth', vol: 0.03, at: 0.2, attack: 0.3, release: 0.4 });
   }
   // two-tone office ring: 1 s trill, 2 s pause (caller loops it)
-  ringOnce() {
+  ringOnce(vol = 0.06, f1 = 1040, f2 = 1300) {
     if (!this.ctx) return;
-    for (let i = 0; i < 20; i++) this.tone(i % 2 ? 1300 : 1040, 0.05, { type: 'square', vol: 0.06, at: i * 0.05, attack: 0.002, release: 0.01 });
+    for (let i = 0; i < 20; i++) this.tone(i % 2 ? f2 : f1, 0.05, { type: 'square', vol, at: i * 0.05, attack: 0.002, release: 0.01 });
   }
+  dtmf(n = 6) {
+    const F = [[697, 1209], [770, 1336], [852, 1477], [941, 1336], [697, 1336], [770, 1209]];
+    for (let i = 0; i < n; i++) { const [a, b] = F[Math.floor(Math.random() * F.length)]; this.tone(a, 0.1, { vol: 0.04, at: i * 0.16 }); this.tone(b, 0.1, { vol: 0.04, at: i * 0.16 }); }
+  }
+  ringback() { for (let i = 0; i < 2; i++) this.tone(425, 0.8, { vol: 0.04, at: 1.2 + i * 3 }); }
+  coffee() {
+    if (!this.ctx) return;
+    for (let i = 0; i < 18; i++) this.noise(0.12, { freq: 180 + (i % 4) * 60, q: 2, vol: 0.18, at: i * 0.1 });
+    this.noise(3.2, { freq: 3500, q: 0.6, vol: 0.12, at: 2.2 });
+    this.tone(150, 1.6, { type: 'sawtooth', vol: 0.02, at: 0.1, attack: 0.2, release: 0.3 });
+  }
+  sweep() { for (let i = 0; i < 4; i++) this.noise(0.18, { freq: 2600, q: 0.5, vol: 0.15, at: i * 0.22 }); }
+  creak() { const o = this.tone(220, 0.35, { type: 'sawtooth', vol: 0.03 }); if (o) o.frequency.linearRampToValueAtTime(140, this.ctx.currentTime + 0.35); }
+  street(on) {
+    if (!this.ctx) return;
+    if (on && !this._street) {
+      const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
+      const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 0.4;
+      const g = this.ctx.createGain(); g.gain.value = 0; g.gain.setTargetAtTime(0.12, this.ctx.currentTime, 0.5);
+      s.connect(f).connect(g).connect(this.master); s.start();
+      this._street = { s, g };
+    } else if (!on && this._street) {
+      this._street.g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2);
+      this._street.s.stop(this.ctx.currentTime + 1);
+      this._street = null;
+    }
+  }
+  step() { this.noise(0.05, { freq: 400 + Math.random() * 200, q: 1, vol: 0.05 }); }
+  fanfare() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.25, { type: 'triangle', vol: 0.08, at: i * 0.14 })); }
+  pop() { this.tone(660 + Math.random() * 300, 0.08, { type: 'triangle', vol: 0.06 }); }
   // Russian dial tone is a continuous 425 Hz
   dialTone(on) {
     if (!this.ctx) return;

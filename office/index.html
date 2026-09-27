@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Рабочее место №2</title>
+<title>Отдел заявок Хлебзавода</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=PT+Mono&family=PT+Sans:wght@400;700&display=swap" />
@@ -46,112 +46,162 @@
   /* ---------- HUD ---------- */
   .hud { position: fixed; z-index: 5; pointer-events: none; }
   .hud button { pointer-events: auto; }
-  #hud-left { top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; display: grid; gap: 10px; max-width: min(360px, calc(100vw - 32px)); }
-  .plate { display: flex; gap: 12px; align-items: baseline; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 7px 12px; backdrop-filter: blur(6px); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; backdrop-filter: blur(6px); }
+  #hud-left { top: calc(14px + env(safe-area-inset-top, 0px)); left: 16px; display: grid; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+  .plate { display: flex; gap: 12px; align-items: baseline; padding: 7px 12px; }
   .plate b { font-size: 14px; }
   #hud-time { font-family: var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
-  #tasks { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 10px 12px; backdrop-filter: blur(6px); display: grid; gap: 8px; }
-  #tasks header { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-  #premium { font-family: var(--mono); color: var(--good); letter-spacing: 0; text-transform: none; font-size: 13px; }
-  #task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  #task-list li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: start; font-size: 14px; line-height: 1.3; }
-  #task-list .box { width: 12px; height: 12px; margin-top: 3px; border: 1.5px solid var(--accent); border-radius: 2px; }
-  #task-list li.done { color: var(--muted); text-decoration: line-through; }
-  #task-list li.done .box { background: var(--good); border-color: var(--good); }
+  .stats { display: flex; gap: 14px; padding: 6px 12px; font-size: 13px; color: var(--muted); }
+  .stats b { font-family: var(--mono); color: var(--text); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .stats .err b { color: var(--bad); }
 
   #hud-right { top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; display: flex; gap: 8px; }
+  #side { top: calc(58px + env(safe-area-inset-top, 0px)); right: 16px; width: min(284px, calc(100vw - 32px)); display: grid; gap: 8px; max-height: calc(100% - 140px); grid-template-rows: auto minmax(0, 1fr); }
+  #tasks { padding: 10px 12px; display: grid; gap: 8px; }
+  .side-h { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 400; }
+  #task-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  #task-list li { display: grid; grid-template-columns: 14px 1fr auto; gap: 8px; align-items: start; font-size: 14px; line-height: 1.3; }
+  #task-list .box { width: 12px; height: 12px; margin-top: 3px; border: 1.5px solid var(--accent); border-radius: 2px; }
+  .timer { font-family: var(--mono); font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .timer.hot { color: var(--bad); }
+  #call-log { padding: 10px 12px; display: grid; gap: 8px; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+  #log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; overflow-y: auto; align-content: start; font-size: 14px; line-height: 1.35; min-height: 0; max-height: 46vh; }
+  #log-list b { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 400; }
+  #log-list li.me b { color: var(--good); }
+  #log-list li.me { color: #cfe8d2; }
+
   .ghost { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 7px 12px; cursor: pointer; font-size: 14px; }
   .ghost:hover { border-color: rgba(255, 255, 255, 0.3); }
-
-  #help-look { position: fixed; left: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); font-size: 13px; color: rgba(240, 238, 231, 0.75); text-shadow: 0 1px 2px #000; z-index: 4; pointer-events: none; max-width: calc(100vw - 32px); }
+  #help-look { position: fixed; left: 16px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); font-size: 13px; color: rgba(240, 238, 231, 0.75); text-shadow: 0 1px 2px #000; z-index: 4; pointer-events: none; max-width: calc(100vw - 220px); }
+  #stand { position: fixed; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 6; }
+  #carry { position: fixed; right: 16px; bottom: calc(58px + env(safe-area-inset-bottom, 0px)); z-index: 6; background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; padding: 6px 12px; font-size: 14px; pointer-events: none; }
 
   #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.45); z-index: 5; pointer-events: none; transition: transform 0.12s; }
   #crosshair.active { transform: scale(1.8); background: var(--accent); }
   #hint { position: fixed; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; font-size: 14px; white-space: nowrap; z-index: 6; pointer-events: none; }
   #hint::before { content: "ЛКМ · "; color: var(--accent); font-family: var(--mono); font-size: 12px; }
-  #hint.at-pointer { transform: translateX(-50%); }
+  #hint.far { color: var(--muted); }
+  #hint.far::before { content: ""; }
 
-  #ring { top: calc(62px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); background: var(--bad); color: #2a0d08; font-weight: 700; padding: 7px 16px; border-radius: 999px; animation: pulse 0.5s ease-in-out infinite alternate; white-space: nowrap; }
+  #ring { top: calc(62px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); background: var(--bad); color: #2a0d08; font-weight: 700; padding: 8px 18px; border-radius: 999px; border: 0; animation: pulse 0.5s ease-in-out infinite alternate; white-space: nowrap; cursor: pointer; pointer-events: auto; z-index: 9; }
   @keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.06); } }
   #notify { position: fixed; top: calc(108px + env(safe-area-inset-top, 0px)); left: 50%; transform: translate(-50%, -8px); opacity: 0; transition: opacity 0.25s, transform 0.25s; background: var(--panel-solid); border: 1px solid var(--line); border-left: 3px solid var(--accent); padding: 8px 14px; border-radius: 4px; z-index: 7; pointer-events: none; max-width: calc(100vw - 32px); }
   #notify.show { opacity: 1; transform: translate(-50%, 0); }
   #notify.good { border-left-color: var(--good); }
+  #notify.bad { border-left-color: var(--bad); }
 
-  #subs { position: fixed; left: 50%; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(680px, calc(100vw - 32px)); background: rgba(12, 13, 16, 0.84); border: 1px solid var(--line); border-radius: 6px; padding: 10px 16px 12px; z-index: 8; display: grid; gap: 4px; }
+  #subs { position: fixed; left: 50%; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(680px, calc(100vw - 32px)); box-sizing: border-box; background: rgba(12, 13, 16, 0.86); border: 1px solid var(--line); border-radius: 6px; padding: 10px 16px 12px; z-index: 8; display: grid; gap: 4px; }
   #subs-who { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
   #subs.phone #subs-who::before { content: "☏  "; }
-  #subs.tip { border-color: rgba(255, 210, 74, 0.45); }
-  #subs.tip #subs-text { color: var(--accent); }
+  #subs.me #subs-who { color: var(--good); }
+  #subs.dim #subs-text { color: var(--muted); }
   #subs-text { font-size: 17px; line-height: 1.4; }
-  #subs-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  #subs-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; position: relative; }
   #subs-choices:empty { display: none; }
-  .choice { background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line); border-radius: 4px; padding: 7px 12px; cursor: pointer; }
-  .choice:hover { border-color: var(--accent); }
+  .choice { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 210, 74, 0.5); border-radius: 4px; padding: 7px 12px; cursor: pointer; text-align: left; }
+  .choice:hover { border-color: var(--accent); background: rgba(255, 210, 74, 0.12); }
+  .choice-timer { position: absolute; left: 0; right: 0; bottom: -7px; height: 3px; background: var(--bad); transform-origin: left; animation: shrink linear forwards; }
+  @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
   #leave { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 9; display: none; }
   body.working #leave { display: block; }
-  body.working #hud-left .plate { opacity: 0.35; }
-  body.working #help-look { display: none; }
+  body.working #hud-left, body.working #help-look, body.working #stand { display: none; }
   body.working #crosshair, body.working #hint { display: none; }
-  body.working #subs { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: auto; width: min(560px, calc(100vw - 32px)); padding: 7px 14px 9px; }
+  body.working #subs { top: calc(56px + env(safe-area-inset-top, 0px)); bottom: auto; left: 16px; right: 316px; width: auto; transform: none; padding: 7px 14px 9px; }
   body.working #subs-text { font-size: 15px; }
-  body.working #ring, body.working #notify { left: auto; right: 16px; transform: none; animation: none; }
-  body:not(.started) .hud, body:not(.started) #help-look, body:not(.started) #crosshair { visibility: hidden; }
+  body.working #ring { left: auto; right: 16px; top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: none; animation: none; }
+  body.working #notify { left: auto; right: 16px; top: auto; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); transform: none; }
+  body:not(.started) .hud, body:not(.started) #help-look, body:not(.started) #crosshair, body:not(.started) #stand { visibility: hidden; }
 
   #numpad { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 52px); gap: 6px; z-index: 9; background: var(--panel); padding: 8px; border-radius: 6px; border: 1px solid var(--line); }
   #numpad button { height: 44px; border-radius: 4px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08); font-family: var(--mono); font-size: 18px; }
   #numpad button.ok { background: var(--accent); color: var(--accent-ink); font-family: var(--sans); font-weight: 700; font-size: 15px; }
+  #joy { position: fixed; left: 24px; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); width: 110px; height: 110px; border-radius: 50%; background: rgba(18, 20, 24, 0.5); border: 1px solid var(--line); z-index: 9; touch-action: none; display: grid; place-items: center; }
+  #joy-knob { width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 210, 74, 0.8); pointer-events: none; }
 
-  @media (max-width: 600px) {
+  /* ---------- end of day ---------- */
+  #end { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(10, 12, 15, 0.7); z-index: 30; }
+  #end dl { margin: 0; display: grid; gap: 6px; }
+  #end dl div { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px dashed var(--line); padding-bottom: 5px; }
+  #end dt { color: var(--muted); }
+  #end dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  #end-grade { font-size: 26px; font-weight: 700; color: var(--accent); }
+
+  @media (max-width: 700px) {
     .card { padding: 22px 18px 18px; }
     .card h1 { font-size: 28px; }
     .controls li { grid-template-columns: 1fr; gap: 2px; }
-    #tasks { display: none; }
+    #side { top: auto; bottom: 150px; max-height: 32vh; }
+    #call-log { display: none; }
     #subs-text { font-size: 15px; }
+    #help-look { display: none; }
+    body.working #subs { right: 16px; }
   }
   @media (prefers-reduced-motion: reduce) { #ring { animation: none; } #notify { transition: none; } }
 </style>
 </head>
 <body>
-  <canvas id="scene" tabindex="0" aria-label="Трёхмерный офис: вид от первого лица с рабочего места"></canvas>
+  <canvas id="scene" tabindex="0" aria-label="Трёхмерный офис отдела заявок хлебозавода, вид от первого лица"></canvas>
 
   <div id="intro">
     <div class="card">
-      <div class="eyebrow">ООО «Вектор» · бухгалтерия · каб. 214</div>
-      <h1>Рабочее место №2</h1>
-      <p>Вы новый бухгалтер. Кресло, стол, монитор с 1Ц:Предприятием, телефон слева и два соседа: главбух Людмила Петровна и менеджер Серёга. Вставать нельзя — только сидеть, крутиться в кресле и работать.</p>
+      <div class="eyebrow">ОАО «Хлебзавод №2» · отдел заявок · смена 08:00</div>
+      <h1>Отдел заявок</h1>
+      <p>Вы оператор хлебозавода. Магазины и столовые звонят с заказами на завтра: код клиента, сверка фамилии по 1Ц, диктовка — «десять белого, чёрного четырнадцать…», и в конце вы называете сумму. За смену 10 заявок, потом сводка на принтер и начальнице. Алёна Владимировна следит за ошибками и даёт поручения.</p>
       <ul class="controls">
-        <li><span>Мышь</span><span>осмотреться, кресло поворачивается</span></li>
-        <li><span>ЛКМ по монитору <kbd>F</kbd></span><span>работать в 1Ц</span></li>
-        <li><span>ЛКМ по предмету <kbd>E</kbd></span><span>телефон, кружка, лампа, степлер, соседи</span></li>
-        <li><span><kbd>Esc</kbd> <kbd>ПКМ</kbd></span><span>откинуться от монитора</span></li>
+        <li><span>Мышь</span><span>осмотреться</span></li>
+        <li><span>ЛКМ / <kbd>E</kbd></span><span>действие: телефон, монитор, окно, кофемашина…</span></li>
+        <li><span><kbd>Пробел</kbd></span><span>встать из-за стола / сесть</span></li>
+        <li><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>ходить (стоя), <kbd>Shift</kbd> — быстрее</span></li>
+        <li><span><kbd>F</kbd>, <kbd>Esc</kbd></span><span>сесть за компьютер / откинуться</span></li>
+        <li><span><kbd>1</kbd>–<kbd>4</kbd>, <kbd>F1</kbd>–<kbd>F4</kbd></span><span>ваши реплики в разговоре</span></li>
       </ul>
-      <button id="start" class="primary">Сесть за стол</button>
-      <div class="fineprint">Задачи приходят по телефону и от коллег. Звук синтезируется в браузере.</div>
+      <button id="start" class="primary">Начать смену</button>
+      <div class="fineprint">Пароль от 1Ц — на стикере на мониторе. Звук синтезируется в браузере.</div>
     </div>
   </div>
 
   <div id="hud-left" class="hud">
-    <div class="plate"><b>Место №2 · ООО «Вектор»</b><span id="hud-time">--:--</span></div>
-    <section id="tasks" hidden>
-      <header><span>Задачи</span><span>Премия: <span id="premium">0 ₽</span></span></header>
-      <ul id="task-list"></ul>
-    </section>
+    <div class="plate panel"><b>Хлебзавод №2 · Отдел заявок</b><span id="hud-time">--:--</span></div>
+    <div class="stats panel"><span>Заявки <b id="st-orders">0/10</b></span><span class="err">Ошибки <b id="st-err">0</b></span><span class="err">Выговоры <b id="st-rep">0</b></span></div>
   </div>
   <div id="hud-right" class="hud">
     <button id="mute" class="ghost" aria-pressed="false">Звук вкл.</button>
   </div>
-  <div id="ring" class="hud" hidden>Звонит телефон — слева на столе</div>
+  <aside id="side" class="hud">
+    <section id="tasks" class="panel" hidden>
+      <h2 class="side-h">Задачи</h2>
+      <ul id="task-list"></ul>
+    </section>
+    <section id="call-log" class="panel" hidden>
+      <h2 class="side-h" id="log-title">Звонок</h2>
+      <ul id="log-list"></ul>
+    </section>
+  </aside>
+  <button id="ring" hidden>☏ Звонит телефон — снять трубку</button>
   <div id="notify" role="status"></div>
   <div id="crosshair" hidden></div>
   <div id="hint" hidden></div>
   <div id="help-look"></div>
+  <div id="carry" hidden></div>
+  <button id="stand" class="ghost">Встать [Пробел]</button>
   <button id="leave" class="ghost">← Откинуться на спинку <kbd>Esc</kbd></button>
+  <div id="joy" hidden><div id="joy-knob"></div></div>
 
   <div id="subs" hidden aria-live="polite">
     <div id="subs-who"></div>
     <div id="subs-text"></div>
     <div id="subs-choices"></div>
+  </div>
+
+  <div id="end" hidden>
+    <div class="card">
+      <div class="eyebrow">Смена окончена</div>
+      <h1>Итоги дня</h1>
+      <dl id="end-stats"></dl>
+      <div id="end-grade"></div>
+      <button id="end-restart" class="primary">Новая смена</button>
+    </div>
   </div>
 
   <div id="numpad" hidden>

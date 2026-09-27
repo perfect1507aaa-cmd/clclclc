@@ -391,3 +391,68 @@ export const phoneTopTex = () => canvasTex(256, 460, (g, w, h, st = {}) => {
 }, { aniso: 4 });
 
 export const lcdState = (tex, st) => redraw(tex, st);
+
+// ---------- corridor & kitchen ----------
+export const linoleumTex = () => canvasTex(512, 512, (g, w, h) => {
+  const r = rng(31);
+  g.fillStyle = '#b9b2a2'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 14000; i++) { g.fillStyle = r() > 0.5 ? `rgba(90,80,65,${r() * 0.25})` : `rgba(255,250,235,${r() * 0.25})`; g.fillRect(r() * w, r() * h, 2 + r() * 3, 1 + r() * 2); }
+  g.fillStyle = 'rgba(60,55,45,.18)'; g.fillRect(0, 0, w, 2);
+}, { repeat: [1, 1] });
+
+export const kitchenTileTex = () => canvasTex(512, 512, (g, w, h) => {
+  const n = 4, s = w / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    g.fillStyle = (x + y) % 2 ? '#e9e6df' : '#cfd5d8';
+    g.fillRect(x * s, y * s, s, s);
+  }
+  g.strokeStyle = '#a9a69e'; g.lineWidth = 3;
+  for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * s, 0); g.lineTo(i * s, h); g.moveTo(0, i * s); g.lineTo(w, i * s); g.stroke(); }
+}, { repeat: [1, 1] });
+
+export const noticeBoardTex = () => canvasTex(640, 420, (g, w, h) => {
+  const r = rng(41);
+  g.fillStyle = '#b78a55'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 5000; i++) { g.fillStyle = `rgba(${90 + r() * 60},${60 + r() * 40},30,.35)`; g.fillRect(r() * w, r() * h, 2, 2); }
+  g.strokeStyle = '#6b4a28'; g.lineWidth = 16; g.strokeRect(0, 0, w, h);
+  const sheet = (x, y, sw, sh, rot, title, lines, col = '#fdfdf8') => {
+    g.save(); g.translate(x, y); g.rotate(rot);
+    g.fillStyle = col; g.fillRect(-sw / 2, -sh / 2, sw, sh);
+    g.fillStyle = '#222'; g.font = `bold 17px ${SANS}`; g.textAlign = 'center'; g.fillText(title, 0, -sh / 2 + 28);
+    g.font = `13px ${SANS}`; lines.forEach((l, i) => g.fillText(l, 0, -sh / 2 + 54 + i * 18));
+    g.fillStyle = '#c0271d'; g.beginPath(); g.arc(0, -sh / 2 + 8, 6, 0, 7); g.fill();
+    g.restore();
+  };
+  sheet(130, 150, 200, 230, -0.04, 'ПРИКАЗ № 14', ['о трудовой дисциплине', 'в отделе заявок', '', 'Телефон брать', 'не позднее 3-го гудка!', '', 'Дир. Громов В. П.']);
+  sheet(340, 130, 170, 180, 0.05, 'ГРАФИК УБОРКИ', ['Пн — Алёна В.', 'Вт — место №2', 'Ср — место №2', 'Чт — сан. день', 'Пт — место №2']);
+  sheet(520, 170, 170, 200, -0.06, 'ПРОДАМ ГАРАЖ', ['недорого', 'ГСК «Мотор»', '', 'тел. 8-916-…'], '#fff6b8');
+  sheet(330, 330, 230, 120, 0.02, 'С ДНЁМ ХЛЕБОПЕКА!', ['поздравляем коллектив', '16 октября'], '#ffe0e6');
+});
+
+export const kitchenPosterTex = () => canvasTex(420, 560, (g, w, h) => {
+  g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#6b3a1f'; g.font = `bold 46px ${SANS}`; g.textAlign = 'center';
+  g.fillText('КОФЕ', w / 2, 90);
+  g.font = `24px ${SANS}`; g.fillText('только для сотрудников', w / 2, 132); g.fillText('отдела заявок', w / 2, 162);
+  g.fillStyle = '#6b3a1f'; g.beginPath(); g.ellipse(w / 2, 300, 90, 60, 0, 0, Math.PI); g.fill();
+  g.fillRect(w / 2 - 90, 240, 180, 60);
+  g.strokeStyle = '#6b3a1f'; g.lineWidth = 12; g.beginPath(); g.arc(w / 2 + 104, 280, 30, -1.4, 1.4); g.stroke();
+  g.strokeStyle = 'rgba(107,58,31,.5)'; g.lineWidth = 6; for (let i = -1; i <= 1; i++) { g.beginPath(); g.moveTo(w / 2 + i * 40, 225); g.bezierCurveTo(w / 2 + i * 40 - 20, 200, w / 2 + i * 40 + 20, 180, w / 2 + i * 40, 150 + 20); g.stroke(); }
+  g.fillStyle = '#b3261e'; g.font = `bold 28px ${SANS}`; g.fillText('ЧАШКИ МОЕМ', w / 2, 440); g.fillText('ЗА СОБОЙ!', w / 2, 476);
+  g.fillStyle = '#777'; g.font = `18px ${SANS}`; g.fillText('администрация', w / 2, 530);
+});
+
+export const handsTex = () => canvasTex(360, 480, (g, w, h) => {
+  g.fillStyle = '#e8f3fb'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#1b5e9c'; g.font = `bold 44px ${SANS}`; g.textAlign = 'center';
+  g.fillText('МОЙТЕ', w / 2, 80); g.fillText('РУКИ!', w / 2, 132);
+  g.fillStyle = '#7fb6e0'; for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(80 + (i * 67) % 220, 200 + (i * 41) % 180, 14 + (i % 3) * 6, 0, 7); g.fill(); }
+  g.fillStyle = '#333'; g.font = `20px ${SANS}`; g.fillText('СанПиН для пищевого', w / 2, 430); g.fillText('производства', w / 2, 456);
+});
+
+export const coffeeScreenTex = () => canvasTex(128, 64, (g, w, h, st = 'idle') => {
+  g.fillStyle = '#0d1a14'; g.fillRect(0, 0, w, h);
+  g.fillStyle = st === 'brew' ? '#ffcc55' : st === 'ready' ? '#7dff9a' : '#5ad2ff';
+  g.font = `bold 18px ${SANS}`; g.textAlign = 'center';
+  g.fillText(st === 'brew' ? 'ГОТОВИМ…' : st === 'ready' ? 'ГОТОВО' : 'КАПУЧИНО', w / 2, 38);
+}, { aniso: 2 });
