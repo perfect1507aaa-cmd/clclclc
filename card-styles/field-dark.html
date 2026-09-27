@@ -189,21 +189,7 @@ details.panel > summary:focus-visible{outline:2px solid var(--tp); outline-offse
 .rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:14px; margin-top:14px;}
 .rules ul,.rules ol{margin:6px 0 0; padding-left:20px; display:grid; gap:5px; font-size:14px;}
 
-/* ---------- sound lab, icons, roster ---------- */
-.srow{display:grid; grid-template-columns:170px 1fr; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
-.srow:last-child{border-bottom:none;}
-.srow > b{font:700 12.5px/1.3 var(--fb);}
-.srow > b small{display:block; font:500 11px var(--fm); color:var(--mut);}
-.svars{display:flex; flex-wrap:wrap; gap:6px;}
-.sbtn{all:unset; box-sizing:border-box; cursor:pointer; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:8px; background:#16130f; border:1px solid var(--off); font:600 12px/1.2 var(--fb);}
-.sbtn::before{content:""; flex:none; width:0; height:0; border-left:7px solid var(--ink); border-top:5px solid transparent; border-bottom:5px solid transparent;}
-.sbtn:hover{border-color:#3a4150;}
-.sbtn:focus-visible{outline:2px solid var(--tp); outline-offset:2px;}
-.sbtn[aria-pressed="true"]{border-color:var(--gold); background:#221d10;}
-.sbtn[aria-pressed="true"]::before{border-left-color:var(--gold);}
-.sbtn.playing{background:#16302e;}
-.sbtn.prev{border-style:dashed; color:var(--mut);}
-@media (max-width:640px){ .srow{grid-template-columns:1fr;} }
+/* ---------- icons, roster ---------- */
 .igal{overflow-x:auto;}
 .igal table{min-width:680px;}
 .igal td{text-align:center;}
@@ -259,7 +245,6 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
     <div class="actions">
       <button class="btn" id="end" type="button">Конец хода</button>
       <button class="btn ghost" id="reset" type="button">Заново</button>
-      <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук</button>
       <span class="hint" id="hint"></span>
     </div>
   </section>
@@ -302,10 +287,6 @@ svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-orde
     </div>
   </details>
 
-  <h2>Звуки</h2>
-  <p class="lede">Два пакета. «Текущий» — звуки, которые вы выбрали раньше. «Реализм» — живые звуки: голоса и рык через форманты, звон стали у клинков, тетива, копыта, крылья, огонь. В реализме ранение и гибель звучат голосом самого юнита: пёс скулит, человек стонет, Энт трещит. Кнопки «ранение» и «гибель» в строке юнита только прослушивают. Выбранный звук (золотая рамка) сразу звучит в бою.</p>
-  <div class="panel" id="sndcats"></div>
-  <div class="panel" id="sndatk"></div>
 
   <h2>Иконки</h2>
   <p class="lede">Утверждённые иконки стоят по одной. Там, где вы просили новые варианты, их пять: нажмите на понравившийся, и он сразу станет иконкой юнита в игре.</p>
@@ -491,251 +472,9 @@ const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const D = ms => Math.round(ms * (RM ? 0.2 : 0.8));
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
-/* ---------- sound: heavier, darker synthesis ---------- */
-const ACLASS = {peasant:'light', imp:'light', pixie:'light', archer:'bow', hunter:'bow', footman:'blade', dancer:'blade', griffin:'beast', hound:'beast', unicorn:'beast',
-  priest:'magic', succubus:'magic', angel:'magic', druid:'magic', demon:'heavy', cavalier:'heavy', charger:'heavy', fiend:'heavy', devil:'heavy', treant:'heavy', gdragon:'heavy'};
-/* Five sound styles: every event and every unit attack has one variant per style. */
-/* Two packs: the current sounds, and a realistic one (voices, steel, strings, hooves, fire). */
-const ATK_VARS = ['Фирменный', 'Реализм'];
-const CATS = {
-  draw:{name:'Вытягивание карты', vars:['Шорох плаща', 'Реализм']},
-  place:{name:'Выставление', vars:['Тяжёлый шаг', 'Реализм']},
-  hurt:{name:'Получение урона (в реализме — голос раненого юнита)', vars:['Пробитый доспех', 'Реализм']},
-  die:{name:'Гибель (в реализме — голос юнита)', vars:['Падение тела', 'Реализм']},
-  hero:{name:'Удар по герою', vars:['Раскат грома', 'Реализм']},
-  up:{name:'Улучшение', vars:['Тёмный ритуал', 'Реализм']},
-};
-let SEL_SND = {draw:0, place:0, hurt:0, die:0, hero:0, up:0, atk:{}};
-try { const s = JSON.parse(localStorage.getItem('fieldDarkSounds3') || 'null'); if (s) SEL_SND = Object.assign(SEL_SND, s); } catch (e) {}
-const saveSnd = () => { try { localStorage.setItem('fieldDarkSounds3', JSON.stringify(SEL_SND)); } catch (e) {} };
-const Sfx = {
-  ctx:null, on:true, out:null, verb:null, nb:null,
-  ensure(){
-    try {
-      if (!this.ctx){
-        const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const lim = c.createDynamicsCompressor(); lim.threshold.value = -14; lim.ratio.value = 8; lim.attack.value = .003; lim.release.value = .2;
-        const tone = c.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 13000;
-        const sat = c.createWaveShaper(), k = 1.5, curve = new Float32Array(1024);
-        for (let i = 0; i < 1024; i++){ const x = i / 511.5 - 1; curve[i] = Math.tanh(k * x) / Math.tanh(k); }
-        sat.curve = curve;
-        const master = c.createGain(); master.gain.value = .8;
-        master.connect(sat).connect(tone).connect(lim).connect(c.destination);
-        const len = Math.floor(c.sampleRate * 1.3), ir = c.createBuffer(2, len, c.sampleRate);
-        for (let ch = 0; ch < 2; ch++){ const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < len; i++){ lp += ((Math.random() * 2 - 1) - lp) * .07; d[i] = lp * 2.6 * Math.pow(1 - i / len, 3); } }
-        const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = .12; conv.connect(wet).connect(master);
-        const nl = c.sampleRate * 2, nb = c.createBuffer(1, nl, c.sampleRate), nd = nb.getChannelData(0); for (let i = 0; i < nl; i++) nd[i] = Math.random() * 2 - 1;
-        this.out = master; this.verb = conv; this.nb = nb;
-      }
-      if (this.ctx.state === 'suspended') this.ctx.resume();
-    } catch (e) {}
-  },
-  env(g, t, a, dur, vol){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); },
-  route(node, wet){ node.connect(this.out); if (wet) node.connect(this.verb); },
-  /* filtered noise with sweep: whooshes, cloth, crackle, rumble */
-  burst(dur, {vol = .1, type = 'lowpass', f = 1000, f2 = null, q = .7, a = .005, delay = 0, wet = false} = {}){
-    const c = this.ctx, t = c.currentTime + delay, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
-    s.buffer = this.nb; s.loop = true; fl.type = type; fl.Q.value = q; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur);
-    this.env(g, t, a, dur, vol); s.connect(fl).connect(g); this.route(g, wet); s.start(t, Math.random()); s.stop(t + dur + .05);
-  },
-  osc(f, dur, {type = 'sine', vol = .15, a = .005, f2 = null, delay = 0, wet = false, lp = null, q = .7} = {}){
-    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * .8);
-    this.env(g, t, a, dur, vol);
-    if (lp){ const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = lp; fl.Q.value = q; o.connect(fl).connect(g); } else o.connect(g);
-    this.route(g, wet); o.start(t); o.stop(t + dur + .05);
-  },
-  /* body impact: sub drop + dull click + short body noise */
-  impact(f = 70, {vol = .5, delay = 0, wet = false, dur = .28} = {}){
-    this.osc(f * 2.2, dur, {vol, a:.002, f2:f * .55, delay, wet});
-    this.burst(.02, {vol:vol * .25, type:'bandpass', f:2400, q:.8, delay});
-    this.burst(dur * .6, {vol:vol * .3, f:500, f2:150, delay});
-  },
-  whoosh(dur = .22, {vol = .12, f = 600, f2 = 2400, delay = 0} = {}){ this.burst(dur, {vol, type:'bandpass', f, f2, q:1.4, a:dur * .6, delay}); },
-  flesh(vol = .3, delay = 0){ this.burst(.07, {vol:vol * .5, type:'bandpass', f:900, q:1.2, delay}); this.impact(55, {vol, delay, dur:.2}); },
-  /* growl: sawtooth amplitude-modulated by a fast square LFO, through a formant band */
-  growl(dur = .5, {f = 70, vol = .12, delay = 0, rate = 28, band = 520} = {}){
-    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), lfo = c.createOscillator(), lg = c.createGain(), am = c.createGain(), bp = c.createBiquadFilter(), g = c.createGain();
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * .8, t + dur);
-    lfo.type = 'square'; lfo.frequency.value = rate; lg.gain.value = .5; am.gain.value = .5; lfo.connect(lg).connect(am.gain);
-    bp.type = 'bandpass'; bp.frequency.value = band; bp.Q.value = 1.6;
-    this.env(g, t, .06, dur, vol); o.connect(am).connect(bp).connect(g); this.route(g, true);
-    o.start(t); lfo.start(t); o.stop(t + dur + .05); lfo.stop(t + dur + .05);
-    this.burst(dur, {vol:vol * .35, type:'bandpass', f:band * 1.4, q:2, a:.05, delay});
-  },
-  /* brass: filtered saws with an opening filter and slow vibrato */
-  horn(f, dur, {vol = .1, delay = 0, f2 = null} = {}){
-    const c = this.ctx, t = c.currentTime + delay, g = c.createGain(), lp = c.createBiquadFilter(), vib = c.createOscillator(), vg = c.createGain();
-    lp.type = 'lowpass'; lp.Q.value = 2; lp.frequency.setValueAtTime(220, t); lp.frequency.linearRampToValueAtTime(1300, t + dur * .35); lp.frequency.linearRampToValueAtTime(600, t + dur);
-    vib.frequency.value = 5; vg.gain.value = f * .012; vib.connect(vg);
-    [0, 7, -6].forEach((det, i) => { const o = c.createOscillator(); o.type = i ? 'sawtooth' : 'square'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.linearRampToValueAtTime(f2, t + dur * .9); o.detune.value = det; vg.connect(o.frequency); o.connect(lp); o.start(t); o.stop(t + dur + .1); });
-    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .12); g.gain.setValueAtTime(vol, t + dur * .7); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-    lp.connect(g); this.route(g, true); vib.start(t); vib.stop(t + dur + .1);
-  },
-  drum(f = 58, {vol = .55, delay = 0} = {}){ this.osc(f * 1.8, .7, {vol, a:.003, f2:f, delay, wet:true}); this.burst(.12, {vol:vol * .35, f:900, f2:200, delay, wet:true}); },
-  choir(freqs, dur, {vol = .05, delay = 0} = {}){ freqs.forEach(f => [-8, 8].forEach(d => this.osc(f * Math.pow(2, d / 1200), dur, {type:'sawtooth', vol, a:dur * .4, delay, wet:true, lp:700, q:4}))); },
-  groan(dur = .8, {f = 110, vol = .08, delay = 0} = {}){ this.osc(f, dur, {type:'sawtooth', vol, a:.08, f2:f * .6, delay, wet:true, lp:600, q:5}); this.osc(f * 1.01, dur, {type:'sawtooth', vol:vol * .6, a:.1, f2:f * .58, delay, lp:1100, q:6}); },
-  crackle(dur = .4, {vol = .06, delay = 0} = {}){ for (let i = 0; i < 8; i++) this.burst(.012, {vol:vol * (0.5 + Math.random()), type:'highpass', f:1800, delay:delay + Math.random() * dur}); this.burst(dur, {vol:vol * .6, f:700, a:.05, delay}); },
-  click(f = 3000, vol = .15, delay = 0){ this.burst(.012, {vol, type:'bandpass', f, q:1, a:.001, delay}); },
-  /* ---- realistic pack: voices through formants, plucked strings, steel, hooves, wings, fire ---- */
-  voice({f = 120, f2 = null, dur = .3, form = [[600, 1], [1000, .6], [2400, .25]], vol = .5, vib = 0, rough = 0, breath = .25, delay = 0, wet = false, q = 7} = {}){
-    const c = this.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain(), mix = c.createGain();
-    o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur * .9);
-    const stops = [o];
-    if (vib){ const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5 + Math.random() * 2; lg.gain.value = f * vib; l.connect(lg).connect(o.frequency); stops.push(l); }
-    let src = o;
-    if (rough){ const am = c.createGain(), l = c.createOscillator(), lg = c.createGain(); l.type = 'square'; l.frequency.value = 24 + Math.random() * 16; lg.gain.value = rough * .5; am.gain.value = 1 - rough * .5; l.connect(lg).connect(am.gain); o.connect(am); src = am; stops.push(l); }
-    const n = c.createBufferSource(); n.buffer = this.nb; n.loop = true; const ng = c.createGain(); ng.gain.value = breath; n.connect(ng);
-    form.forEach(([ff, gain]) => { const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = ff; bp.Q.value = q; const fg = c.createGain(); fg.gain.value = gain; src.connect(bp); ng.connect(bp); bp.connect(fg).connect(mix); });
-    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(.04, dur * .2)); g.gain.setValueAtTime(vol, t + dur * .55); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-    mix.connect(g); this.route(g, wet);
-    stops.forEach(x => { x.start(t); x.stop(t + dur + .05); }); n.start(t, Math.random()); n.stop(t + dur + .05);
-  },
-  /* Karplus-Strong plucked string: a bowstring twang */
-  string(f = 100, {vol = .5, delay = 0, decay = .994, dur = .5} = {}){
-    const c = this.ctx, sr = c.sampleRate, N = Math.max(2, Math.round(sr / f)), len = Math.floor(sr * dur), b = c.createBuffer(1, len, sr), d = b.getChannelData(0);
-    for (let i = 0; i < N; i++) d[i] = Math.random() * 2 - 1;
-    for (let i = N; i < len; i++) d[i] = decay * .5 * (d[i - N] + d[i - N + 1]);
-    const s = c.createBufferSource(), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
-    s.buffer = b; g.gain.value = vol; s.connect(lp).connect(g); this.route(g, false); s.start(c.currentTime + delay);
-  },
-  /* steel: a short, inharmonic blade ring over a sharp scrape */
-  steel(vol = .06, delay = 0, p = 1){
-    [2210, 3130, 4470, 5930, 7340].forEach((f, i) => this.osc(f * p, .14 + i * .03, {vol:vol / (1 + i * .5), a:.001, delay}));
-    this.burst(.03, {vol:vol * 2, type:'highpass', f:2500, a:.001, delay});
-  },
-  swing(dur = .18, vol = .14, delay = 0, lo = 350, hi = 1600){ this.burst(dur, {vol, type:'bandpass', f:lo, f2:hi, q:1.3, a:dur * .55, delay}); },
-  cut(vol = .35, delay = 0){ this.burst(.06, {vol:vol * .45, type:'bandpass', f:1300, q:1, delay}); this.impact(70, {vol, dur:.12, delay}); },
-  gallop(vol = .25, delay = 0){ [0, .07, .19, .26].forEach(d => { this.impact(95, {vol, dur:.07, delay:delay + d}); this.burst(.04, {vol:vol * .25, type:'bandpass', f:1600, delay:delay + d}); }); },
-  wings(vol = .12, delay = 0, n = 2){ for (let k = 0; k < n; k++) this.burst(.13, {vol, type:'lowpass', f:900, f2:260, a:.04, delay:delay + k * .17}); },
-  fire(dur = .5, vol = .12, delay = 0){ this.burst(dur, {vol, type:'lowpass', f:300, f2:2600, a:dur * .35, delay}); this.crackle(dur, {vol:vol * .5, delay}); },
-  /* voices */
-  grunt(delay = 0, p = 1, vol = .5){ this.voice({f:140 * p, f2:108 * p, dur:.17, form:[[650, 1], [1100, .6], [2500, .2]], breath:.5, vol, delay}); },
-  hurtM(delay = 0, p = 1){ this.voice({f:175 * p, f2:118 * p, dur:.27, form:[[560, 1], [900, .7], [2400, .25]], rough:.25, vol:.6, delay}); },
-  dieM(delay = 0, p = 1){ this.voice({f:150 * p, f2:78 * p, dur:.85, form:[[520, 1], [860, .6], [2300, .2]], vib:.02, vol:.42, delay}); this.impact(45, {vol:.35, dur:.25, delay:delay + .55}); },
-  rgrowl(delay = 0, p = 1, dur = .5, vol = .6){ this.voice({f:82 * p, f2:72 * p, dur, form:[[420, 1], [900, .5], [2000, .15]], rough:1, breath:.6, vol, delay}); },
-  bark(delay = 0){ this.voice({f:390, f2:270, dur:.13, form:[[700, 1], [1450, .55]], rough:.35, breath:.4, vol:.6, delay}); },
-  yelp(delay = 0, long = false){ this.voice({f:880, f2:1450, dur:.14, form:[[1050, 1], [2300, .4]], breath:.2, vol:.45, delay}); this.voice({f:1400, f2:640, dur:long ? .7 : .34, form:[[1050, 1], [2300, .4]], vib:.07, breath:.2, vol:.4, delay:delay + .12}); },
-  roar(delay = 0, p = 1, dur = .8){ this.voice({f:66 * p, f2:52 * p, dur, form:[[340, 1], [780, .7], [1600, .3]], rough:1, breath:.8, vol:.7, delay, wet:true}); this.burst(dur, {vol:.06, type:'lowpass', f:700, a:dur * .3, delay}); },
-  neigh(delay = 0, short = false){ this.voice({f:560, f2:980, dur:.22, form:[[900, 1], [1650, .6], [2900, .25]], breath:.35, vol:.35, delay}); if (!short) this.voice({f:980, f2:430, dur:.5, form:[[900, 1], [1650, .6], [2900, .25]], vib:.07, breath:.35, vol:.32, delay:delay + .2}); },
-  snort(delay = 0){ this.burst(.2, {vol:.12, type:'bandpass', f:900, q:1.5, a:.02, delay}); },
-  screech(delay = 0, dur = .4){ this.voice({f:1750, f2:1250, dur, form:[[2500, 1], [3600, .5]], vib:.05, rough:.25, breath:.3, vol:.55, delay}); },
-  squeal(delay = 0){ this.voice({f:620, f2:950, dur:.2, form:[[1250, 1], [2700, .4]], rough:.3, vol:.7, delay}); },
-  hiss(delay = 0){ this.voice({f:300, f2:230, dur:.3, form:[[820, 1], [1350, .6], [2900, .3]], breath:.8, vol:.45, delay}); },
-  gasp(delay = 0){ this.voice({f:680, f2:480, dur:.15, form:[[1100, 1], [2600, .5]], breath:.7, vol:.5, delay}); },
-  creak(delay = 0, dur = .6){ this.voice({f:46, f2:38, dur, form:[[520, 1], [1150, .5]], rough:.7, breath:.9, vol:.5, delay}); },
-  real(key){
-    const R = {
-      peasant:() => { this.grunt(); this.swing(.14, .12, .02, 500, 1800); this.cut(.3, .15); },
-      archer:() => { this.string(98, {vol:.55}); this.swing(.24, .06, .03, 3500, 1200); this.impact(130, {vol:.22, dur:.07, delay:.28}); this.burst(.04, {vol:.08, type:'bandpass', f:900, delay:.28}); },
-      footman:() => { this.grunt(0, .95); this.swing(.18, .14, .03); this.steel(.05, .19); this.cut(.35, .2); },
-      griffin:() => { this.screech(0, .32); this.wings(.12, .05, 2); this.cut(.3, .36); },
-      priest:() => { [220, 277, 330].forEach(f => this.voice({f, dur:.5, form:[[800, 1], [1150, .6], [2900, .2]], vib:.012, breath:.1, vol:.14, wet:true})); this.impact(50, {vol:.35, delay:.42, wet:true}); },
-      cavalier:() => { this.gallop(.22); this.neigh(.05, true); this.impact(40, {vol:.6, dur:.25, delay:.32}); this.crackle(.2, {vol:.12, delay:.33}); this.grunt(.3, .9); },
-      angel:() => { this.wings(.13, 0, 2); this.swing(.2, .14, .3, 300, 1400); this.steel(.05, .47, .9); this.cut(.4, .48); },
-      imp:() => { [0, .05, .1].forEach(d => this.burst(.05, {vol:.12, type:'bandpass', f:2200, q:1.4, a:.01, delay:d})); this.squeal(.04); this.cut(.25, .1); },
-      demon:() => { this.rgrowl(0, .8, .35); this.swing(.18, .14, .1, 250, 1100); this.impact(45, {vol:.65, dur:.18, delay:.26}); },
-      hound:() => { this.rgrowl(0, 1, .32); this.bark(.28); this.crackle(.06, {vol:.16, delay:.36}); this.cut(.3, .38); },
-      succubus:() => { this.fire(.42, .12); this.hiss(.02); this.impact(55, {vol:.35, dur:.14, delay:.4}); },
-      charger:() => { this.gallop(.24); this.neigh(.05); this.fire(.35, .08, .1); this.impact(45, {vol:.5, dur:.18, delay:.33}); },
-      fiend:() => { this.roar(0, .9, .5); this.swing(.28, .18, .15, 200, 1000); this.steel(.07, .42, .7); this.cut(.55, .43); },
-      devil:() => { this.roar(0, .8, .6); this.fire(.5, .14, .2); this.impact(35, {vol:.7, dur:.3, delay:.62, wet:true}); },
-      pixie:() => { this.swing(.14, .06, 0, 1800, 4200); this.string(880, {vol:.12, dur:.18, decay:.99}); this.gasp(.06); },
-      dancer:() => { this.swing(.12, .13, 0, 600, 2400); this.steel(.045, .11); this.swing(.12, .13, .15, 700, 2600); this.steel(.05, .26, 1.08); this.cut(.3, .27); },
-      hunter:() => { this.string(104, {vol:.5}); this.swing(.22, .06, .03, 3600, 1200); this.string(110, {vol:.45, delay:.16}); this.swing(.22, .05, .19, 3600, 1200); this.impact(130, {vol:.2, dur:.07, delay:.4}); },
-      druid:() => { for (let k = 0; k < 5; k++) this.burst(.12, {vol:.05, type:'bandpass', f:2400 + k * 300, q:1.2, a:.04, delay:k * .07}); this.creak(.1, .35); this.crackle(.15, {vol:.12, delay:.42}); this.impact(55, {vol:.35, dur:.14, delay:.45}); },
-      unicorn:() => { this.gallop(.2); this.neigh(.08, true); this.cut(.4, .32); },
-      treant:() => { this.creak(0, .5); this.swing(.3, .16, .2, 150, 700); this.impact(32, {vol:.8, dur:.35, delay:.48}); this.crackle(.3, {vol:.12, delay:.5}); },
-      gdragon:() => { this.roar(0, 1, .7); this.roar(0, 1.5, .5); this.fire(.6, .24, .35); this.impact(40, {vol:.5, dur:.3, delay:.7}); },
-    };
-    (R[key] || R.footman)();
-  },
-  hurtOf(key){
-    const H = {peasant:() => this.hurtM(0, 1.05), archer:() => this.hurtM(0, 1.1), footman:() => { this.steel(.03); this.hurtM(.02, .95); }, griffin:() => this.screech(0, .22), priest:() => this.hurtM(0, 1),
-      cavalier:() => { this.steel(.03); this.hurtM(.02, .9); }, angel:() => this.voice({f:150, f2:115, dur:.3, form:[[560, 1], [900, .7], [2400, .25]], vol:.55, wet:true}),
-      imp:() => this.squeal(), demon:() => this.rgrowl(0, .85, .22, .85), hound:() => this.yelp(), succubus:() => this.hiss(), charger:() => { this.snort(); this.neigh(.05, true); },
-      fiend:() => this.rgrowl(0, .7, .28, .85), devil:() => this.roar(0, 1, .3), pixie:() => this.gasp(), dancer:() => this.hurtM(0, 1.15), hunter:() => this.hurtM(0, 1.1),
-      druid:() => this.hurtM(0, .9), unicorn:() => { this.snort(); this.neigh(.04, true); }, treant:() => { this.creak(0, .3); this.crackle(.12, {vol:.14}); }, gdragon:() => this.roar(0, 1.15, .35)};
-    this.impact(70, {vol:.3, dur:.1});
-    (H[key] || H.footman)();
-  },
-  dieOf(key){
-    const K = {griffin:() => { this.screech(0, .7); this.wings(.1, .2, 1); }, imp:() => { this.squeal(); this.squeal(.18); }, demon:() => this.rgrowl(0, .7, .8, .6),
-      hound:() => this.yelp(0, true), succubus:() => this.voice({f:320, f2:160, dur:.8, form:[[820, 1], [1350, .6], [2900, .3]], vib:.03, vol:.45}),
-      charger:() => this.neigh(0), unicorn:() => this.neigh(0), fiend:() => this.roar(0, .75, .9), devil:() => this.roar(0, .65, 1.1), gdragon:() => this.roar(0, .9, 1.2),
-      treant:() => { this.creak(0, .9); this.crackle(.6, {vol:.16, delay:.3}); }, pixie:() => this.voice({f:700, f2:380, dur:.4, form:[[1100, 1], [2600, .5]], breath:.7, vol:.3}),
-      angel:() => this.voice({f:150, f2:75, dur:1, form:[[520, 1], [860, .6], [2300, .2]], vib:.02, vol:.5, wet:true})};
-    (K[key] || (() => this.dieM()))();
-    this.impact(42, {vol:.5, dur:.3, delay:.5});
-  },
-  hurt(u){ if (!this.on || !this.ctx) return; try { SEL_SND.hurt === 1 ? this.hurtOf(U(u).key) : this.cat('hurt', 0); } catch (e) {} },
-  die(u){ if (!this.on || !this.ctx) return; try { SEL_SND.die === 1 ? this.dieOf(U(u).key) : this.cat('die', 0); } catch (e) {} },
-  cat(name, i){
-    const R = {
-      draw:[() => this.whoosh(.3, {vol:.06, f:300, f2:900}),
-        () => { this.burst(.09, {vol:.07, type:'bandpass', f:3200, f2:2000, q:1, a:.03}); this.burst(.012, {vol:.06, type:'highpass', f:5000, delay:.08}); }],
-      place:[() => { this.impact(48, {vol:.55}); this.burst(.1, {vol:.05, f:300}); },
-        () => { this.impact(65, {vol:.42, dur:.14}); this.burst(.05, {vol:.06, type:'bandpass', f:2200, q:1.2}); this.crackle(.08, {vol:.07}); }],
-      hurt:[() => { this.burst(.03, {vol:.12, type:'bandpass', f:1100, q:3}); this.impact(60, {vol:.45, dur:.22}); },
-        () => this.hurtOf('footman')],
-      die:[() => { this.impact(38, {vol:.6, dur:.4}); this.burst(.4, {vol:.08, f:400, f2:120, delay:.03}); },
-        () => this.dieOf('footman')],
-      hero:[() => { this.burst(1.6, {vol:.18, f:260, f2:60, a:.02, wet:true}); this.impact(30, {vol:.7, dur:.8}); },
-        () => { this.impact(36, {vol:.85, dur:.4}); this.burst(.25, {vol:.1, type:'lowpass', f:500}); this.creak(.05, .4); this.crackle(.25, {vol:.1, delay:.05}); }],
-      up:[() => { this.osc(36, 1.4, {vol:.4, a:.5, wet:true}); this.burst(1.2, {vol:.07, type:'bandpass', f:300, f2:1400, q:2, a:.8, wet:true}); this.impact(34, {vol:.6, delay:1.1, wet:true}); },
-        () => { this.horn(98, .9, {vol:.09}); [0, .18, .36].forEach((d, k) => this.impact(55, {vol:.3 + k * .1, dur:.16, delay:d})); }],
-    };
-    (R[name][i] || R[name][0])();
-  },
-  signature(key){
-    switch (key){
-      case 'peasant': this.whoosh(.16, {vol:.08, f:400, f2:1200}); this.flesh(.25, .12); break;
-      case 'archer': this.osc(82, .22, {type:'triangle', vol:.2, a:.002, f2:70, lp:600}); this.whoosh(.3, {vol:.06, f:2500, f2:700, delay:.04}); break;
-      case 'footman': this.whoosh(.2, {vol:.1, f:500, f2:2200}); this.burst(.03, {vol:.1, type:'bandpass', f:1000, q:2, delay:.17}); this.impact(55, {vol:.45, delay:.17}); break;
-      case 'griffin': this.growl(.35, {f:150, band:1100, rate:40, vol:.08}); this.whoosh(.3, {vol:.1, f:200, f2:700}); this.flesh(.35, .25); break;
-      case 'priest': this.choir([147, 220], .7, {vol:.035}); this.impact(45, {vol:.4, delay:.45, wet:true}); break;
-      case 'cavalier': [0, .1, .2].forEach(d => this.impact(70, {vol:.25, dur:.1, delay:d})); this.impact(35, {vol:.7, delay:.32, wet:true}); break;
-      case 'angel': this.whoosh(.5, {vol:.12, f:150, f2:600}); this.choir([110, 165, 220], .9, {vol:.03}); this.impact(38, {vol:.6, delay:.4, wet:true}); break;
-      case 'imp': this.growl(.25, {f:180, band:1400, rate:45, vol:.07}); this.whoosh(.1, {vol:.07, f:1500, f2:3000, delay:.08}); this.flesh(.2, .15); break;
-      case 'demon': this.growl(.4, {f:55, band:350, vol:.12}); this.impact(40, {vol:.6, delay:.2}); break;
-      case 'hound': this.growl(.35, {f:90, band:700, rate:32, vol:.11}); this.crackle(.1, {vol:.1, delay:.25}); this.flesh(.3, .28); break;
-      case 'succubus': this.burst(.5, {vol:.1, f:200, f2:2500, a:.3, wet:true}); this.crackle(.4, {vol:.06, delay:.1}); this.impact(50, {vol:.35, delay:.45}); break;
-      case 'charger': this.growl(.3, {f:120, band:900, rate:22, vol:.07}); this.impact(60, {vol:.4, dur:.14}); this.impact(55, {vol:.45, dur:.14, delay:.12}); this.crackle(.3, {vol:.06}); break;
-      case 'fiend': this.growl(.6, {f:45, band:280, rate:24, vol:.15}); this.whoosh(.3, {vol:.12, f:150, f2:600, delay:.2}); this.impact(30, {vol:.8, delay:.45, wet:true}); break;
-      case 'devil': this.choir([55, 58], 1, {vol:.04}); this.growl(.5, {f:50, band:300, vol:.1, delay:.1}); this.impact(32, {vol:.7, delay:.55, wet:true}); break;
-      case 'pixie': this.burst(.2, {vol:.05, type:'bandpass', f:3500, f2:6000, q:3, a:.05}); this.whoosh(.12, {vol:.06, f:2000, f2:4000, delay:.1}); this.flesh(.15, .2); break;
-      case 'dancer': this.whoosh(.12, {vol:.1, f:800, f2:3200}); this.whoosh(.12, {vol:.1, f:900, f2:3400, delay:.13}); this.flesh(.28, .22); break;
-      case 'hunter': this.osc(90, .18, {type:'triangle', vol:.18, a:.002, f2:75, lp:700}); this.whoosh(.25, {vol:.07, f:2600, f2:800, delay:.03}); this.whoosh(.25, {vol:.05, f:2400, f2:700, delay:.12}); break;
-      case 'druid': this.burst(.8, {vol:.08, type:'bandpass', f:180, f2:900, q:1.2, a:.4, wet:true}); this.osc(65, .8, {vol:.15, a:.3, wet:true}); this.impact(42, {vol:.4, delay:.6}); break;
-      case 'unicorn': [0, .09].forEach(d => this.impact(80, {vol:.25, dur:.1, delay:d})); this.whoosh(.25, {vol:.1, f:500, f2:2800, delay:.15}); this.flesh(.35, .35); break;
-      case 'treant': this.osc(36, .9, {type:'sawtooth', vol:.06, a:.2, lp:180, q:6}); this.crackle(.5, {vol:.08}); this.impact(28, {vol:.8, delay:.5, wet:true}); break;
-      case 'gdragon': this.growl(.9, {f:40, band:240, rate:20, vol:.16}); this.burst(.9, {vol:.14, f:300, f2:2200, a:.2, wet:true, delay:.3}); this.crackle(.6, {vol:.08, delay:.4}); break;
-    }
-  },
-  attack(key, i){
-    if (!i) return this.signature(key);
-    this.real(key);
-  },
-  play(name){
-    if (!this.on || !this.ctx) return;
-    try {
-      if (CATS[name]) return this.cat(name, SEL_SND[name] || 0);
-      if (ACLASS[name]) return this.attack(name, SEL_SND.atk[name] || 0);
-      switch (name){
-        case 'pick': this.burst(.08, {vol:.03, type:'bandpass', f:1400, q:.8, a:.02}); break;
-        case 'fly': this.whoosh(.35, {vol:.05, f:250, f2:800}); break;
-        case 'camp': this.impact(70, {vol:.3, dur:.15}); break;
-        case 'move': this.impact(80, {vol:.2, dur:.1}); this.impact(75, {vol:.2, dur:.1, delay:.14}); break;
-        case 'spill': this.impact(36, {vol:.55, dur:.35}); break;
-        case 'turn': this.drum(50, {vol:.35}); break;
-        case 'offer': this.osc(55, .5, {vol:.18, a:.08, wet:true}); this.burst(.3, {vol:.03, type:'bandpass', f:500, q:2, a:.1}); break;
-        case 'win': this.horn(73, .7); this.horn(98, 1.2, {delay:.55}); [0, .2, .4, .55].forEach(d => this.drum(48, {vol:.45, delay:d})); break;
-        case 'lose': this.horn(73, 1.6, {f2:49}); this.groan(1.2, {f:82, delay:.5}); this.impact(30, {vol:.6, delay:1.2, wet:true}); break;
-      }
-    } catch (e) {}
-  },
-};
-document.addEventListener('pointerdown', () => Sfx.ensure(), {capture:true});
+/* ---------- sound: none for now ----------
+   All sound was removed. The game still calls these hooks, so a new pack can be plugged in here later. */
+const Sfx = {play(){}, hurt(){}, die(){}};
 
 /* ---------- state ---------- */
 let S, SHOW_ARROWS = true, uid = 1;
@@ -1522,7 +1261,6 @@ $('#bwrap').addEventListener('click', async e => {
 });
 $('#end').onclick = endTurn;
 $('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
-$('#snd').onclick = e => { Sfx.on = !Sfx.on; e.currentTarget.setAttribute('aria-pressed', Sfx.on); e.currentTarget.textContent = Sfx.on ? 'Звук' : 'Без звука'; };
 
 function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
@@ -1537,26 +1275,6 @@ function renderModes(){
     newGame();
   });
 }
-
-/* ---------- sound lab ---------- */
-function flashBtn(b){ b.classList.add('playing'); setTimeout(() => b.classList.remove('playing'), 420); }
-function renderSoundLab(){
-  const allReal = Object.keys(CATS).every(k => SEL_SND[k] === 1) && Object.values(FAC).every(f => f.units.every(u => SEL_SND.atk[u.key] === 1));
-  const allCur = Object.keys(CATS).every(k => !SEL_SND[k]) && Object.values(FAC).every(f => f.units.every(u => !SEL_SND.atk[u.key]));
-  $('#sndcats').innerHTML = `<h3>Весь пакет</h3><div class="srow"><b>Переключить всё сразу</b><div class="svars"><button class="sbtn" type="button" data-pack="0" aria-pressed="${allCur}">Текущий</button><button class="sbtn" type="button" data-pack="1" aria-pressed="${allReal}">Реализм</button></div></div><h3 style="margin-top:14px">События</h3>` + Object.entries(CATS).map(([k, c]) => `<div class="srow"><b>${c.name}</b><div class="svars">${c.vars.map((n, i) => `<button class="sbtn" type="button" data-cat="${k}" data-i="${i}" aria-pressed="${(SEL_SND[k] || 0) === i}">${n}</button>`).join('')}</div></div>`).join('');
-  $('#sndatk').innerHTML = `<h3>Атака каждого юнита</h3>` + Object.values(FAC).flatMap(f => f.units.map(u => `<div class="srow"><b>${u.name}<small>${f.name}</small></b><div class="svars">${ATK_VARS.map((n, i) => `<button class="sbtn" type="button" data-atk="${u.key}" data-i="${i}" aria-pressed="${(SEL_SND.atk[u.key] || 0) === i}">${n}</button>`).join('')}<button class="sbtn prev" type="button" data-prev="hurt" data-key="${u.key}">ранение</button><button class="sbtn prev" type="button" data-prev="die" data-key="${u.key}">гибель</button></div></div>`)).join('');
-}
-document.addEventListener('click', e => {
-  const pk = e.target.closest('[data-pack]');
-  if (pk){ Sfx.ensure(); const v = +pk.dataset.pack; Object.keys(CATS).forEach(k => SEL_SND[k] = v); Object.values(FAC).forEach(f => f.units.forEach(u => SEL_SND.atk[u.key] = v)); saveSnd(); renderSoundLab(); Sfx.real && v ? Sfx.real('footman') : Sfx.signature('footman'); return; }
-  const pv = e.target.closest('[data-prev]');
-  if (pv){ Sfx.ensure(); pv.dataset.prev === 'hurt' ? Sfx.hurtOf(pv.dataset.key) : Sfx.dieOf(pv.dataset.key); flashBtn(pv); return; }
-  const b = e.target.closest('[data-cat],[data-atk]'); if (!b) return;
-  Sfx.ensure(); const i = +b.dataset.i;
-  if (b.dataset.cat){ SEL_SND[b.dataset.cat] = i; Sfx.cat(b.dataset.cat, i); } else { SEL_SND.atk[b.dataset.atk] = i; Sfx.attack(b.dataset.atk, i); }
-  saveSnd(); renderSoundLab();
-  const nb = document.querySelector(b.dataset.cat ? `[data-cat="${b.dataset.cat}"][data-i="${i}"]` : `[data-atk="${b.dataset.atk}"][data-i="${i}"]`); if (nb){ flashBtn(nb); nb.focus(); }
-});
 
 /* ---------- icon gallery and roster ---------- */
 function renderIcons(){
@@ -1584,6 +1302,6 @@ function renderRoster(){
       + `</tbody></table></div>`;
   }).join('');
 }
-renderSoundLab(); renderIcons(); renderRoster();
+renderIcons(); renderRoster();
 newGame();
 </script>
