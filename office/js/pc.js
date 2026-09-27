@@ -34,6 +34,7 @@ export class PC {
     this.modal = null; this.popup = null; this.edit = null; this.toasts = [];
     this.dirty = true;
     this.onEvent = () => {};
+    this.power = 'off';           // 'off' | 'boot' | 'on'
     // desktop/shell
     this.front = null;            // 'onec' | 'match3' | null (desktop)
     this.launcher = false;
@@ -62,7 +63,13 @@ export class PC {
     this.dirty = true;
   }
   pointerLeave() { this.mouse.inside = false; this.hover = null; this.dirty = true; }
+  powerOn() {
+    if (this.power !== 'off') return false;
+    this.power = 'boot'; this.bootT0 = performance.now(); this.dirty = true;
+    return true;
+  }
   click(x, y) {
+    if (this.power !== 'on') return;
     this.pointerMove(x, y);
     const h = this.hitAt(x, y);
     if (this.edit && (!h || h.id !== this.edit.id) && !(h && h.keepEdit)) this.commitEdit();
@@ -82,6 +89,7 @@ export class PC {
     }
   }
   key(e) {
+    if (this.power !== 'on') return false;
     this.dirty = true;
     const k = e.key;
     if (this.modal) {
@@ -128,7 +136,7 @@ export class PC {
     return false;
   }
   needsAnim() {
-    return this.toasts.length > 0 || !!this.edit || !!this.splash || this.report.state === 'busy' || this.match3.busy();
+    return this.power === 'boot' || this.toasts.length > 0 || !!this.edit || !!this.splash || this.report.state === 'busy' || this.match3.busy();
   }
 
   // ---------- shell actions ----------
@@ -445,6 +453,7 @@ export class PC {
     const now = performance.now();
     this.toasts = this.toasts.filter((t) => now - t.t0 < 6000);
     g.setTransform(this.scale, 0, 0, this.scale, 0, 0);
+    if (this.power !== 'on') { this.drawPowerState(now); this.dirty = false; return; }
 
     this.drawDesktop();
     if (this.appRunning && this.front === 'onec') this.drawOneC();
@@ -459,6 +468,32 @@ export class PC {
     if (this.startMenu) this.drawStartMenu();
     this.drawCursor();
     this.dirty = false;
+  }
+
+  // monitor with the PC off, then BIOS and the OS splash
+  drawPowerState(now) {
+    const g = this.g, W = this.W, H = this.H;
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    if (this.power === 'off') {
+      this.box(W / 2 - 110, H / 2 - 22, 220, 44, '#1a1c20', '#3a3d44');
+      this.text('Нет сигнала', W / 2, H / 2 + 1, { align: 'center', size: 16, color: '#8a9099' });
+      return;
+    }
+    const t = (now - this.bootT0) / 1000;
+    if (t < 2.4) {
+      const lines = ['ХлебТех BIOS v2.18  (C) 2014', '', 'CPU: Pentium G4560 @ 3.50GHz', 'Memory Test: ' + Math.min(8192, Math.floor(t * 6000)) + 'M OK', 'Detecting SATA drives...', t > 1.2 ? '  WDC WD5000AAKX ... OK' : '', t > 1.7 ? 'Press DEL to enter SETUP' : ''];
+      lines.forEach((l, i) => this.text(l, 30, 40 + i * 24, { size: 16, color: '#c8c8c8' }));
+    } else {
+      g.fillStyle = '#6fb7ff';
+      [[-24, -60], [2, -60], [-24, -34], [2, -34]].forEach(([dx, dy]) => g.fillRect(W / 2 + dx, H / 2 + dy - 20, 22, 22));
+      for (let i = 0; i < 5; i++) {
+        const a = now / 300 + i * 0.5;
+        g.fillStyle = `rgba(255,255,255,${0.3 + 0.14 * i})`;
+        g.beginPath(); g.arc(W / 2 + Math.cos(a) * 16, H / 2 + 50 + Math.sin(a) * 16, 3, 0, 7); g.fill();
+      }
+      this.text(t > 4.5 ? 'Добро пожаловать' : 'Загрузка…', W / 2, H / 2 + 100, { align: 'center', size: 18, color: '#e8edf3' });
+    }
+    if (t > 6.2) { this.power = 'on'; this.dirty = true; this.onEvent('pcOn'); }
   }
 
   drawDesktop() {

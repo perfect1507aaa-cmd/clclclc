@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PC, fmt } from './pc.js';
 import { buildWorld } from './world.js';
+import { loadModelBoss, makeModelBoss } from './boss.js';
 import { Sfx } from './audio.js';
 import { redraw, lcdState, standingSheetTex } from './textures.js';
 import { CLIENTS, productByCode, makeOrder, sayItem, orderTotal, digitsWords, shortFio, makeStandingOrders, phoneClients, STANDING_COUNT } from './data.js';
@@ -55,7 +56,20 @@ screenTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
 try { await Promise.race([document.fonts.load('48px Caveat'), new Promise((r) => setTimeout(r, 2500))]); } catch { /* fall back */ }
 const world = buildWorld(scene, { screenTex });
-const { phone, mug, lamp, keyboard, boss, bossPhone } = world;
+const { phone, mug, lamp, keyboard, bossPhone } = world;
+let boss = world.boss;
+// a real rigged model in office/models/ replaces the built-in one (see boss.js)
+loadModelBoss(['models/alena.glb', 'models/alena.fbx']).then((obj) => {
+  if (!obj) return;
+  const mb = makeModelBoss(obj, world.bossStation);
+  if (!mb) return;
+  world.boss.group.visible = false;
+  world.interactables.splice(world.interactables.indexOf(world.boss.group), 1);
+  mb.group.userData.interact = 'boss';
+  mb.group.userData.hint = 'Алёна Владимировна';
+  world.interactables.push(mb.group);
+  boss = mb;
+});
 [[-1.75, -0.35], [1.75, -0.35], [0, 1.8], [-0.2, 4.02], [-1.3, 6.6]].forEach(([x, z]) => {
   const l = new THREE.PointLight(0xf2f5ff, 2.2, 0, 2);
   l.position.set(x, 2.55, z);
@@ -80,7 +94,7 @@ const day = {
   standing: makeStandingOrders(), standingReviewed: false, forgiven: 0,
 };
 // where you can sit: your own chair and the visitor chair at the boss's desk
-const SEATS = { own: { x: 0, z: 0, yaw0: 0, standAt: [0, 0.62] }, visit: { x: -1.22, z: -0.25, yaw0: Math.PI / 2, standAt: [-1.2, 0.44] } };
+const SEATS = { own: { x: 0, z: 0, yaw0: 0, standAt: [0, 0.62] }, visit: { x: -2.05, z: 0.88, yaw0: 0.6, standAt: [-1.55, 1.32] } };
 const seatChair = () => (S.seat === 'visit' ? world.visitChair : world.playerChair);
 const EYE_SEATED = 1.2, EYE_STAND = 1.62;
 
@@ -163,7 +177,6 @@ function nextSub() {
   if (!S.choices) $('subs-choices').innerHTML = '';
   let d = s.dur;
   const done = () => { if (s.finished) return; s.finished = true; clearTimeout(s.timer); s.onDone?.(); s.resolve(); nextSub(); };
-  if (s.log) logLine(s.who, s.text, s.logCls);
   if (S.tts && s.voice && tts.speak(s.text, s.voice, done)) {
     // the line ends when the voice finishes; the timer is only a safety net
     s.timer = setTimeout(done, (4 + s.text.length * 0.12) * 1000);
@@ -213,16 +226,6 @@ function ask(options, { timeout } = {}) {
   });
 }
 function choose(i) { if (S.choices && i < S.choices.options.length) S.choices.finish(i); }
-
-function logLine(who, text, cls = '') {
-  const ul = $('log-list');
-  const li = document.createElement('li');
-  li.className = cls;
-  li.innerHTML = `<b>${who}</b> ${text}`;
-  ul.appendChild(li);
-  ul.scrollTop = ul.scrollHeight;
-}
-function showLog(title) { $('log-title').textContent = title; $('log-list').innerHTML = ''; $('call-log').hidden = false; }
 
 let notifyT;
 function notify(text, kind = 'good') {
@@ -274,6 +277,7 @@ function lookYaw() {
   return THREE.MathUtils.clamp(Math.atan2(-_v.x, -(_v.z - 0.05)), -1.15, 1.15);
 }
 const bossS = { wave: 0, waveT: 0, phone: 0, onPhone: false, summon: null, task: null, typing: true, pause: 0, nextTask: 0, nextCall: 0, lookUntil: 0, clients: new Set() };
+const bossSayReal = (...a) => bossSay(...a);
 function bossSay(text, o = {}) {
   bossS.lookUntil = performance.now() + 6000;
   bossS.pause = performance.now() + 5000;
@@ -285,7 +289,7 @@ function reprimand(reason) {
   notify(`Выговор: ${reason}`, 'bad');
 }
 function summon(errors, call) {
-  bossS.summon = { errors, call };
+  bossS.summon = { kind: 'scold', errors, call };
   bossS.wave = 1; bossS.waveT = performance.now() + 4000;
   bossSay(pick(['Так. А ну-ка подойди ко мне. Садись на стул.', 'Подойди ко мне, пожалуйста. Сейчас. Стул у стола.', 'Иди-ка сюда, присаживайся. Поговорим.']));
   addTask('summon', 'Сесть на стул у стола Алёны Владимировны', 60, () => {
@@ -358,6 +362,7 @@ async function scold() {
   S.scolding = true;
   try {
     await bossSay(pick(SCOLD.open));
+    if (call?.repeats >= 2) await bossSay('И ещё ты всё время переспрашиваешь. Слушай внимательнее.');
     await bossSay(call ? `Звонил клиент ${call.client.code}, ${shortFio(call.client.fio)}.` : `Проверила утренние заказы с листа. Ошибок: ${errors.length}.`);
     const K = SCOLD.kinds[classify(errors[0])];
     await bossSay(`${errors[0]}.`);
@@ -380,6 +385,89 @@ async function scold() {
     else if (score < 0) { await bossSay(pick(SCOLD.close.harsh)); reprimand('ошибка в заявке'); reprimand('отговорки'); }
     else { await bossSay(pick(SCOLD.close.normal)); reprimand('ошибка в заявке'); }
   } finally { S.scolding = false; }
+}
+// too many «повторите» in one call: a talk without a reprimand, sometimes a chore
+function summonEducate(call) {
+  if (bossS.summon) return;
+  bossS.summon = { kind: 'educate', call };
+  bossS.wave = 1; bossS.waveT = performance.now() + 4000;
+  bossSay(pick(['Подойди-ка ко мне на минутку. Садись на стул.', 'Зайди ко мне, поговорим. Стул сбоку.']));
+  addTask('summon', 'Сесть на стул к Алёне Владимировне', 60, () => {
+    bossSay('Не пришёл? Ну ладно. Я запомнила.');
+    reprimand('не подошёл к начальнице');
+    bossS.summon = null;
+  });
+}
+const EDU = {
+  open: ['Садись. Я слышала твой разговор.', 'Садись. Давай про телефон поговорим.', 'Присядь. Ты клиента заставил повторять.'],
+  point: [`Клиент диктовал тебе два раза. Он занятой человек.`, 'Когда переспрашиваешь постоянно, клиент думает, что мы тут спим.', 'Переспросить можно. Но не на каждой строчке.'],
+  replies: [['Понятно, Алёна Владимировна.', 'sorry'], ['Они очень быстро диктуют.', 'excuse'], ['Связь плохая, не слышно.', 'blame'], ['Буду вводить быстрее.', 'fix']],
+  tips: ['Вводи код товара: сто один — белый, сто два — чёрный. Так быстрее, чем искать по названию.', 'Сначала дослушай строчку, потом вводи. И говори «угу», только когда записал.', 'Держи руку на Enter: товар, Enter, количество, Enter. Не надо мышкой.'],
+  chores: [['coffee', 'А чтобы проснуться — сделай-ка мне кофе. Капучино.'], ['sweep', 'А пока иди подмети крошки в коридоре. Проветришься.'], ['window', 'И открой, пожалуйста, окно — душно, голова не варит.']],
+};
+async function educate() {
+  const { call } = bossS.summon;
+  bossS.summon = null;
+  removeTask('summon');
+  S.scolding = true;
+  try {
+    await bossSay(pick(EDU.open));
+    await bossSay(pick(EDU.point));
+    const list = [...shuffle(EDU.replies).slice(0, 3)];
+    const r = await ask(list.map((o) => o[0]), { timeout: 15 });
+    const [text, tone] = r.i < 0 ? ['', 'silent'] : list[r.i];
+    if (tone !== 'silent') await say('Вы', text, { voice: 165, cls: 'me', dur: 1.6 });
+    await bossSay(pick(SCOLD.react[tone]));
+    if (tone === 'blame') { await bossSay('Связь у всех одинаковая. Выговор за отговорки.'); reprimand('отговорки'); }
+    await bossSay(pick(EDU.tips));
+    await ask(['Понятно, Алёна Владимировна.'], { timeout: 12 });
+    await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
+    if (!bossS.task && Math.random() < 0.45) {
+      const opts = EDU.chores.filter(([k]) => k === 'window' || !day.used.has(k));
+      const [kind, line] = pick(opts.length ? opts : EDU.chores);
+      await bossSay(kind === 'window' && world.window.open ? 'И закрой, пожалуйста, окно — дует.' : line);
+      giveBossTask(kind, true);
+      await ask(['Понятно, Алёна Владимировна.'], { timeout: 12 });
+    }
+    await bossSay(pick(['Всё, иди работай.', 'Иди. И внимательнее.']));
+  } finally { S.scolding = false; }
+  void call;
+}
+// morning: she gives the plan for the day
+async function briefing() {
+  S.scolding = true;
+  bossS.summon = null;
+  removeTask('brief');
+  const ok = async () => { await ask(['Понятно, Алёна Владимировна.'], { timeout: 20 }); await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 }); };
+  try {
+    await bossSay('Доброе утро. Садись.');
+    const r = await ask(['Доброе утро, Алёна Владимировна.', 'Здравствуйте.'], { timeout: 20 });
+    await say('Вы', r.i === 1 ? 'Здравствуйте.' : 'Доброе утро, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
+    await bossSay('Сегодня двадцать постоянных заказов — лист у тебя на столе. Вводишь их первыми.');
+    await ok();
+    await bossSay('Потом пойдут звонки. Твои — десять. Код клиента, сверяешь фамилию, записываешь, в конце называешь сумму.');
+    const q = await ask(['Понятно, Алёна Владимировна.', 'А если не расслышу?'], { timeout: 20 });
+    if (q.i === 1) {
+      await say('Вы', 'А если не расслышу?', { voice: 165, cls: 'me', dur: 1.4 });
+      await bossSay('Переспроси: «повторите, пожалуйста». Но не злоупотребляй — клиенты этого не любят.');
+      await ok();
+    } else await say('Вы', 'Понятно, Алёна Владимировна.', { voice: 165, cls: 'me', dur: 1.6 });
+    const [kind, line] = pick([['coffee', 'И сделай мне, пожалуйста, кофе. Кухня по коридору налево, кофемашина чёрная.'], ['window', 'И открой, пожалуйста, окно у меня за спиной — душно с утра.']]);
+    await bossSay(line);
+    giveBossTask(kind, true);
+    await ok();
+    await bossSay('Всё. Иди работай. Пароль от 1Ц — на стикере.');
+    day.briefed = true;
+    addTask('standing', `Утренние заказы с листа: ${STANDING_COUNT - standingLeft()}/${STANDING_COUNT}`, 0);
+    $('sheet').hidden = false; $('sheet').classList.remove('collapsed');
+    if (day.phase === 'calls') phoneS.nextRing = performance.now() + 150000;
+  } finally { S.scolding = false; }
+}
+function talkAtDesk() {
+  if (bossS.summon?.kind === 'scold') scold();
+  else if (bossS.summon?.kind === 'educate') educate();
+  else if (!day.briefed) briefing();
+  else chatAtDesk();
 }
 async function chatAtDesk() {
   S.scolding = true;
@@ -433,12 +521,13 @@ async function bossPhoneCall() {
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // boss chores with timers
-function giveBossTask(forced) {
+function giveBossTask(forced, quiet = false) {
   const opts = ['coffee', 'sweep', 'window'].filter((t) => !(t !== 'window' && day.used.has(t)));
   const kind = forced || pick(opts);
+  const bossSay = quiet ? () => {} : bossSayReal;
   day.used.add(kind);
   bossS.task = kind;
-  const fail = (why) => () => { bossS.task = null; day.bossFailed++; bossS.nextTask = performance.now() + rand(110, 170) * 1000; bossSay(why); reprimand('не выполнено поручение'); if (kind === 'sweep') cleanupSweep(false); };
+  const fail = (why) => () => { bossS.task = null; day.bossFailed++; bossS.nextTask = performance.now() + rand(110, 170) * 1000; bossSayReal(why); reprimand('не выполнено поручение'); if (kind === 'sweep') cleanupSweep(false); };
   if (kind === 'window') {
     const open = world.window.open;
     bossS.windowWant = !open;
@@ -534,7 +623,6 @@ function currentSum(call) {
 }
 async function runCall(call, callback) {
   const c = call.client;
-  showLog(`Звонок: код ${c.code}`);
   if (callback) {
     sfx.dtmf(6); sfx.ringback();
     await wait(4200); guard(call);
@@ -554,6 +642,7 @@ async function runCall(call, callback) {
     const r = await ask([...names.map((k) => `${k.surname}?`), 'Повторите код, пожалуйста.']);
     guard(call);
     if (r.i === names.length || r.i < 0) {
+      call.repeats = (call.repeats || 0) + 1;
       await meSay(call, 'Повторите код, пожалуйста.');
       await callerSay(call, `${digitsWords(c.code)}. ${c.code}.`);
       continue;
@@ -574,7 +663,7 @@ async function runCall(call, callback) {
     for (;;) {
       const r = await ask(['Угу.', 'Так, записал.', 'Повторите, пожалуйста.'], { timeout: 14 });
       guard(call);
-      if (r.i === 2) { await meSay(call, r.text, 0.9); await callerSay(call, repeatLine(), { dur: 2.8 }); continue; }
+      if (r.i === 2) { call.repeats = (call.repeats || 0) + 1; await meSay(call, r.text, 0.9); await callerSay(call, repeatLine(), { dur: 2.8 }); continue; }
       if (r.i < 0) {
         if (!nudged) { nudged = true; await callerSay(call, pick(['Алло? Вы записываете?', 'Алло, вы там?', 'Успеваете?'])); continue; }
         call.errors.push('Молчал в трубку, пока клиент диктовал');
@@ -599,6 +688,7 @@ async function runCall(call, callback) {
       call.errors.push('Не ответил клиенту на вопрос «Записали?»');
       await callerSay(call, 'Алло! Вы меня слышите вообще? Ладно.');
     } else if (r.i === 1) {
+      call.repeats = (call.repeats || 0) + 1;
       await meSay(call, r.text);
       await callerSay(call, 'Повторяю.');
       for (const it of call.items) await callerSay(call, sayItem(it), { dur: 2.8 });
@@ -621,8 +711,15 @@ async function runCall(call, callback) {
   await meSay(call, 'До свидания!');
   call.ended = true;
   hangUp(true);
+  afterCall(call);
   if (call.savedOrder) evaluate(call);
   else addTask(`save${call.id}`, `Записать заявку ${c.code} в 1Ц (Ctrl+Enter)`, 0);
+}
+// how she reacts to «повторите» after a call
+function afterCall(call) {
+  const n = call.repeats || 0;
+  if (n === 1) setTimeout(() => { if (!bossS.summon) bossSay(pick(['Будь внимательнее — клиенты не любят повторять.', 'Слушай внимательнее, пожалуйста.', 'Переспросил — ладно. Но старайся с первого раза.'])); }, 3500);
+  else if (n >= 2) setTimeout(() => summonEducate(call), 3500);
 }
 function answer() {
   const call = phoneS.call;
@@ -706,9 +803,8 @@ function updateBossHandset() {
   bossPhone.group.updateMatrixWorld(true);
   const rest = bossPhone.rest.pos.clone().applyMatrix4(bossPhone.group.matrixWorld);
   const restQ = bossPhone.group.getWorldQuaternion(new THREE.Quaternion()).multiply(bossPhone.rest.quat);
-  boss.head.updateMatrixWorld(true);
-  const ear = new THREE.Vector3(-0.11, 0.09, 0.0).applyMatrix4(boss.head.matrixWorld);
-  const earQ = boss.head.getWorldQuaternion(new THREE.Quaternion()).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0.3)));
+  const ear = new THREE.Vector3(), earQ = new THREE.Quaternion();
+  boss.ear(ear, earQ);
   hs.position.lerpVectors(rest, ear, k);
   hs.quaternion.slerpQuaternions(restQ, earQ, k);
   bossPhone.updateCord();
@@ -786,13 +882,14 @@ pc.onEvent = (type, data) => {
   if (type === 'click') sfx.click();
   else if (type === 'error') sfx.error();
   else if (type === 'm3pop') sfx.pop();
-  else if (type === 'appReady') {
+  else if (type === 'pcOn') {
+    removeTask('pc');
+    addTask('launch', 'Запустить 1Ц: двойной щелчок по ярлыку на экране', 0);
+  } else if (type === 'appReady') {
     removeTask('launch');
-    if (day.phase === 'boot') {
+    if (day.phase === 'arrive' || day.phase === 'boot') {
       day.phase = 'calls';
-      setTimeout(() => bossSay('Ну наконец-то. Начни с утренних постоянных заказов — лист у тебя на столе, двадцать штук. Потом пойдут звонки.'), 1500);
-      addTask('standing', `Утренние заказы с листа: 0/${STANDING_COUNT}`, 0);
-      $('sheet').hidden = false; $('sheet').classList.remove('collapsed');
+      if (!day.briefed) setTimeout(() => bossSay('1Ц запустил? Хорошо. А теперь подойди ко мне — стул сбоку от моего стола.'), 1500);
       phoneS.nextRing = performance.now() + 150000;
       bossS.nextTask = performance.now() + rand(90, 130) * 1000;
       bossS.nextCall = performance.now() + rand(50, 80) * 1000;
@@ -825,7 +922,12 @@ pc.onEvent = (type, data) => {
 const FAR_OK = new Set(['clock', 'calendar', 'whiteboard', 'notice']);
 function reachOf(name) { return FAR_OK.has(name) ? 6 : name === 'boss' ? 2.5 : S.mode === 'standing' ? 2.2 : 1.9; }
 const INTERACT = {
+  pc: () => {
+    if (pc.powerOn()) { sfx.click(); sfx.tone(880, 0.12, { vol: 0.05, at: 0.2 }); sfx.tone(60, 3, { type: 'sawtooth', vol: 0.015, attack: 0.5, release: 1 }); say('', 'Компьютер загружается…', { dur: 2 }); }
+    else say('', 'Компьютер уже включён.', { dur: 1.5 });
+  },
   monitor: () => {
+    if (pc.power === 'off') { say('', 'Монитор тёмный: «Нет сигнала». Включите компьютер — кнопка на системном блоке под столом.', { dur: 3.2 }); return; }
     if (S.mode === 'seated' && S.seat === 'own') enterWork();
     else if (S.mode === 'seated') say('', 'Сначала вернитесь на своё место.', { dur: 1.8 });
     else sitDown('own', true);
@@ -915,12 +1017,12 @@ function talkToBoss() {
     endDay();
     return;
   }
-  if (bossS.summon) {
-    if (atDesk) scold();
+  if (bossS.summon || !day.briefed) {
+    if (atDesk) talkAtDesk();
     else bossSay(near ? 'Садись на стул, не стой над душой.' : 'Встань и подойди. Садись на стул у моего стола.');
     return;
   }
-  if (atDesk) { chatAtDesk(); return; }
+  if (atDesk) { talkAtDesk(); return; }
   bossSay(pick(['Что такое? Работай, звонки же.', 'Если про обед — с часу до двух. По очереди.', 'Фамилию клиента всегда сверяй, понял?', 'Сумму вслух — обязательно. Клиенты любят цифры.', day.phase === 'boot' ? 'Запускай 1Ц. Пароль на стикере.' : 'Не отвлекайся.']));
 }
 async function endDay() {
@@ -1006,7 +1108,7 @@ function sitDown(seat = 'own', thenWork = false) {
   startTrans(seatedPose, 0.55, () => {
     S.mode = 'seated'; updateHelp();
     if (thenWork) enterWork();
-    if (seat === 'visit') { if (bossS.summon) scold(); else chatAtDesk(); }
+    if (seat === 'visit') talkAtDesk();
   });
 }
 // ---------- doors ----------
@@ -1070,14 +1172,15 @@ function enterWork() {
   S.mode = 'toWork';
   startTrans(workPose, 0.6, () => {
     S.mode = 'work';
-    if (S.pointer) { const uv = screenUV(S.pointer); if (uv) pc.pointerMove(uv.x * pc.W, (1 - uv.y) * pc.H); }
+    if (S.locked) { S.vc = { x: pc.W / 2, y: pc.H / 2 }; pc.pointerMove(S.vc.x, S.vc.y); }
+    else if (S.pointer) { const uv = screenUV(S.pointer); if (uv) pc.pointerMove(uv.x * pc.W, (1 - uv.y) * pc.H); }
   });
-  if (S.locked) document.exitPointerLock?.();
   $('hint').hidden = true;
   document.body.classList.add('working');
 }
 function leaveWork() {
   if (S.mode !== 'work' && S.mode !== 'toWork') return;
+  S.vc = null;
   pc.pointerLeave();
   if (pc.edit) pc.commitEdit();
   S.mode = 'toSeat';
@@ -1109,6 +1212,8 @@ function tryLock() {
 }
 document.addEventListener('pointerlockchange', () => {
   S.locked = document.pointerLockElement === canvas;
+  // Esc at the PC releases the mouse: treat it as leaning back
+  if (!S.locked && (S.mode === 'work' || S.mode === 'toWork') && S.vc) leaveWork();
   $('crosshair').hidden = !S.locked;
   updateHelp();
 });
@@ -1118,6 +1223,7 @@ canvas.addEventListener('pointerdown', (e) => {
   sfx.init();
   if (S.mode === 'work') {
     if (e.button === 2) { leaveWork(); return; }
+    if (S.locked) { pc.click(S.vc.x, S.vc.y); moveDeskMouse({ x: S.vc.x / pc.W, y: 1 - S.vc.y / pc.H }); return; }
     const uv = screenUV(e);
     if (uv) { pc.click(uv.x * pc.W, (1 - uv.y) * pc.H); moveDeskMouse(uv); } else if (!isTouch) leaveWork();
     return;
@@ -1130,6 +1236,14 @@ canvas.addEventListener('pointerdown', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   S.pointer = e;
   if (S.mode === 'work') {
+    if (S.locked) {
+      // the monitor shows ~70% of the window width: move the on-screen cursor at roughly 1:1
+      const k = pc.W / (innerWidth * 0.72);
+      S.vc = { x: THREE.MathUtils.clamp((S.vc?.x ?? pc.W / 2) + e.movementX * k, 0, pc.W - 1), y: THREE.MathUtils.clamp((S.vc?.y ?? pc.H / 2) + e.movementY * k, 0, pc.H - 1) };
+      pc.pointerMove(S.vc.x, S.vc.y);
+      moveDeskMouse({ x: S.vc.x / pc.W, y: 1 - S.vc.y / pc.H });
+      return;
+    }
     const uv = screenUV(e);
     if (uv) { pc.pointerMove(uv.x * pc.W, (1 - uv.y) * pc.H); moveDeskMouse(uv); canvas.style.cursor = 'none'; }
     else { pc.pointerLeave(); canvas.style.cursor = 'default'; }
@@ -1154,6 +1268,7 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 canvas.addEventListener('wheel', (e) => {
   if (S.mode !== 'work') return;
   e.preventDefault();
+  if (S.locked && S.vc) { pc.wheel(S.vc.x, S.vc.y, e.deltaY); return; }
   const uv = screenUV(e);
   if (uv) pc.wheel(uv.x * pc.W, (1 - uv.y) * pc.H, e.deltaY);
 }, { passive: false });
@@ -1163,6 +1278,7 @@ window.addEventListener('keydown', (e) => {
   if (S.mode === 'intro' || S.mode === 'end') return;
   // replies: F1–F4 always, 1–4 when not typing in 1C
   const fk = /^F([1-4])$/.exec(e.key);
+  if (e.key === 'F1' && phoneS.state === 'ringing' && S.mode === 'work') { e.preventDefault(); answer(); return; }
   if (S.choices && (fk || (/^[1-9]$/.test(e.key) && !(S.mode === 'work' && pc.edit)))) { choose((fk ? +fk[1] : +e.key) - 1); e.preventDefault(); return; }
   if (S.mode === 'work' || S.mode === 'toWork') {
     const k = keyboard.keys[e.code];
@@ -1229,11 +1345,15 @@ $('start').onclick = () => {
   sfx.init();
   $('intro').hidden = true;
   document.body.classList.add('started');
-  S.mode = 'seated'; S.yaw = 0;
+  // you arrive in the corridor, outside the office door
+  S.mode = 'standing'; S.seat = 'own';
+  S.pos.set(2.2, 0, 4.4); S.yaw = 0; S.pitch = -0.05;
+  day.phase = 'arrive';
   tryLock();
   updateHelp();
-  addTask('launch', 'Запустить 1Ц: двойной щелчок по ярлыку на экране', 0);
-  setTimeout(() => bossSay('Доброе утро! Я Алёна Владимировна, начальник отдела заявок. Запускай 1Ц — база «Хлебзавод — Заявки», пароль на стикере.'), 1800);
+  addTask('pc', 'Включить компьютер: кнопка на системном блоке под столом', 0);
+  addTask('brief', 'Подойти к Алёне Владимировне: стул сбоку от её стола', 0);
+  setTimeout(() => bossSay('Доброе утро! Заходи, дверь за собой закрывай. Включай компьютер и подойди ко мне.'), 2200);
 };
 
 // ---------- main loop ----------
@@ -1304,11 +1424,11 @@ function frame() {
     } else hint.hidden = true;
     $('crosshair').classList.toggle('active', !!S.hover && !S.hover.far);
     if (!S.locked) canvas.style.cursor = S.hover ? 'pointer' : 'grab';
-  }
+  } else { S.hover = null; $('hint').hidden = true; }
 
   // phone
   updateDoors(dt, now);
-  const canRing = day.phase === 'calls' && !S.scolding && phoneS.state === 'idle' && !day.missedList.length && day.generated < DAY_ORDERS && phoneS.nextRing && now > phoneS.nextRing;
+  const canRing = day.phase === 'calls' && day.briefed && !S.scolding && phoneS.state === 'idle' && !day.missedList.length && day.generated < DAY_ORDERS && phoneS.nextRing && now > phoneS.nextRing;
   if (canRing) startRinging(newCall());
   if (phoneS.state === 'ringing') {
     if (now - phoneS.lastRing > 3000) { phoneS.lastRing = now; sfx.ringOnce(); }
@@ -1326,7 +1446,10 @@ function frame() {
 
   // boss
   if (day.phase === 'calls' || day.phase === 'report') {
-    if (!bossS.task && !bossS.summon && bossS.nextTask && now > bossS.nextTask && !subCurrent && day.phase === 'calls') { giveBossTask(); bossS.nextTask = 0; }
+    if (!bossS.task && !bossS.summon && bossS.nextTask && now > bossS.nextTask && day.phase === 'calls') {
+      if (S.scolding || phoneS.state === 'call' || bossS.onPhone) bossS.nextTask = now + 15000;
+      else { giveBossTask(); bossS.nextTask = 0; }
+    }
     if (!bossS.onPhone && bossS.nextCall && now > bossS.nextCall && !subCurrent && phoneS.state !== 'call') { bossS.nextCall = now + rand(80, 140) * 1000; bossPhoneCall(); }
   }
   bossS.phone += ((bossS.phoneTarget || 0) - bossS.phone) * Math.min(1, dt * 4);
@@ -1334,8 +1457,7 @@ function frame() {
   bossS.waveK = (bossS.waveK || 0) + ((bossS.wave || 0) - (bossS.waveK || 0)) * Math.min(1, dt * 5);
   boss.lookTarget = now < bossS.lookUntil ? lookYaw() : 0;
   boss.look += (boss.lookTarget - boss.look) * Math.min(1, dt * 4);
-  boss.head.rotation.y = boss.look;
-  boss.head.rotation.x = boss.look ? -0.05 : 0.1;
+  boss.setLook(boss.look, now < bossS.lookUntil);
   boss.setPose(t, bossS.phone, bossS.waveK, now > bossS.pause && Math.sin(t * 0.3 + boss.phase) > -0.3);
   updateBossHandset();
   if (now > bossS.pause && Math.random() < dt * 5 && S.mode !== 'intro') sfx.colleagueKey();
@@ -1367,7 +1489,7 @@ function frame() {
     if (tasks.some((x) => x.deadline)) renderTasks();
     if (sec % 30 === 0 && phoneS.state === 'idle') updateLcd();
   }
-  world.pcLed.material.color.setHex(Math.random() < 0.08 ? 0x0a3a66 : 0x3cb0ff);
+  world.pcLed.material.color.setHex(pc.power === 'off' ? 0x0a1a28 : Math.random() < 0.08 ? 0x0a3a66 : 0x3cb0ff);
 
   if (pc.dirty || pc.needsAnim()) { pc.draw(); screenTex.needsUpdate = true; }
   $('numpad').hidden = !(isTouch && S.mode === 'work' && pc.edit);
@@ -1394,4 +1516,4 @@ renderStats();
 requestAnimationFrame(frame);
 
 // handy for poking at the scene from the devtools console
-window.office = { S, day, pc, world, tasks, INTERACT, talkToBoss, walkable, toggleDoor, onStandingSaved, reviewStanding, bossPhoneCall, enterWork, leaveWork, standUp, sitDown, startRinging, newCall, answer, phoneS, bossS, giveBossTask, choose, summon, endDay };
+window.office = { S, day, pc, world, tasks, INTERACT, talkToBoss, summonEducate, afterCall, walkable, toggleDoor, onStandingSaved, reviewStanding, bossPhoneCall, enterWork, leaveWork, standUp, sitDown, startRinging, newCall, answer, phoneS, bossS, giveBossTask, choose, summon, endDay };

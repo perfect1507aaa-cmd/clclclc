@@ -363,7 +363,9 @@ export function buildWorld(scene, { screenTex }) {
   reg(cac, 'cactus', 'Кактус');
   const pc = new THREE.Group(); pc.position.set(0.55, 0, -0.85); scene.add(pc);
   box(pc, 0.2, 0.42, 0.44, M.blackMatte, 0, 0.21, 0);
-  refs.pcLed = box(pc, 0.008, 0.008, 0.004, new THREE.MeshBasicMaterial({ color: 0x3cb0ff }), 0.06, 0.38, 0.224);
+  refs.pcLed = box(pc, 0.008, 0.008, 0.004, new THREE.MeshBasicMaterial({ color: 0x0a1a28 }), 0.06, 0.38, 0.224);
+  cyl(pc, 0.014, 0.014, 0.006, std(0x9aa0a8, 0.3, 0.8), 0.0, 0.36, 0.224, 16).rotation.x = Math.PI / 2;
+  reg(pc, 'pc', 'Системный блок');
   const bin = new THREE.Group(); bin.position.set(0.18, 0, -0.95); scene.add(bin);
   add(bin, new THREE.CylinderGeometry(0.13, 0.11, 0.32, 20, 1, true), std(0x3a3d42, 0.6, 0.2, { side: THREE.DoubleSide }), 0, 0.16, 0);
 
@@ -406,10 +408,10 @@ export function buildWorld(scene, { screenTex }) {
   reg(refs.boss.group, 'boss', 'Алёна Владимировна');
   col(-2.42, -1.08, -1.58, 0.58);       // her desk
   col(x0, -0.62, -2.38, 0.12);          // her chair
-  // visitor chair in front of her desk: sit here to talk
-  refs.visitChair = makeVisitorChair(scene, M, -1.22, -0.25, Math.PI / 2);
+  // visitor chair at the side of her desk: sit here to talk
+  refs.visitChair = makeVisitorChair(scene, M, -2.05, 0.88, 0.6);
   reg(refs.visitChair, 'visitchair', 'Стул у начальницы');
-  col(-1.48, -0.52, -0.96, 0.02);
+  col(-2.32, 0.62, -1.78, 1.14);
   // a floor plant where the third desk used to be
   const palm = new THREE.Group(); palm.position.set(2.6, 0, -0.9); scene.add(palm);
   cyl(palm, 0.22, 0.17, 0.42, std(0x3d4148, 0.6), 0, 0.21, 0);
@@ -788,75 +790,73 @@ export function makeChair(scene, M, x, z, yaw = 0) {
 }
 
 
-// Алёна Владимировна. Arms are cylinders re-aimed every frame so she can type,
-// hold the phone to her ear or wave you over.
+// Алёна Владимировна (built-in model). Smooth lathed body, blazer over a blouse, bob haircut.
+// Arms are cylinders re-aimed every frame so she can type, hold the phone or wave you over.
+// Interface shared with the loaded-model version in boss.js: setPose, setLook, ear.
 function makeBoss(scene, M, x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
   const V = (a, b, c) => new THREE.Vector3(a, b, c);
-  const skin = std(0xf0c9b2, 0.6);
-  const blouse = std(0x8e2142, 0.75);
-  const skirt = std(0x24232d, 0.85);
-  const tights = std(0x9c7564, 0.55);
-  const hair = std(0x5b2c1a, 0.5);
-  const gold = std(0xd9b24a, 0.3, 0.9);
-  // legs: pencil skirt over the thighs, tights, heels
+  const skin = std(0xeec3aa, 0.55);
+  const blazer = std(0x243049, 0.7);
+  const blouse = std(0xf4f1ec, 0.6);
+  const skirt = std(0x1f2638, 0.75);
+  const tights = std(0xb28f7c, 0.5);
+  const hair = std(0x4a2517, 0.45);
+  const pearl = std(0xf3efe6, 0.2, 0.1);
+  const lathe = (pts, mat, y0 = 0, phiStart = 0, phiLength = Math.PI * 2) => {
+    const geo = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 32, phiStart, phiLength);
+    const m = add(g, geo, mat, 0, y0, 0.06);
+    m.scale.set(1.12, 1, 0.72);
+    return m;
+  };
+  // legs: knee-length skirt over the thighs, tights, low pumps
   [-1, 1].forEach((s) => {
-    limb(g, V(0.085 * s, 0.55, 0.04), V(0.09 * s, 0.56, -0.34), 0.07, skirt);
-    limb(g, V(0.09 * s, 0.54, -0.36), V(0.08 * s, 0.11, -0.4), 0.045, tights);
-    const shoe = new THREE.Group(); shoe.position.set(0.08 * s, 0, -0.43); g.add(shoe);
-    rbox(shoe, 0.07, 0.05, 0.19, 0.02, std(0x1a1112, 0.3), 0, 0.06, -0.02);
-    cyl(shoe, 0.008, 0.006, 0.06, std(0x8a1020, 0.3), 0, 0.03, 0.06, 8);
+    limb(g, V(0.085 * s, 0.56, 0.04), V(0.09 * s, 0.56, -0.33), 0.068, skirt);
+    limb(g, V(0.09 * s, 0.53, -0.35), V(0.085 * s, 0.1, -0.38), 0.042, tights);
+    rbox(g, 0.07, 0.05, 0.18, 0.022, std(0x1b1f2c, 0.3), 0.085 * s, 0.05, -0.42);
   });
-  add(g, new THREE.CapsuleGeometry(0.15, 0.12, 4, 14), skirt, 0, 0.6, 0.06).scale.set(1.15, 0.8, 0.9);
-  // torso: waist + chest
-  add(g, new THREE.CapsuleGeometry(0.11, 0.14, 4, 14), blouse, 0, 0.76, 0.07).scale.set(1.12, 1, 0.78);
-  const chest = add(g, new THREE.CapsuleGeometry(0.13, 0.12, 4, 14), blouse, 0, 0.95, 0.06);
-  chest.scale.set(1.12, 1, 0.78); chest.rotation.x = -0.06;
-  // V-neckline
-  cyl(g, 0.038, 0.042, 0.12, skin, 0, 1.1, 0.05, 12);
-  const vgeo = new THREE.CircleGeometry(0.045, 3); const v = add(g, vgeo, skin, 0, 1.04, -0.045, { cast: false });
-  v.rotation.z = -Math.PI / 2; v.scale.set(1, 0.8, 1);
-  add(g, new THREE.TorusGeometry(0.047, 0.0025, 6, 24), gold, 0, 1.07, 0.04, { cast: false }).rotation.x = Math.PI / 2 - 0.25;
-  add(g, new THREE.SphereGeometry(0.008, 8, 6), gold, 0, 1.03, -0.01, { cast: false });
+  add(g, new THREE.SphereGeometry(0.16, 24, 16), skirt, 0, 0.58, 0.05).scale.set(1.08, 0.62, 1.0);
+  // torso: white blouse underneath, blazer closed at the waist and open in a V at the chest
+  lathe([[0.001, 0.6], [0.135, 0.62], [0.118, 0.74], [0.135, 0.84], [0.145, 0.92], [0.13, 1.0], [0.085, 1.06], [0.04, 1.09], [0.001, 1.095]], blouse);
+  lathe([[0.001, 0.6], [0.142, 0.62], [0.125, 0.74], [0.14, 0.84], [0.148, 0.88], [0.001, 0.88]], blazer);
+  lathe([[0.148, 0.88], [0.152, 0.92], [0.138, 1.0], [0.095, 1.055], [0.05, 1.085]], blazer, 0, Math.PI + 0.42, Math.PI * 2 - 0.84);
+  [0.8, 0.72].forEach((y) => add(g, new THREE.SphereGeometry(0.008, 8, 6), std(0x0f1320, 0.3), 0, y, -0.035, { cast: false }));
+  cyl(g, 0.036, 0.04, 0.1, skin, 0, 1.11, 0.05, 14);
+  add(g, new THREE.TorusGeometry(0.042, 0.002, 6, 24), std(0xd9b24a, 0.3, 0.9), 0, 1.08, 0.045, { cast: false }).rotation.x = Math.PI / 2 - 0.3;
   // head
   const head = new THREE.Group(); head.position.set(0, 1.15, 0.05); g.add(head);
-  add(head, new THREE.SphereGeometry(0.095, 24, 18), skin, 0, 0.12, 0).scale.set(0.9, 1.1, 0.98);
-  add(head, new THREE.SphereGeometry(0.05, 14, 10), skin, 0, 0.07, -0.035).scale.set(1.15, 0.9, 1); // jaw/chin
-  add(head, new THREE.SphereGeometry(0.014, 8, 6), skin, 0, 0.11, -0.094).scale.set(0.9, 1.2, 1);
-  const eyeW = std(0xffffff, 0.3), iris = std(0x3a6b4a, 0.2), lash = std(0x140c0a, 0.6);
+  add(head, new THREE.SphereGeometry(0.09, 28, 20), skin, 0, 0.12, 0).scale.set(0.86, 1.08, 0.94);
+  add(head, new THREE.SphereGeometry(0.048, 16, 12), skin, 0, 0.075, -0.03).scale.set(1.1, 0.95, 1);
+  add(head, new THREE.SphereGeometry(0.01, 10, 8), skin, 0, 0.112, -0.084).scale.set(0.8, 1.3, 0.6);
+  const iris = std(0x3a2a20, 0.25), brow = std(0x3b2016, 0.8);
   [-1, 1].forEach((s) => {
-    add(head, new THREE.SphereGeometry(0.013, 10, 8), eyeW, 0.032 * s, 0.135, -0.082).scale.set(1.2, 0.8, 0.6);
-    add(head, new THREE.SphereGeometry(0.0075, 8, 6), iris, 0.032 * s, 0.135, -0.09);
-    const l = box(head, 0.03, 0.004, 0.01, lash, 0.033 * s, 0.144, -0.089, { cast: false }); l.rotation.z = 0.25 * s;
-    const b = box(head, 0.03, 0.005, 0.006, std(0x3b2016, 0.8), 0.033 * s, 0.162, -0.087, { cast: false }); b.rotation.z = -0.15 * s;
-    add(head, new THREE.SphereGeometry(0.016, 8, 6), std(0xf2a8a0, 0.7), 0.05 * s, 0.1, -0.075, { cast: false }).scale.set(1, 0.6, 0.4);
-    add(head, new THREE.SphereGeometry(0.018, 8, 6), skin, 0.087 * s, 0.12, 0.0).scale.set(0.5, 1, 0.8);
-    add(head, new THREE.SphereGeometry(0.009, 8, 6), gold, 0.089 * s, 0.092, -0.004, { cast: false });
+    add(head, new THREE.SphereGeometry(0.0085, 10, 8), iris, 0.026 * s, 0.134, -0.081).scale.set(1.15, 0.85, 0.45);
+    add(head, new THREE.SphereGeometry(0.0022, 6, 4), std(0xffffff, 0.1), 0.0245 * s, 0.136, -0.085, { cast: false });
+    box(head, 0.022, 0.0035, 0.004, brow, 0.027 * s, 0.153, -0.082, { cast: false }).rotation.z = -0.12 * s;
+    add(head, new THREE.SphereGeometry(0.016, 8, 6), skin, 0.083 * s, 0.12, 0.0).scale.set(0.45, 1, 0.8);
+    add(head, new THREE.SphereGeometry(0.0065, 8, 6), pearl, 0.086 * s, 0.098, -0.002, { cast: false });
   });
-  add(head, new THREE.SphereGeometry(0.02, 12, 8), std(0xb8283c, 0.35), 0, 0.073, -0.088, { cast: false }).scale.set(1.35, 0.45, 0.55);
-  // hair: crown, long back, side locks, swept fringe
-  add(head, new THREE.SphereGeometry(0.104, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.6), hair, 0, 0.135, 0.008).scale.set(0.97, 1.08, 1.04);
-  add(head, new THREE.SphereGeometry(0.1, 18, 14), hair, 0, 0.0, 0.05).scale.set(1.12, 2.2, 0.72);
-  [-1, 1].forEach((s) => {
-    const lock = add(head, new THREE.CapsuleGeometry(0.03, 0.2, 4, 10), hair, 0.083 * s, 0.02, -0.02);
-    lock.rotation.z = 0.12 * s; lock.scale.set(1, 1, 0.8);
-  });
-  const fringe = add(head, new THREE.SphereGeometry(0.1, 18, 12), hair, 0.02, 0.2, -0.045);
-  fringe.scale.set(0.98, 0.42, 0.62); fringe.rotation.z = 0.28;
+  add(head, new THREE.SphereGeometry(0.015, 12, 8), std(0xa8505a, 0.4), 0, 0.078, -0.083, { cast: false }).scale.set(1.35, 0.42, 0.5);
+  // hair: a rounded bob from sphere sections — open at the face, down to the jaw, with a side fringe
+  const hairMat = std(0x4a2517, 0.45, 0, { side: THREE.DoubleSide });
+  const face = Math.PI * 1.5;           // SphereGeometry: -Z (her face) is at phi = 3π/2
+  add(head, new THREE.SphereGeometry(0.103, 32, 16, 0, Math.PI * 2, 0, 0.95), hairMat, 0, 0.125, 0.008).scale.set(0.95, 1.06, 1.04);
+  const shell = add(head, new THREE.SphereGeometry(0.108, 32, 20, face + 0.78, Math.PI * 2 - 1.56, 0.55, 1.45), hairMat, 0, 0.118, 0.012);
+  shell.scale.set(0.97, 1.12, 1.03);
+  add(head, new THREE.SphereGeometry(0.105, 24, 10, face - 0.95, 1.55, 0.42, 0.6), hairMat, 0.006, 0.124, 0.004).scale.set(0.96, 1.08, 1.05);
 
   // arms
-  const sleeve = blouse;
   const mkArm = () => {
-    const upper = add(g, new THREE.CylinderGeometry(0.042, 0.036, 1, 10), sleeve, 0, 0, 0);
-    const fore = add(g, new THREE.CylinderGeometry(0.034, 0.028, 1, 10), sleeve, 0, 0, 0);
-    const elbow = add(g, new THREE.SphereGeometry(0.037, 10, 8), sleeve);
-    const shoulder = add(g, new THREE.SphereGeometry(0.047, 10, 8), sleeve);
-    const hand = add(g, new THREE.SphereGeometry(0.03, 10, 8), skin);
-    hand.scale.set(0.8, 0.6, 1.3);
-    return { upper, fore, elbow, shoulder, hand };
+    const upper = add(g, new THREE.CylinderGeometry(0.04, 0.034, 1, 12), blazer);
+    const fore = add(g, new THREE.CylinderGeometry(0.032, 0.026, 1, 12), blazer);
+    const elbow = add(g, new THREE.SphereGeometry(0.035, 12, 8), blazer);
+    const shoulder = add(g, new THREE.SphereGeometry(0.04, 12, 8), blazer);
+    const cuff = add(g, new THREE.CylinderGeometry(0.027, 0.027, 0.02, 12), blouse);
+    const hand = add(g, new THREE.SphereGeometry(0.028, 12, 8), skin);
+    hand.scale.set(0.75, 0.55, 1.25);
+    return { upper, fore, elbow, shoulder, cuff, hand };
   };
   const arms = [mkArm(), mkArm()];
-  const bracelet = add(g, new THREE.TorusGeometry(0.03, 0.004, 6, 16), gold, 0, 0, 0);
   const Y = new THREE.Vector3(0, 1, 0), tmp = new THREE.Vector3();
   const aim = (m, a, b) => {
     tmp.subVectors(b, a);
@@ -866,20 +866,27 @@ function makeBoss(scene, M, x, z) {
     m.scale.set(1, len, 1);
   };
   const lerp3 = (a, b, k) => new THREE.Vector3().lerpVectors(a, b, k);
-  // pose: t — time, phone — 0..1 (left hand to the ear), wave — 0..1 (right hand raised)
   const setPose = (t, phone = 0, wave = 0, typing = true) => {
     [-1, 1].forEach((s, i) => {
       const A = arms[i];
-      const S = V(0.165 * s, 1.03, 0.07);
-      const bob = typing ? Math.sin(t * 16 + i * 1.9) * 0.012 : 0;
-      let E = V(0.2 * s, 0.82, -0.07), H = V(0.12 * s, 0.79 + bob, -0.37);
-      if (i === 0 && phone > 0) { E = lerp3(E, V(-0.25, 0.93, -0.1), phone); H = lerp3(H, V(-0.115, 1.22, -0.02), phone); }
-      if (i === 1 && wave > 0) { E = lerp3(E, V(0.3, 1.08, -0.1), wave); H = lerp3(H, V(0.34 + Math.sin(t * 9) * 0.05, 1.36, -0.16), wave); }
+      const S = V(0.16 * s, 1.03, 0.07);
+      const bob2 = typing ? Math.sin(t * 16 + i * 1.9) * 0.012 : 0;
+      let E = V(0.19 * s, 0.82, -0.06), H = V(0.11 * s, 0.79 + bob2, -0.36);
+      if (i === 0 && phone > 0) { E = lerp3(E, V(-0.24, 0.93, -0.1), phone); H = lerp3(H, V(-0.11, 1.22, -0.02), phone); }
+      if (i === 1 && wave > 0) { E = lerp3(E, V(0.29, 1.08, -0.1), wave); H = lerp3(H, V(0.33 + Math.sin(t * 9) * 0.05, 1.36, -0.16), wave); }
       aim(A.upper, S, E); aim(A.fore, E, H);
-      A.shoulder.position.copy(S); A.elbow.position.copy(E); A.hand.position.copy(H);
-      if (i === 0) { bracelet.position.copy(lerp3(E, H, 0.85)); bracelet.quaternion.copy(A.fore.quaternion); bracelet.rotateX(Math.PI / 2); }
+      A.shoulder.position.copy(S); A.elbow.position.copy(E);
+      A.cuff.position.copy(lerp3(E, H, 0.9)); A.cuff.quaternion.copy(A.fore.quaternion);
+      A.hand.position.copy(H); A.hand.quaternion.copy(A.fore.quaternion);
     });
   };
   setPose(0);
-  return { group: g, head, setPose, earLocal: V(-0.1, 0.12, 0.0), look: 0, lookTarget: 0, phase: Math.random() * 10 };
+  const setLook = (yaw, talking) => { head.rotation.y = yaw; head.rotation.x = talking ? -0.05 : 0.1; };
+  // ear position/orientation for her phone handset (left ear)
+  const ear = (pos, quat) => {
+    head.updateWorldMatrix(true, false);
+    pos.set(-0.1, 0.09, 0).applyMatrix4(head.matrixWorld);
+    head.getWorldQuaternion(quat).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0.3)));
+  };
+  return { group: g, head, setPose, setLook, ear, look: 0, lookTarget: 0, phase: Math.random() * 10 };
 }

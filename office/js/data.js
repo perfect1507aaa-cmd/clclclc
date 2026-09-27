@@ -12,10 +12,7 @@ export const PRODUCTS = [
   { code: '201', name: 'Булочка с маком 0,1 кг', nom: 'булочки с маком', gen: 'булочек с маком', price: 22, unit: 'шт', kind: 'bun' },
   { code: '202', name: 'Булочка сдобная 0,08 кг', nom: 'сдобные булочки', gen: 'сдобных булочек', price: 19, unit: 'шт', kind: 'bun' },
   { code: '203', name: 'Плюшка московская 0,1 кг', nom: 'плюшки', gen: 'плюшек', price: 27, unit: 'шт', kind: 'bun' },
-  { code: '204', name: 'Рогалик с повидлом 0,07 кг', nom: 'рогалики', gen: 'рогаликов', price: 24, unit: 'шт', kind: 'bun' },
   { code: '301', name: 'Лаваш армянский 0,25 кг', nom: 'лаваш', gen: 'лаваша', price: 36, unit: 'шт', kind: 'flat' },
-  { code: '302', name: 'Багет французский 0,3 кг', nom: 'багеты', gen: 'багетов', price: 54, unit: 'шт', kind: 'flat' },
-  { code: '303', name: 'Хала с маком 0,4 кг', nom: 'хала', gen: 'халы', price: 68, unit: 'шт', kind: 'flat' },
   { code: '401', name: 'Сушки ванильные 0,3 кг', nom: 'сушки', gen: 'сушек', price: 62, unit: 'уп', kind: 'dry' },
 ];
 export const productByCode = (c) => PRODUCTS.find((p) => p.code === c);
