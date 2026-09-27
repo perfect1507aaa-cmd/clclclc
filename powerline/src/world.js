@@ -310,6 +310,8 @@ export class World {
       if (d2 < er * er) {
         f.dead = true;
         s.addScore(f.v);
+        // food is energy: every bite tops up the charge, big chunks give a real kick
+        s.charge = Math.min(1, s.charge + Math.min(CFG.FOOD_CHARGE_MAX, f.v * CFG.FOOD_CHARGE));
         if (s.isPlayer) this.events.push({ type: 'eat', snake: s, food: f });
       } else if (d2 < mag * mag) {
         const d = Math.sqrt(d2);

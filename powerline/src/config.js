@@ -7,6 +7,8 @@ export const CFG = {
   CHARGE_GAIN: 2.6,
   CHARGE_DECAY: 0.28, // slow cool-down: a charge carries you for a few seconds
   CHARGE_RANGE: 70, // extra reach (beyond both half-widths) that still charges you
+  FOOD_CHARGE: 0.03, // charge gained per point of food eaten
+  FOOD_CHARGE_MAX: 0.5, // cap for a single pellet (big corpse chunks)
 
   START_SCORE: 10,
   LEN_BASE: 140,
