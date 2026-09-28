@@ -44,6 +44,11 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 #cv{ position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+/* the static backdrop and the camera-following grid live in CSS layers, and the fog in its own low-res canvas the compositor
+   scales and shifts: the page no longer repaints them every frame. #cvTop holds what is drawn over the fog */
+#bgl,#gridl,#fogc,#cvTop{ position:fixed; pointer-events:none; }
+#bgl{ inset:0; } #gridl{ left:-26px; top:-26px; right:-26px; bottom:-26px; will-change:transform; }
+#fogc{ display:none; will-change:transform; } #cvTop{ inset:0; width:100%; height:100%; }
 #scan{
   position:fixed; inset:0; pointer-events:none; opacity:calc(var(--scan) * .025);
   background:repeating-linear-gradient(to bottom, rgba(255,255,255,.9) 0 1px, transparent 1px 3px);
@@ -243,7 +248,9 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   .caret, .titlebar .led{ animation:none; }
 }
 </style>
+<div id="bgl"></div><div id="gridl"></div>
 <canvas id="cv" aria-label="Карта сети"></canvas>
+<canvas id="fogc" aria-hidden="true"></canvas><canvas id="cvTop" aria-hidden="true"></canvas>
 <div id="scan"></div>
 <div id="safeProbe" style="position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)"></div>
 
@@ -651,7 +658,8 @@ function nodeSprite(tier, owner, hq) {
 }
 
 /* ---------- view / camera ---------- */
-const cv = $('#cv'), ctx = cv.getContext('2d');
+const cv = $('#cv'), cvTop = $('#cvTop'), ctx0 = cv.getContext('2d'), ctxTop = cvTop.getContext('2d');
+let ctx = ctx0; // render() switches to ctxTop for everything drawn over the fog
 const V = { w: 0, h: 0, dpr: 1, s: 1 };
 const cam = { x: 800, y: 500, z: 1, tx: null, ty: null, tz: null };
 let TX = 0, TY = 0, SHX = 0, SHY = 0;
@@ -668,7 +676,7 @@ function clampCam() {
 function focusOn(x, y, z) { cam.tx = x; cam.ty = y; cam.tz = z != null ? z : cam.z; }
 function resize() {
   V.w = innerWidth; V.h = innerHeight; V.dpr = Math.min(2, window.devicePixelRatio || 1);
-  cv.width = Math.round(V.w * V.dpr); cv.height = Math.round(V.h * V.dpr);
+  cv.width = cvTop.width = Math.round(V.w * V.dpr); cv.height = cvTop.height = Math.round(V.h * V.dpr); fogK = null;
   if (G && G.demo) { cam.z = zoomLimits().min * 1.02; cam.x = G.W / 2; cam.y = G.H / 2; }
   clampCam(); V.s = cam.z; bgDirty = true; nCache.clear();
   const mini = $('#mini'), r = mini.getBoundingClientRect();
@@ -676,19 +684,13 @@ function resize() {
 }
 
 /* ---------- background ---------- */
-const bgCv = document.createElement('canvas');
-let rain = [], gridPat = null;
+let rain = [], gridK = '';
 function buildBg() {
-  bgDirty = false; bgCv.width = cv.width; bgCv.height = cv.height;
-  const x = bgCv.getContext('2d'), w = bgCv.width, h = bgCv.height;
-  const lg = x.createLinearGradient(0, 0, w, h); lg.addColorStop(0, PAL.bg0); lg.addColorStop(1, PAL.bg1);
-  x.fillStyle = lg; x.fillRect(0, 0, w, h);
-  if (PAL.dark) {
-    const vg = x.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)'); x.fillStyle = vg; x.fillRect(0, 0, w, h);
-  }
-  const pc = document.createElement('canvas'); pc.width = pc.height = 26; const px = pc.getContext('2d');
-  px.fillStyle = PAL.grid; px.fillRect(12, 12, 1, 1); gridPat = ctx.createPattern(pc, 'repeat');
+  bgDirty = false; const w = V.w, h = V.h;
+  $('#bgl').style.background = (PAL.dark ? `radial-gradient(circle at 50% 50%, rgba(0,0,0,0) ${Math.min(w, h) * 0.3}px, rgba(0,0,0,.55) ${Math.max(w, h) * 0.75}px), ` : '') + `linear-gradient(to bottom right, ${PAL.bg0}, ${PAL.bg1})`;
+  const d = V.dpr, pc = document.createElement('canvas'); pc.width = pc.height = 26 * d; const px = pc.getContext('2d');
+  px.fillStyle = PAL.grid; px.fillRect(12 * d, 12 * d, d, d);
+  const gl = $('#gridl').style; gl.backgroundImage = `url(${pc.toDataURL()})`; gl.backgroundSize = '26px 26px'; gridK = '';
   rain = [];
   for (let i = 0; i < Math.floor(V.w / 22); i++) rain.push({ x: i * 22 + 11, y: Math.random() * V.h * 1.5 - V.h * 0.5, sp: 30 + Math.random() * 60, len: 6 + Math.floor(Math.random() * 12), on: Math.random() < 0.07, seed: Math.floor(Math.random() * 1e6) });
 }
@@ -2585,20 +2587,55 @@ function glitchText(str, x, y, col, prob, gc, seed, t, hz = 14, one = false) {
   }
 }
 const onScreen = (x, y, m) => { ts(x, y); return TX > -m && TX < V.w + m && TY > -m && TY < V.h + m; };
-const fogCv = document.createElement('canvas'), expCv = document.createElement('canvas'), visCv = document.createElement('canvas');
-function drawFog() {
-  const q = 4, fw = Math.ceil(V.w / q), fh = Math.ceil(V.h / q);
-  for (const c of [fogCv, expCv, visCv]) if (c.width !== fw || c.height !== fh) { c.width = fw; c.height = fh; }
-  const fx = fogCv.getContext('2d'), ex = expCv.getContext('2d'), vx = visCv.getContext('2d');
-  ex.clearRect(0, 0, fw, fh); vx.clearRect(0, 0, fw, fh);
-  const circle = (c2, x, y, r) => { ts(x, y); const cx = TX / q, cy = TY / q, rr = r * cam.z / q; if (cx + rr < 0 || cx - rr > fw || cy + rr < 0 || cy - rr > fh) return; const g = c2.createRadialGradient(cx, cy, rr * 0.7, cx, cy, rr); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c2.fillStyle = g; c2.beginPath(); c2.arc(cx, cy, rr, 0, TAU); c2.fill(); };
-  for (const p of G.nodes) if (p.expR > 0) circle(ex, p.x, p.y, p.expR);
-  for (const c of G.visC) circle(vx, c.x, c.y, c.r);
-  fx.globalCompositeOperation = 'source-over'; fx.clearRect(0, 0, fw, fh);
-  fx.fillStyle = PAL.dark ? 'rgba(0,0,0,0.93)' : 'rgba(28,30,30,0.78)'; fx.fillRect(0, 0, fw, fh);
-  fx.globalCompositeOperation = 'destination-out'; fx.globalAlpha = 0.5; fx.drawImage(expCv, 0, 0); fx.globalAlpha = 1; fx.drawImage(visCv, 0, 0);
-  fx.globalCompositeOperation = 'source-over';
-  ctx.imageSmoothingEnabled = true; ctx.drawImage(fogCv, 0, 0, fw, fh, 0, 0, fw * q, fh * q);
+/* Fog of war: a low-res layer (1/4 px) with a margin around the view, cut by soft circles from a ready sprite. It is rebuilt
+   only when vision changes (every ~150 ms at most) or the camera drifts past the margin; in between the compositor just
+   shifts and scales the old one to follow the camera. */
+const fogEl = $('#fogc'), expCv = document.createElement('canvas'), visCv = document.createElement('canvas'), FOG_M = 64, FOG_Q = 4;
+const softDot = (() => { const S = 128, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'), g = x.createRadialGradient(S / 2, S / 2, S * 0.35, S / 2, S / 2, S / 2); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S); return c; })();
+let fogK = null;
+function drawFog(now) {
+  const q = FOG_Q, M = FOG_M, fw = Math.ceil((V.w + 2 * M) / q), fh = Math.ceil((V.h + 2 * M) / q), f = fogK;
+  const k = f ? cam.z / f.z : 1, dx = f ? (f.x - cam.x) * cam.z : 0, dy = f ? (f.y - cam.y) * cam.z : 0;
+  const stale = !f || f.g !== G || f.pal !== PAL || f.w !== fw || f.h !== fh || Math.abs(k - 1) > 0.04 || Math.abs(dx) > M * 0.6 || Math.abs(dy) > M * 0.6 || (f.vc !== G.visC && now - f.t > 150);
+  if (stale) {
+    fogK = { g: G, pal: PAL, w: fw, h: fh, x: cam.x, y: cam.y, z: cam.z, vc: G.visC, t: now };
+    for (const c of [fogEl, expCv, visCv]) if (c.width !== fw || c.height !== fh) { c.width = fw; c.height = fh; }
+    const fx = fogEl.getContext('2d'), ex = expCv.getContext('2d'), vx = visCv.getContext('2d');
+    ex.clearRect(0, 0, fw, fh); vx.clearRect(0, 0, fw, fh);
+    const circle = (c2, x, y, r) => { const cx = (V.w / 2 + (x - cam.x) * cam.z + M) / q, cy = (V.h / 2 + (y - cam.y) * cam.z + M) / q, rr = r * cam.z / q; if (cx + rr < 0 || cx - rr > fw || cy + rr < 0 || cy - rr > fh) return; c2.drawImage(softDot, cx - rr, cy - rr, rr * 2, rr * 2); };
+    for (const p of G.nodes) if (p.expR > 0) circle(ex, p.x, p.y, p.expR);
+    for (const c of G.visC) circle(vx, c.x, c.y, c.r);
+    fx.globalCompositeOperation = 'source-over'; fx.clearRect(0, 0, fw, fh);
+    // light theme: a pale veil of the page colour, not a charcoal smudge
+    fx.fillStyle = PAL.dark ? 'rgba(0,0,0,0.93)' : rgba(mix(hexToRgb(PAL.bg1), [13, 19, 17], 0.1), 0.88); fx.fillRect(0, 0, fw, fh);
+    fx.globalCompositeOperation = 'destination-out'; fx.globalAlpha = 0.5; fx.drawImage(expCv, 0, 0); fx.globalAlpha = 1; fx.drawImage(visCv, 0, 0);
+    fx.globalCompositeOperation = 'source-over';
+    const st = fogEl.style; st.display = 'block'; st.left = st.top = -M + 'px'; st.width = fw * q + 'px'; st.height = fh * q + 'px'; st.transformOrigin = `${M + V.w / 2}px ${M + V.h / 2}px`;
+  }
+  const g = fogK, tr = `translate(${((g.x - cam.x) * cam.z + SHX).toFixed(2)}px,${((g.y - cam.y) * cam.z + SHY).toFixed(2)}px) scale(${(cam.z / g.z).toFixed(4)})`;
+  if (fogEl.style.transform !== tr) fogEl.style.transform = tr;
+  fogEl.style.display = 'block';
+}
+/* The edge of your vision as a faint dotted line, so fogged space reads as closed off: dots on each vision circle that fall
+   outside every other one, in world space, recomputed only when vision changes. */
+let rimK = null, rimPts = [];
+function drawRim() {
+  const C = G.visC; if (!C || !C.length) return;
+  const key = C.length + ':' + C.map(c => c.r | 0).join(',');
+  if (rimK !== key) {
+    rimK = key; rimPts = [];
+    for (const a of C) {
+      const r = a.r * 0.86, n = Math.max(12, Math.round(TAU * r / 16));
+      for (let k = 0; k < n; k++) {
+        const an = k / n * TAU, x = a.x + Math.cos(an) * r, y = a.y + Math.sin(an) * r;
+        if (!C.some(b => b !== a && (b.x - x) ** 2 + (b.y - y) ** 2 < (b.r * 0.86) ** 2)) rimPts.push(x, y);
+      }
+    }
+  }
+  const z = cam.z, ox = V.w / 2 - cam.x * z + SHX, oy = V.h / 2 - cam.y * z + SHY, s = z < 0.45 ? 1 : 1.5;
+  ctx.fillStyle = rgba(PAL.rain, PAL.dark ? 0.22 : 0.3); ctx.beginPath();
+  for (let k = 0; k < rimPts.length; k += 2) { const x = rimPts[k] * z + ox, y = rimPts[k + 1] * z + oy; if (x > -4 && x < V.w + 4 && y > -4 && y < V.h + 4) ctx.rect(x - s / 2, y - s / 2, s, s); }
+  ctx.fill();
 }
 /* Where a cable meets the icons at its ends: the first point along the path outside each drawn box (plus a small gap),
    found by bisection and cached until either end changes size. */
@@ -2619,12 +2656,14 @@ let lastRender = 0;
 function render(now) {
   const d = V.dpr, rdt = Math.min(0.05, (now - lastRender) / 1000 || 0); lastRender = now;
   V.s = cam.z;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (bgDirty) buildBg();
-  ctx.drawImage(bgCv, 0, 0);
-  ctx.setTransform(d, 0, 0, d, 0, 0);
+  for (const c of [ctxTop, ctx0]) { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height); c.setTransform(d, 0, 0, d, 0, 0); }
+  ctx = ctx0;
   const t = now / 1000, dark = PAL.dark;
-  if (gridPat) { const ox = ((-cam.x * cam.z) % 26 + 26) % 26, oy = ((-cam.y * cam.z) % 26 + 26) % 26; ctx.save(); ctx.translate(ox, oy); ctx.fillStyle = gridPat; ctx.fillRect(-26, -26, V.w + 52, V.h + 52); ctx.restore(); }
+  // the grid follows the camera: a compositor-only shift of the CSS layer, touched only when the offset changes
+  const gk = `${Math.round(((-cam.x * cam.z) % 26 + 26) % 26 * 4) / 4},${Math.round(((-cam.y * cam.z) % 26 + 26) % 26 * 4) / 4}`;
+  if (gk !== gridK) { gridK = gk; const [ox, oy] = gk.split(','); $('#gridl').style.transform = `translate(${ox}px,${oy}px)`; }
+  if (!G || !G.fog || !G.visC) fogEl.style.display = 'none';
   if (!G) return;
   const S = cam.z, N = G.nodes, sz = Math.max(7, 12 * S);
   const shownOwner = p => p.vis ? p.owner : p.lastOwner, shownV = p => p.vis ? p.vd : p.lastV;
@@ -2862,7 +2901,9 @@ function render(now) {
   }
   drawArrivals(t);
   // fog
-  if (G.fog && G.visC) drawFog();
+  if (G.fog && G.visC) drawFog(now);
+  ctx = ctxTop; ctx.font = `12px ${FONT}`; ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+  if (G.fog && G.visC) drawRim();
   // bundles in flight: a small swarm of packets with a head count, drawn over the fog. Under the fog of war other players'
   // bundles are never seen, not even next to your nodes: only the ▼ over a node says that something is coming
   const hidden = o => G.fog && o !== 1;
