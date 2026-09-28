@@ -1,4 +1,6 @@
+<!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Поле: тёмная редакция</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +14,7 @@
 }
 html,body{background:var(--bg);}
 body{color:var(--ink); font:15px/1.55 var(--fb);}
-.wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:24px 64px; display:grid; gap:18px;}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:16px; padding-block:14px 64px; display:grid; grid-template-columns:minmax(0,1fr); gap:18px;}
 .eyebrow,.label{margin:0; font:500 11.5px/1.4 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
 h1{margin:4px 0 6px; font:700 clamp(30px,4.4vw,46px)/1.05 var(--fs); letter-spacing:-.01em; text-wrap:balance;}
 h2{margin:26px 0 0; font:700 28px/1.2 var(--fs); text-wrap:balance;}
@@ -224,31 +226,394 @@ td.w{white-space:normal; min-width:220px;}
 tr.frow td{padding-top:16px; font:700 13px var(--fd); border-bottom-color:var(--off);}
 svg.ico .sep{stroke:#0c0b0a; stroke-width:2.2; stroke-linejoin:round; paint-order:stroke;}
 @media (prefers-reduced-motion: reduce){ .card,.card .in,.tile,.hero .hb i{transition:none;} .tile.drop-in,.tile .mgl.tri{animation:none;} }
+
+/* ==================== dark war-table art direction ==================== */
+/* ==========================================================================
+   Art-direction prototype layer for field-dark.html  (appended after the
+   existing <style>; nothing in the original is removed).
+   Everything here is pure CSS + inline SVG data-URIs. No external images.
+   ========================================================================== */
+
+/* ---------- 1. tokens ---------- */
+:root{
+  /* stone / wood */
+  --void:#070605; --st-950:#0b0908; --st-900:#110e0b; --st-850:#16120e; --st-800:#1c1712; --st-700:#261f18; --st-600:#33291f; --st-500:#4a3c2b;
+  /* burnished gold */
+  --au-100:#fbefc4; --au-200:#f1d68e; --au-300:#e2bb62; --au-400:#cf9f45; --au-500:#b08032; --au-600:#8a6124; --au-700:#5e4118; --au-800:#3a280e;
+  --au-metal:linear-gradient(155deg,#f7e3a0 0%,#a8772c 22%,#f0cd78 45%,#6e4b1a 68%,#d9b060 86%,#8a6124 100%);
+  /* blackened iron (enemy rims) */
+  --fe-metal:linear-gradient(155deg,#9a9ea6 0%,#2b2c31 24%,#71757d 46%,#18191c 70%,#5b5e66 88%,#2b2c31 100%);
+  /* parchment */
+  --pa-100:#f3e8cb; --pa-200:#e4d2a6; --pa-300:#c9b07c; --pa-ink:#2a1d0f;
+  /* semantics */
+  --hp-hi:#ff9a86; --hp:#c8302a; --hp-lo:#4d0c09;
+  --mana-hi:#d8efff; --mana:#4a93ea; --mana-lo:#10284d;
+  --ready:#63e39a; --target:#ff4a3a; --heal:#8ff0a4;
+  /* factions: enamel / highlight / ambient */
+  --haven:#8fb6e6;   --haven-hi:#e8f1ff;   --haven-lo:#142236;
+  --inferno:#e0482e; --inferno-hi:#ffb35a; --inferno-lo:#2a0b07;
+  --sylvan:#86b95a;  --sylvan-hi:#e6d98f;  --sylvan-lo:#132210;
+  /* textures */
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --mottle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .02' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .86 0 0 0 0 .62 0 0 0 .16 -.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --wood:repeating-linear-gradient(92deg, rgba(0,0,0,.0) 0 7px, rgba(0,0,0,.16) 7px 8px, rgba(0,0,0,0) 8px 19px, rgba(255,210,150,.035) 19px 20px);
+}
+.arena{--tp:var(--pc); --te:var(--ec);}
+.arena.mirror{--ec:color-mix(in oklab,var(--ec) 55%,#b0201a); --ec-lo:color-mix(in oklab,var(--ec-lo) 60%,#2a0605);}
+
+html,body{margin:0; background:var(--void);}
+body{background:
+  radial-gradient(120% 70% at 50% 0%, #1a140e 0%, transparent 60%),
+  radial-gradient(90% 60% at 50% 100%, #120d09 0%, transparent 70%), var(--void);}
+
+/* ---------- 2. board: carved table, gold inlay, two territories ---------- */
+.board-wrap{
+  --pad:clamp(8px,1.6%,14px);
+  padding:var(--pad); border-radius:18px; isolation:isolate;
+  border:2px solid transparent;
+  background:
+    var(--grain) padding-box,
+    var(--wood) padding-box,
+    linear-gradient(180deg,#2a2016,#1a140e 50%,#241b13) padding-box,
+    var(--au-metal) border-box;
+  box-shadow:
+    0 0 0 4px #120d08, 0 0 0 5px #4b3519, 0 0 0 9px #0d0a07,
+    0 30px 60px -10px rgba(0,0,0,.85), 0 0 120px rgba(0,0,0,.6);
+}
+.board-wrap::before{ /* the sunken field inside the frame: enemy ground above, own ground below */
+  content:""; position:absolute; inset:var(--pad); border-radius:10px; z-index:-1; pointer-events:none;
+  background:
+    var(--mottle),
+    linear-gradient(180deg, color-mix(in srgb,var(--ec-lo) 85%,#0d0b09) 0%, #0f0c0a 49.6%, #0f0c0a 50.4%, color-mix(in srgb,var(--pc-lo) 85%,#0d0b09) 100%);
+  box-shadow: inset 0 3px 10px rgba(0,0,0,.9), inset 0 0 0 1px rgba(0,0,0,.8), 0 1px 0 rgba(255,220,160,.06);
+}
+.grid{gap:clamp(4px,.8%,8px);}
+.cell{
+  border-radius:9px;
+  background:
+    radial-gradient(60% 60% at 50% 45%, rgba(255,235,190,.035), transparent 70%),
+    linear-gradient(160deg, rgba(255,240,210,.035), rgba(0,0,0,.22));
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.8), inset 0 -1px 0 rgba(255,225,170,.07), 0 1px 0 rgba(255,225,170,.04);
+}
+.cell::before{ /* engraved ring in every empty slot */
+  content:""; position:absolute; inset:24%; border-radius:50%;
+  border:1px solid rgba(226,187,98,.07); box-shadow: 0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 6px rgba(226,187,98,.025);
+}
+.cell.ze{background: radial-gradient(60% 60% at 50% 45%, color-mix(in srgb,var(--ec) 7%,transparent), transparent 70%), linear-gradient(160deg, rgba(255,240,210,.03), rgba(0,0,0,.25));}
+.cell.zp{background: radial-gradient(60% 60% at 50% 45%, color-mix(in srgb,var(--pc) 7%,transparent), transparent 70%), linear-gradient(160deg, rgba(255,240,210,.03), rgba(0,0,0,.25));}
+.cell.camp{outline:1px dashed rgba(226,187,98,.18); outline-offset:-6px; background:rgba(0,0,0,.25);}
+/* drop targets: light pooling inside the slot, not just a hairline */
+.cell.drop{box-shadow: inset 0 0 0 2px color-mix(in srgb,var(--pc-hi) 55%,transparent), inset 0 0 22px color-mix(in srgb,var(--pc) 30%,transparent); animation:slotbreath 1.6s ease-in-out infinite;}
+.cell.drop.hov,.cell.hov{box-shadow: inset 0 0 0 2px var(--au-200), inset 0 0 30px color-mix(in srgb,var(--au-300) 45%,transparent), 0 0 18px color-mix(in srgb,var(--au-300) 35%,transparent); animation:none;}
+@keyframes slotbreath{50%{box-shadow: inset 0 0 0 2px color-mix(in srgb,var(--pc-hi) 80%,transparent), inset 0 0 30px color-mix(in srgb,var(--pc) 45%,transparent);}}
+.cell.hdrop{box-shadow: inset 0 0 0 2px color-mix(in srgb,var(--target) 70%,transparent), inset 0 0 26px color-mix(in srgb,var(--target) 30%,transparent);}
+/* frontline: gold inlay bar with studs at both ends */
+.frontline{height:3px; border-radius:2px; background:linear-gradient(90deg, transparent, var(--au-600) 6%, var(--au-200) 50%, var(--au-600) 94%, transparent); box-shadow:0 0 10px rgba(226,187,98,.35), 0 1px 0 #000; position:relative; overflow:visible;}
+.frontline::before,.frontline::after{content:""; position:absolute; top:50%; width:11px; height:11px; translate:0 -50%; rotate:45deg; background:var(--au-metal); box-shadow:0 0 0 1.5px #1a1209, 0 0 8px rgba(226,187,98,.5);}
+.frontline::before{left:-8px;} .frontline::after{right:-8px;}
+
+/* ---------- 3. unit tiles: side metal rim, faction hairline, tier ornaments ---------- */
+.tile{
+  --rim:var(--fe-metal); --side:var(--ec);
+  border:3px solid transparent; border-radius:12px;
+  background:
+    radial-gradient(85% 75% at 50% 38%, color-mix(in srgb,var(--t) 28%,#19140f) 0%, color-mix(in srgb,var(--t) 7%,#0c0a08) 72%) padding-box,
+    var(--rim) border-box;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--side) 70%,transparent),
+    inset 0 0 0 2px rgba(0,0,0,.6),
+    inset 0 -18px 26px -8px rgba(0,0,0,.65), inset 0 10px 20px -10px rgba(255,240,210,.08),
+    0 3px 0 #050403, 0 10px 18px rgba(0,0,0,.6);
+}
+.tile.p{--rim:var(--au-metal); --side:var(--pc);}
+.tile::after{ /* hit flash layer (replaces filter:brightness(2), which turns silhouettes neon) */
+  content:""; position:absolute; inset:0; border-radius:9px; pointer-events:none; opacity:0;
+  background: radial-gradient(70% 70% at 50% 45%, rgba(255,255,255,.95), rgba(255,110,80,.55) 55%, rgba(255,60,40,0) 80%); mix-blend-mode:screen;
+}
+.tile.hitfx::after{animation:hitflash .32s ease-out;}
+@keyframes hitflash{0%{opacity:.95} 100%{opacity:0}}
+/* tier ornaments */
+.tile[data-tier="2"]::before,.tile[data-tier="3"]::before{ /* III–IV: four rivets */
+  content:""; position:absolute; inset:3px; pointer-events:none; border-radius:8px;
+  background:
+    radial-gradient(circle at 5px 5px, var(--au-200) 0 1.5px, #3a280e 2.2px, transparent 2.8px),
+    radial-gradient(circle at calc(100% - 5px) 5px, var(--au-200) 0 1.5px, #3a280e 2.2px, transparent 2.8px),
+    radial-gradient(circle at 5px calc(100% - 5px), var(--au-200) 0 1.5px, #3a280e 2.2px, transparent 2.8px),
+    radial-gradient(circle at calc(100% - 5px) calc(100% - 5px), var(--au-200) 0 1.5px, #3a280e 2.2px, transparent 2.8px);
+}
+.tile[data-tier="4"]::before,.tile[data-tier="5"]::before,.tile[data-tier="6"]::before{ /* V–VII: corner brackets */
+  content:""; position:absolute; inset:2px; pointer-events:none; border-radius:9px;
+  --b:linear-gradient(var(--au-200),var(--au-500));
+  background:
+    var(--b) left 0 top 0/16% 2px no-repeat, var(--b) left 0 top 0/2px 16% no-repeat,
+    var(--b) right 0 top 0/16% 2px no-repeat, var(--b) right 0 top 0/2px 16% no-repeat,
+    var(--b) left 0 bottom 0/16% 2px no-repeat, var(--b) left 0 bottom 0/2px 16% no-repeat,
+    var(--b) right 0 bottom 0/16% 2px no-repeat, var(--b) right 0 bottom 0/2px 16% no-repeat;
+  filter: drop-shadow(0 0 3px color-mix(in srgb,var(--t) 70%,transparent));
+}
+.tile[data-tier="4"],.tile[data-tier="5"]{box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--side) 70%,transparent), inset 0 0 0 2px rgba(0,0,0,.6),
+    inset 0 -18px 26px -8px rgba(0,0,0,.65), inset 0 0 26px -4px color-mix(in srgb,var(--t) 35%,transparent),
+    0 3px 0 #050403, 0 10px 18px rgba(0,0,0,.6), 0 0 16px -2px color-mix(in srgb,var(--t) 45%,transparent);}
+.tile[data-tier="6"]{box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--side) 70%,transparent), inset 0 0 0 2px rgba(0,0,0,.6),
+    inset 0 -18px 26px -8px rgba(0,0,0,.6), inset 0 0 30px -2px rgba(255,244,214,.28),
+    0 3px 0 #050403, 0 10px 18px rgba(0,0,0,.6), 0 0 22px 0 rgba(255,236,190,.35);}
+.tile[data-tier="6"] .ic{filter: drop-shadow(0 0 10px rgba(255,240,200,.55)) drop-shadow(0 3px 4px rgba(0,0,0,.7));}
+.tile[data-tier="6"] .ic::before{ /* halo behind the tier VII figure */
+  content:""; position:absolute; inset:-14%; z-index:-1; border-radius:50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,236,190,.16) 0 6deg, transparent 6deg 18deg);
+  mask: radial-gradient(closest-side, #000 40%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 40%, transparent 100%);
+  animation: halo 18s linear infinite;
+}
+@keyframes halo{to{rotate:360deg}}
+.tile .ic{isolation:isolate;}
+
+/* tier gem (top-left): enamel shield with roman numeral */
+.tile .tr{left:6%; top:6%; min-width:max(14px,17cqmin); height:max(14px,15cqmin); padding:0 max(3px,3cqmin); box-sizing:border-box; display:grid; place-items:center;
+  font:700 max(8px,9.5cqmin)/1 var(--fd); letter-spacing:.02em; color:#fff; -webkit-text-stroke:2px rgba(0,0,0,.55); paint-order:stroke fill;
+  background:linear-gradient(180deg, color-mix(in srgb,var(--t) 85%,#fff 15%), color-mix(in srgb,var(--t) 70%,#000 30%));
+  clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%); padding-bottom:max(2px,2.5cqmin);}
+
+/* stat gems: attack = burnished disc (light = can strike, iron = spent), HP = crimson drop */
+.tile .st{bottom:-3%; gap:0; padding:0; width:max(20px,25cqmin); height:max(20px,25cqmin); border-radius:50%; justify-content:center;
+  font:700 max(11px,15cqmin)/1 var(--fd); color:#fff; -webkit-text-stroke:max(1.5px,1.7cqmin) #140c05; paint-order:stroke fill;}
+.tile .st svg{display:none;}
+.tile .st.a{left:-4%; color:#fff; background:radial-gradient(circle at 35% 30%, #fff7da, #e7bf62 42%, #8a5a18 90%); box-shadow:0 0 0 max(1.5px,1.6cqmin) #2a1a08, 0 3px 5px rgba(0,0,0,.6);}
+.tile .st.a.off{background:radial-gradient(circle at 35% 30%, #a4a6ab, #55575c 45%, #222326 90%); color:#d6d6d6; box-shadow:0 0 0 max(1.5px,1.6cqmin) #111, 0 3px 5px rgba(0,0,0,.6);}
+.tile .st.h{right:-4%; background:radial-gradient(circle at 35% 30%, var(--hp-hi), var(--hp) 45%, var(--hp-lo) 92%); box-shadow:0 0 0 max(1.5px,1.6cqmin) #2a0605, 0 3px 5px rgba(0,0,0,.6); border-radius:50% 50% 50% 50% / 42% 42% 58% 58%;}
+.tile .st.h.d{color:#ffd0c4; box-shadow:0 0 0 max(1.5px,1.6cqmin) #2a0605, 0 0 8px rgba(255,60,40,.7);}
+.tile .st.h.d b{color:#ff6a55;}
+.tile .zz{right:7%; top:6%;}
+
+/* states */
+.tile.ready{box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--side) 70%,transparent), inset 0 0 0 2px rgba(0,0,0,.6), inset 0 -18px 26px -8px rgba(0,0,0,.65), 0 3px 0 #050403, 0 0 0 2px var(--ready), 0 0 18px 2px color-mix(in srgb,var(--ready) 55%,transparent); animation:readyglow 1.8s ease-in-out infinite;}
+@keyframes readyglow{50%{box-shadow: inset 0 0 0 1px color-mix(in srgb,var(--side) 70%,transparent), inset 0 0 0 2px rgba(0,0,0,.6), inset 0 -18px 26px -8px rgba(0,0,0,.65), 0 3px 0 #050403, 0 0 0 2px var(--ready), 0 0 26px 5px color-mix(in srgb,var(--ready) 40%,transparent);}}
+.tile.trio,.tile.mg,.tile.pair{box-shadow: 0 0 0 2px var(--au-200), 0 0 22px 3px color-mix(in srgb,var(--au-300) 60%,transparent), 0 3px 0 #050403;}
+.tile.tgt{box-shadow: 0 0 0 2px var(--target), 0 0 20px 3px color-mix(in srgb,var(--target) 55%,transparent), 0 3px 0 #050403;}
+.tile.tgt.hov{box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--target), 0 0 30px 6px var(--target);}
+.tile.tgt::before{ /* reticle */
+  content:""; position:absolute; inset:14%; border-radius:50%; pointer-events:none; z-index:2;
+  background:
+    linear-gradient(var(--target),var(--target)) 50% 0/2px 18% no-repeat, linear-gradient(var(--target),var(--target)) 50% 100%/2px 18% no-repeat,
+    linear-gradient(var(--target),var(--target)) 0 50%/18% 2px no-repeat, linear-gradient(var(--target),var(--target)) 100% 50%/18% 2px no-repeat;
+  border:2px solid color-mix(in srgb,var(--target) 70%,transparent); opacity:.8;
+}
+.tile.sel{translate:0 -4px; box-shadow:0 0 0 2px #fff6d8, 0 0 22px rgba(255,240,200,.45), 0 16px 26px rgba(0,0,0,.7);}
+.tile .mgl{background:var(--au-metal); color:#1b1307; box-shadow:0 0 0 1.5px #2a1a08, 0 3px 8px rgba(0,0,0,.6);}
+
+/* ---------- 4. hero plates: medallion portrait + crimson shield gem ---------- */
+.bar{gap:12px;}
+.hero{position:relative; gap:12px; min-width:0; padding:6px 18px 6px 6px; border-radius:44px 14px 14px 44px; border:1px solid transparent;
+  background:
+    linear-gradient(90deg, color-mix(in srgb,var(--team) 18%,#17120d), #120e0a 70%) padding-box,
+    linear-gradient(90deg, var(--au-500), var(--au-800) 60%, rgba(94,65,24,.3)) border-box;
+  box-shadow:0 10px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,230,170,.07);}
+#hero-p{--team:var(--pc);} #hero-e{--team:var(--ec);}
+.hero .ava{width:58px; height:58px; border-radius:50%; border:3px solid transparent;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb,var(--team) 40%,#1a140e), #0a0806 72%) padding-box,
+    conic-gradient(from 210deg, #f7e19c, #8d6424, #f1cf7a, #5a3d14, #e9c46e, #8d6424, #f7e19c) border-box;
+  box-shadow:0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #6b4a1c, 0 8px 16px rgba(0,0,0,.6), inset 0 0 14px rgba(0,0,0,.85);}
+.hero .ava svg{width:36px; height:36px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.7));}
+.hero b{font:700 17px/1.1 var(--fs); letter-spacing:.02em; color:var(--pa-100); text-shadow:0 1px 0 #000;}
+.hero .hb{width:130px; height:7px; border-radius:4px; background:#0a0706; box-shadow:inset 0 1px 2px #000, 0 1px 0 rgba(255,225,170,.08);}
+.hero .hb i{background:linear-gradient(180deg, var(--hp-hi), var(--hp) 55%, #7a1712); box-shadow:0 0 6px rgba(200,48,42,.5);}
+.hero .hv{position:absolute; left:40px; top:36px; width:30px; height:33px; min-width:0; padding:0; border-radius:0; display:grid; place-items:center;
+  background:radial-gradient(circle at 40% 30%, var(--hp-hi), var(--hp) 45%, var(--hp-lo) 95%); box-shadow:none;
+  clip-path:polygon(50% 100%, 6% 74%, 0 12%, 50% 0, 100% 12%, 94% 74%);
+  font:700 16px/1 var(--fd); color:#fff; -webkit-text-stroke:3px #2a0605; paint-order:stroke fill;}
+.hero .hv::before{content:""; position:absolute; inset:0; z-index:-1;}
+.hero.tgt{box-shadow:0 0 0 2px var(--target), 0 0 24px color-mix(in srgb,var(--target) 60%,transparent);}
+
+/* ---------- 5. mana crystals ---------- */
+.mana{gap:8px; padding:5px 12px 5px 10px; border-radius:999px; border:1px solid transparent;
+  background:linear-gradient(#0e1422,#0a0d15) padding-box, linear-gradient(90deg, #4d6f9c, #1c2b44) border-box;}
+.mana b{font:700 16px/1 var(--fd); color:#fff; -webkit-text-stroke:3px #0b1d3a; paint-order:stroke fill; letter-spacing:.02em;}
+.gems{gap:3px;}
+.gems i{position:relative; width:15px; height:19px; border-radius:0; background:none;}
+.gems i::before{content:""; position:absolute; inset:0; clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%);
+  background:linear-gradient(135deg,#1a2230,#0c1119);}
+.gems i.on{background:radial-gradient(closest-side, rgba(90,160,255,.55), transparent);}
+.gems i.on::before{background:
+  linear-gradient(135deg, transparent 0 48%, rgba(0,0,0,.25) 48% 100%),
+  linear-gradient(225deg, rgba(255,255,255,.55) 0 22%, transparent 22%),
+  linear-gradient(180deg, var(--mana-hi), var(--mana) 45%, #1b4a9a);}
+.gems i.cap::before{background:linear-gradient(135deg,#3a4d68,#1a2432 55%,#0c1119);}
+.gems i:not(.on):not(.cap){opacity:.35;}
+
+/* ---------- 6. hand cards ---------- */
+.face{border-radius:11px; border:2px solid transparent;
+  background:
+    var(--grain) padding-box,
+    linear-gradient(180deg,#241c13,#15100b) padding-box,
+    var(--au-metal) border-box;
+  box-shadow:0 12px 24px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.7);}
+.face .art{left:6px; right:6px; top:6px; height:74px; border-radius:46px 46px 5px 5px / 26px 26px 5px 5px;
+  background:radial-gradient(80% 90% at 50% 38%, color-mix(in srgb,var(--t) 34%,#1a1510), color-mix(in srgb,var(--t) 6%,#0b0907));
+  box-shadow:inset 0 0 0 1px #000, 0 0 0 1px color-mix(in srgb,var(--au-400) 55%,transparent), inset 0 -12px 18px rgba(0,0,0,.7);}
+.face .art svg{width:52px; height:52px; margin-top:4px;}
+.face .cost{left:2px; top:2px; width:26px; height:26px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--mana-hi), var(--mana) 42%, #163a7a 88%);
+  font:700 16px/26px var(--fd); color:#fff; -webkit-text-stroke:3px #0b1d3a; paint-order:stroke fill;
+  box-shadow:0 0 0 1.5px var(--au-300), 0 0 0 2.5px #1b1307, 0 3px 6px rgba(0,0,0,.6);}
+.card.poor .face .cost{background:radial-gradient(circle at 35% 30%, #9aa0a8, #4a4e56 45%, #1e2026 90%); color:#cfd3da;}
+.face .tr{right:6px; top:5px; min-width:18px; height:17px; padding:0 3px 3px; box-sizing:border-box; display:grid; place-items:center;
+  font:700 10px/1 var(--fd); color:#fff; -webkit-text-stroke:2px rgba(0,0,0,.5); paint-order:stroke fill; text-shadow:none;
+  background:linear-gradient(180deg, color-mix(in srgb,var(--t) 85%,#fff 15%), color-mix(in srgb,var(--t) 70%,#000 30%));
+  clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);}
+.face .nm{left:-2px; right:-2px; top:72px; padding:3px 12px 4px; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:clip;
+  font:700 12.5px/1.05 var(--fs); letter-spacing:.01em; color:var(--pa-ink);
+  background:linear-gradient(180deg, var(--pa-100), var(--pa-300));
+  clip-path:polygon(0 0,100% 0,95% 50%,100% 100%,0 100%,5% 50%);
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.6));}
+.face .ab{top:95px; left:8px; right:8px; font:600 9px/1.25 var(--fb); color:color-mix(in srgb,var(--pa-200) 75%,transparent);}
+.face .sts{left:4px; right:4px; bottom:4px;}
+.face .sts span{width:24px; height:24px; padding:0; justify-content:center; border-radius:50%; gap:0;
+  font:700 14px/1 var(--fd); color:#fff; -webkit-text-stroke:3px #140c05; paint-order:stroke fill;}
+.face .sts svg{display:none;}
+.face .sts .a{color:#fff; background:radial-gradient(circle at 35% 30%, #fff7da, #e7bf62 42%, #8a5a18 90%); box-shadow:0 0 0 1.5px #2a1a08;}
+.face .sts .h{background:radial-gradient(circle at 35% 30%, var(--hp-hi), var(--hp) 45%, var(--hp-lo) 92%); box-shadow:0 0 0 1.5px #2a0605; border-radius:50% 50% 50% 50% / 42% 42% 58% 58%;}
+.card:not(.poor) .face{box-shadow:0 12px 24px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.7), 0 0 0 1px color-mix(in srgb,var(--ready) 70%,transparent), 0 0 14px color-mix(in srgb,var(--ready) 40%,transparent);}
+.card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 56px)) rotate(0deg) scale(1.28);}
+/* card backs: quilted leather + gold lozenge; enemy backs in crimson */
+.backf,.deck i{border:2px solid transparent; border-radius:11px;
+  background:
+    radial-gradient(circle at 50% 50%, var(--au-300) 0 5px, transparent 5.5px) padding-box,
+    conic-gradient(from 45deg at 50% 50%, transparent 0 25%, transparent 0) padding-box,
+    repeating-linear-gradient(45deg, rgba(226,187,98,.10) 0 1px, transparent 1px 11px) padding-box,
+    repeating-linear-gradient(-45deg, rgba(226,187,98,.10) 0 1px, transparent 1px 11px) padding-box,
+    radial-gradient(90% 70% at 50% 50%, color-mix(in srgb,var(--pc) 22%,#1c150e), #120d09) padding-box,
+    var(--au-metal) border-box;
+  box-shadow:0 10px 22px rgba(0,0,0,.55), inset 0 0 0 3px #120d09, inset 0 0 0 4px rgba(226,187,98,.35);}
+.backf::after{width:30px; height:30px; border:2px solid var(--au-300); background:color-mix(in srgb,var(--pc) 30%,#120d09); box-shadow:0 0 0 3px #120d09, 0 0 0 4px rgba(226,187,98,.5);}
+.backf.e{background:
+    repeating-linear-gradient(45deg, rgba(226,187,98,.08) 0 1px, transparent 1px 11px) padding-box,
+    repeating-linear-gradient(-45deg, rgba(226,187,98,.08) 0 1px, transparent 1px 11px) padding-box,
+    radial-gradient(90% 70% at 50% 50%, color-mix(in srgb,var(--ec) 25%,#1c0e0a), #120a08) padding-box,
+    var(--fe-metal) border-box;}
+.backf.e::after{border-color:var(--ec); background:color-mix(in srgb,var(--ec) 30%,#120a08);}
+.deck i{box-shadow:0 1px 0 #000, 0 2px 0 #3a2a14, 0 3px 0 #000, 0 4px 0 #3a2a14, 0 5px 0 #000, 0 14px 22px rgba(0,0,0,.6), inset 0 0 0 3px #120d09, inset 0 0 0 4px rgba(226,187,98,.35);}
+.deck b{font:700 12px var(--fd); color:var(--pa-300); letter-spacing:.04em;}
+.ehand i{width:20px; height:28px; margin-left:-8px; border-radius:4px; border:1.5px solid transparent;
+  background: repeating-linear-gradient(45deg, rgba(255,220,160,.14) 0 1px, transparent 1px 6px) padding-box, color-mix(in srgb,var(--ec) 60%,#241410) padding-box, linear-gradient(155deg, color-mix(in srgb,var(--ec) 85%,#fff), color-mix(in srgb,var(--ec) 45%,#000)) border-box;
+  box-shadow:0 3px 6px rgba(0,0,0,.6);}
+
+/* ---------- 7. chips, buttons, turn banner ---------- */
+.chip{background:linear-gradient(#1a1510,#110d0a); border-color:#3a2c1a; color:var(--pa-300);}
+.chip.turn.me{background:linear-gradient(#f5d98a,#c9973f); color:#1b1307; border-color:#6b4a18; box-shadow:0 0 16px rgba(226,187,98,.35);}
+#end{padding:13px 26px; font:700 14px/1 var(--fd); letter-spacing:.08em; text-transform:uppercase; color:#1b1307;
+  background:linear-gradient(180deg,#fff0b8,#e2b458 45%,#9c6d28); box-shadow:0 0 0 2px #2a1a08, 0 0 0 3.5px #d9b060, 0 8px 18px rgba(0,0,0,.6), inset 0 1px 0 #fff8dc;}
+#end[disabled]{opacity:1; background:linear-gradient(#4a4238,#2a241e); color:#8f8574; box-shadow:0 0 0 2px #120d08, 0 0 0 3px #4a3a22;}
+.btn.ghost{box-shadow:inset 0 0 0 1px #4a3a22; color:var(--pa-200);}
+.turnban{position:absolute; left:-14px; right:-14px; top:50%; height:84px; margin-top:-42px; z-index:25; display:grid; place-items:center; pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(10,8,6,.94) 14%, rgba(10,8,6,.94) 86%, transparent);
+  box-shadow:0 -1px 0 rgba(226,187,98,.0), 0 0 60px rgba(0,0,0,.6);}
+.turnban::before,.turnban::after{content:""; position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg, transparent, var(--au-300), transparent);}
+.turnban::before{top:0;} .turnban::after{bottom:0;}
+.turnban b{font:700 48px/1 var(--fs); letter-spacing:.05em; background:linear-gradient(180deg,#fff6d6,#f0cd78 45%,#a8772c); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 20px rgba(226,187,98,.45));}
+.turnban.e b{background-image:linear-gradient(180deg,#ffd9c8,#ff7a52 45%,#8a1c10); filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 20px rgba(255,90,60,.45));}
+
+/* damage numbers */
+.float{font:700 clamp(26px,4.2vw,46px)/1 var(--fd); -webkit-text-stroke:6px #4a0806; letter-spacing:.01em; filter:drop-shadow(0 3px 2px rgba(0,0,0,.6));}
+.float.big::before{content:""; position:absolute; inset:-40%; z-index:-1; background:radial-gradient(circle, #d62a1c 0 45%, #7a0d08 70%, transparent 72%);
+  clip-path:polygon(50% 0,61% 30%,95% 18%,72% 45%,100% 62%,66% 66%,72% 100%,50% 76%,26% 100%,32% 68%,0 62%,28% 45%,6% 16%,39% 30%);}
+.over{background:radial-gradient(60% 50% at 50% 50%, rgba(10,8,6,.92), rgba(10,8,6,.7));}
+.over b{font:700 64px/1 var(--fs); letter-spacing:.06em; background:linear-gradient(180deg,#fff6d6,#f0cd78 45%,#a8772c); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 30px rgba(226,187,98,.5));}
+
+/* ---------- 8. stage layout: one screen on desktop ---------- */
+.arena{--bw:min(var(--bw-max,860px), max(380px, calc((100dvh - 430px) * 1.24)));}
+.arena.camp{--bw:min(var(--bw-max,900px), max(420px, calc((100dvh - 430px) * 1.62)));}
+.handwrap{height:150px;}
+.card{top:22px;}
+.board-wrap > #end{position:absolute; left:calc(100% + 26px); top:50%; translate:0 -50%; z-index:7; width:112px; height:112px; padding:0; border-radius:50%; display:grid; place-items:center; text-align:center; line-height:1.15; white-space:normal;
+  background:radial-gradient(circle at 50% 35%, #fff4c4, #e7bb5a 40%, #8a5a18 85%); font-size:13px;
+  box-shadow:0 0 0 3px #2a1a08, 0 0 0 6px #d9b060, 0 0 0 8px #1a1209, 0 10px 24px rgba(0,0,0,.7), inset 0 -6px 12px rgba(90,50,10,.5), inset 0 3px 6px rgba(255,255,255,.6);}
+.board-wrap > #end.idle{animation:endpulse 1.5s ease-in-out infinite;}
+@keyframes endpulse{50%{box-shadow:0 0 0 3px #2a1a08, 0 0 0 6px var(--ready), 0 0 0 8px #1a1209, 0 0 34px 6px color-mix(in srgb,var(--ready) 55%,transparent), inset 0 3px 6px rgba(255,255,255,.6);}}
+.board-wrap > #end[disabled]{background:radial-gradient(circle at 50% 35%, #6b6258, #3a332b 50%, #1c1814 90%); color:#a39884; box-shadow:0 0 0 3px #120d08, 0 0 0 6px #4a3a22, 0 0 0 8px #0d0a07;}
+
+/* ---------- 9. phone ---------- */
+@media (max-width:600px){
+  .wrap{grid-template-columns:minmax(0,1fr); padding:8px 8px 40px; gap:12px;}
+  .arena{order:-1; --bw:100%; gap:8px; min-height:100svh; align-content:start;}
+  .bar{flex-wrap:nowrap; gap:6px;}
+  .hero{flex:1 1 auto; padding:3px 10px 3px 3px; gap:8px;}
+  .hero .ava{width:38px; height:38px; border-width:2px;} .hero .ava svg{width:24px; height:24px;}
+  .hero b{font-size:13.5px;} .hero .hb{width:auto; min-width:60px; height:5px;}
+  .hero .hv{left:22px; top:22px; width:22px; height:25px; font-size:12px; -webkit-text-stroke:2.5px #2a0605;}
+  .mana{padding:4px 8px; gap:5px;} .mana b{font-size:13px;}
+  .gems i{width:11px; height:15px;}
+  .chip{padding:4px 8px; font-size:11px;} .chip.turn{display:none;}
+  .ehand i{width:12px; height:17px; margin-left:-7px;}
+  .board-wrap{--pad:5px; border-radius:12px; box-shadow:0 0 0 3px #120d08, 0 0 0 4px #4b3519, 0 16px 30px rgba(0,0,0,.8);}
+  .grid{gap:4px;}
+  .tile{border-width:2px; border-radius:9px;}
+  .handwrap{height:122px;}
+  .card{width:76px; height:108px; top:12px;}
+  .card .in{zoom:.7037;}
+  .card:hover,.card.sel{transform:translate(var(--x),calc(var(--y) - 34px)) rotate(0deg) scale(1.3);}
+  .deck{width:52px; height:74px; top:18px;} .deck b{bottom:-18px; font-size:10px;}
+  #topbar{order:1;} #bwrap{order:2;} #botbar{order:3;} .actions{order:4;} #hand{order:5;}
+  .actions{gap:6px; flex-wrap:nowrap;} .actions .hint{display:none;} .btn{padding:9px 12px; font-size:12px;} #end{order:2; margin-left:auto; padding:12px 22px; font-size:13px;}
+  .turnban{height:60px; margin-top:-30px;} .turnban b{font-size:32px;}
+  .float{font-size:26px; -webkit-text-stroke:5px #4a0806;}
+}
+
+/* fx particles */
+.spark{position:absolute; z-index:18; border-radius:50%; pointer-events:none;}
+.float{isolation:isolate;}
+
+/* ---------- setup strip above the table ---------- */
+.setup{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; width:min(100%,var(--bw,860px));}
+.setup .modes{gap:4px; padding:3px; border-radius:11px; background:#100c09; box-shadow:inset 0 0 0 1px #3a2c1a;}
+.setup .mbtn{padding:6px 12px; border:0; border-radius:8px; background:none; font:700 12.5px/1.2 var(--fd); color:var(--pa-300); letter-spacing:.02em;}
+.setup .mbtn small{display:none;}
+.setup .mbtn[aria-pressed="true"]{background:linear-gradient(#f5d98a,#c9973f); color:#1b1307; box-shadow:0 0 12px rgba(226,187,98,.3);}
+.setup .races{gap:8px;}
+.rsel{display:inline-flex; align-items:center; gap:7px; padding:3px 4px 3px 8px; border-radius:10px; background:#100c09; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 45%,#3a2c1a);}
+.rsel i{width:22px; height:22px; display:grid; place-items:center;} .rsel i svg{width:20px; height:20px;} .rsel svg *{fill:var(--rc);} .rsel svg .k{fill:#16130f;}
+.rsel span{font:500 10.5px/1 var(--fm); letter-spacing:.06em; text-transform:uppercase; color:var(--mut);}
+.rsel select{appearance:none; -webkit-appearance:none; border:0; outline:0; cursor:pointer; padding:5px 22px 5px 6px; border-radius:7px; font:700 13px/1.2 var(--fd); color:var(--rc);
+  background:#1a140f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%23c9b07c'/%3E%3C/svg%3E") no-repeat right 7px center;}
+.rsel select:focus-visible{box-shadow:0 0 0 2px var(--au-300);}
+.rsel option{background:#1a140f; color:var(--ink);}
+.setup .sys{display:flex; gap:6px; margin-left:auto;}
+.btn.sm{padding:6px 11px; font-size:12px;}
+.hint{min-height:1.4em;}
+.card.nope{animation:nope .26s linear;} .tile.nope{animation:nope .26s linear;}
+@keyframes nope{20%{translate:-4px 0} 40%{translate:4px 0} 60%{translate:-3px 0} 80%{translate:2px 0}}
+.fastfwd{position:absolute; left:50%; bottom:6px; translate:-50% 0; z-index:24; padding:4px 10px; border-radius:999px; font:600 11px/1.2 var(--fb); color:var(--pa-300); background:rgba(10,8,6,.8); box-shadow:inset 0 0 0 1px #3a2c1a; pointer-events:none;}
+.burn{position:fixed; z-index:60; pointer-events:none;}
+@media (max-width:600px){
+  .setup{gap:6px;} .setup .mbtn{padding:5px 8px; font-size:11.5px;} .rsel span{display:none;} .rsel select{font-size:12px; padding:4px 18px 4px 4px;} .setup .sys{margin-left:0;}
+}
 </style>
 
 <div class="wrap">
+  <section class="arena" id="arena" aria-label="Поле боя">
+    <div class="setup">
+      <div class="modes" id="modes" role="group" aria-label="Режим"></div>
+      <div class="races" id="races"></div>
+      <div class="sys"><button class="btn ghost sm" id="reset" type="button">Заново</button><button class="btn ghost sm" id="snd" type="button" aria-pressed="true">Звук: вкл</button></div>
+    </div>
+    <div class="bar" id="topbar"></div>
+    <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
+    <div class="bar" id="botbar"></div>
+    <div class="actions">
+      <button class="btn" id="end" type="button">Конец хода</button>
+      <span class="hint" id="hint" role="status"></span>
+    </div>
+    <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
+  </section>
+
   <header>
     <p class="eyebrow" id="eyebrow">Три режима · три расы</p>
     <h1>Поле · тёмная редакция</h1>
     <p class="lede">Юниты стоят там, где их выставили. В свой ход вы сами выбираете, кого бить: прямо или по диагонали вперёд. Лишний урон проходит дальше: в юнита за убитым, а потом в героя. Вторая, взрослая версия: другие иконки и звук, герои по 30 ХП, в руку по 3 карты за ход.</p>
   </header>
-
-  <div class="modes" id="modes" role="group" aria-label="Режим"></div>
   <p class="mdesc" id="mdesc"></p>
-  <div class="races" id="races"></div>
-
-  <section class="arena" aria-label="Поле боя">
-    <div class="bar" id="topbar"></div>
-    <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
-    <div class="bar" id="botbar"></div>
-    <div class="handwrap" id="hand"><div class="deck" id="deck"><i></i><i></i><i></i><b>колода ∞</b></div></div>
-    <div class="actions">
-      <button class="btn" id="end" type="button">Конец хода</button>
-      <button class="btn ghost" id="reset" type="button">Заново</button>
-      <button class="btn ghost" id="snd" type="button" aria-pressed="true">Звук: вкл</button>
-      <span class="hint" id="hint"></span>
-    </div>
-  </section>
 
   <details class="panel">
     <summary>Как играть и правила</summary>
@@ -417,7 +782,7 @@ const atkIcon = key => ATK_ICON[key] || SWORD;
 const ZZZ = `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="M1 10h7v1.8L3.8 16H8v1.8H1V16l4.2-4.2H1zM11 5h6v1.6l-3.4 3.6H17v1.6h-6v-1.6l3.4-3.6H11zM19.5 1H25v1.4l-2.8 3H25v1.4h-5.5V5.4l2.8-3h-2.8z"/></svg>`;
 
 const FAC = {
-  haven:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', castle:'Haven', col:'#8fb0d6', units:[
+  haven:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', castle:'Haven', col:'#8fb6e6', hi:'#e8f1ff', lo:'#142236', units:[
     {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
     {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
     {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
@@ -426,7 +791,7 @@ const FAC = {
     {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
     {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
   ]},
-  inferno:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', castle:'Inferno', col:'#c8483a', units:[
+  inferno:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', castle:'Inferno', col:'#e0482e', hi:'#ffb35a', lo:'#2a0b07', units:[
     {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
     {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
     {key:'hound', name:'Адский пёс', atk:2, hp:7, diagonal:true, noRetal:true, ab:'Бьёт прямо и наискосок, на его удар сдачи нет', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
@@ -435,7 +800,7 @@ const FAC = {
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
   ]},
-  sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#7fae5a', units:[
+  sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#86b95a', hi:'#e6d98f', lo:'#132210', units:[
     {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', noRetal:true, ab:'Пыльца: бьёт через своих, без сдачи', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
     {key:'dancer', name:'Танцор клинков', atk:1, hp:6, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
     {key:'hunter', name:'Охотник', atk:1, hp:6, ranged:true, double:true, bolt:'arrow', ab:'2 очка хода: два выстрела или выстрел и шаг', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
@@ -471,7 +836,7 @@ const U = u => F[u.side].units[u.type];
 const svg = k => ico(k);
 const $ = s => document.querySelector(s);
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const D = ms => Math.round(ms * (RM ? 0.2 : 0.8));
+const D = ms => Math.round(ms * (RM ? 0.2 : 0.8) * (S && S.fast ? .4 : 1));
 const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 
 /* ---------- sound ----------
@@ -569,7 +934,7 @@ const apMax = u => U(u).double ? 2 : 1;
 const canMove = u => u && u.where === 'f' && !u.sleep && (u.atks || 0) > 0;
 const canAttack = u => u && u.where === 'f' && !u.sleep && (u.atks || 0) > 0 && (() => { const T = attackTargets(u); return T.hero || T.units.length > 0; })();
 /* white attack badge: this unit can still strike this turn */
-const armed = u => u.where === 'f' && u.side === S.side && !u.sleep && (u.atks || 0) > 0;
+const armed = u => u.side === S.side && canAttack(u);
 const selUnit = () => S && S.sel && S.sel.unit != null ? S.units.find(u => u.id === S.sel.unit) : null;
 /* Trio by placement: a card completes a trio if the target cell touches a pair (or joins a chain of two). */
 function completionAt(side, type, cell, excl){
@@ -608,7 +973,7 @@ function readyTrios(){
 /* ---------- board DOM ---------- */
 function buildBoard(){
   const g = $('#grid'), m = M(); g.innerHTML = ''; CELLS.length = 0; CAMP.p = []; CAMP.e = []; TILES.clear();
-  document.documentElement.style.setProperty('--bw', m.bw);
+  document.documentElement.style.setProperty('--bw-max', m.bw); $('#arena').classList.toggle('camp', !!m.camp);
   g.style.gridTemplateColumns = m.camp ? '1fr 4px repeat(4,1fr) 4px 1fr' : `repeat(${m.cols},1fr)`;
   const off = m.camp ? 3 : 1;
   const add = (cls, col, row, data) => { const el = document.createElement('div'); el.className = 'cell ' + cls; el.style.gridColumn = col; el.style.gridRow = row; Object.assign(el.dataset, data); g.appendChild(el); return el; };
@@ -637,7 +1002,7 @@ function syncUnits(dropId){
       if (u.id === dropId){ el.classList.add('drop-in'); el.addEventListener('animationend', () => el.classList.remove('drop-in'), {once:true}); } }
     const keep = el.classList.contains('drop-in') ? ' drop-in' : '', mg = T.ups.includes(u), sel = S.sel && S.sel.unit === u.id, tri = !mg && trios.members.has(u.id), head = tri && trios.heads.has(u.id);
     el.className = `tile ${u.side}${u.sleep ? ' sleep' : ''}${sel ? ' sel' : ''}${mg ? ' mg' : ''}${tri ? ' trio' : ''}${keep}`;
-    el.style.setProperty('--t', TC[u.type]);
+    el.style.setProperty('--t', TC[u.type]); el.dataset.tier = u.type;
     const next = u.type < 6 ? F[u.side].units[u.type + 1].name : '';
     const swp = T.swaps.includes(u);
     if (swp) el.classList.add('swp');
@@ -719,13 +1084,16 @@ function manaHTML(side){
   return `<div class="mana" title="Мана ${m} из ${cap}"><b>${m}/${cap}</b><span class="gems">${Array.from({length:MANA_MAX}, (_, i) => `<i class="${i < m ? 'on' : i < cap ? 'cap' : ''}"></i>`).join('')}</span></div>`;
 }
 function renderBars(){
-  const me = S.side === 'p' && !S.busy && !S.over;
+  const me = S.side === 'p' && !S.busy && !S.over, a = $('#arena');
+  for (const [side, k] of [['p', 'pc'], ['e', 'ec']]){ const f = F[side]; a.style.setProperty(`--${k}`, f.col); a.style.setProperty(`--${k}-hi`, f.hi); a.style.setProperty(`--${k}-lo`, f.lo); }
+  a.classList.toggle('mirror', RACE.p === RACE.e);
+  $('#end').classList.toggle('idle', me && !onField('p').some(canAttack) && !S.hand.p.some(c => c.type + 1 <= S.mana.p));
   const unl = side => M().unlock ? `<span class="chip unl">Карты до <b>${RO[S.unlocked[side]]}</b> тира</span>` : '';
   $('#topbar').innerHTML = heroHTML('e') + manaHTML('e') + unl('e') + `<span class="ehand" id="ehand">${'<i></i>'.repeat(S.hand.e.length)}</span>`
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника…` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : 'Выберите подсвеченную цель: золото — улучшение.')
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : 'Выберите подсвеченную цель: золото — улучшение.')
     : readyTrios().heads.size ? 'Тройка готова: нажмите на юнита со стрелкой ↑ — двое других сольются в него. Сливать можно только в того, у кого есть ход.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
@@ -741,11 +1109,12 @@ function cardEl(card){
 }
 function layoutHand(){
   const hb = $('#hand'); if (!hb || !S) return;
-  const cards = [...hb.querySelectorAll('.card')], n = cards.length, W = 108, avail = hb.clientWidth - 90;
-  const step = n > 1 ? Math.min(W + 10, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2;
+  const cards = [...hb.querySelectorAll('.card')], n = cards.length;
+  const W = cards[0] ? cards[0].offsetWidth : 108, deckW = ($('#deck')?.offsetWidth || 74) + 16, avail = hb.clientWidth - deckW;
+  const step = n > 1 ? Math.min(W + 8, (avail - W) / (n - 1)) : 0, start = (avail - (W + step * (n - 1))) / 2, arc = W / 108;
   cards.forEach((el, i) => {
     const k = i - (n - 1) / 2;
-    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${k * k * 3}px`); el.style.setProperty('--a', `${k * 3.5}deg`);
+    el.style.setProperty('--x', `${start + i * step}px`); el.style.setProperty('--y', `${Math.min(k * k * 2.2, 26) * arc}px`); el.style.setProperty('--a', `${k * 3}deg`);
     el.style.zIndex = i + 1;
     const c = S.hand.p.find(h => h.uid === +el.dataset.uid), poor = !!c && c.type + 1 > S.mana.p;
     el.classList.toggle('poor', poor);
@@ -759,8 +1128,53 @@ function renderAll(dropId){ renderBars(); syncUnits(dropId); layoutHand(); }
 function floatAt(x, y, text, cls = ''){
   const el = document.createElement('div'); el.className = 'float ' + cls; el.textContent = text; el.style.left = x + 'px'; el.style.top = y + 'px';
   $('#units').appendChild(el);
-  el.animate([{transform:'translateY(6px)', opacity:0}, {transform:'translateY(-4px)', opacity:1, offset:.18}, {transform:'translateY(-8px)', opacity:1, offset:.6}, {transform:'translateY(-22px)', opacity:0}], {duration:D(850), easing:'ease-out'}).finished.then(() => el.remove());
+  el.animate([{transform:'scale(1.9)', opacity:0}, {transform:'scale(1)', opacity:1, offset:.16}, {transform:'translateY(-6px)', opacity:1, offset:.62}, {transform:'translateY(-26px) scale(.9)', opacity:0}],
+    {duration:D(1000), easing:'cubic-bezier(.2,.8,.2,1)'}).finished.then(() => el.remove());
 }
+/* Combat feedback kit: board shake, sparks, hit flash, turn banner, death shatter. Everything goes through D(), so reduced motion is respected. */
+const FX = {
+  shake(el, amp = 4, dur = 240){
+    if (RM || !el) return;
+    const k = [];
+    for (let i = 0; i < 7; i++){ const f = 1 - i / 7, r = () => (Math.random() * 2 - 1) * amp * f; k.push({transform:`translate(${r()}px,${r()}px) rotate(${r() * .08}deg)`}); }
+    k.push({transform:'none'});
+    el.animate(k, {duration:dur, easing:'linear'});
+  },
+  sparks(x, y, {n = 10, color = '#ffc66b', spread = 48, size = 4, dur = 520, gravity = 26} = {}){
+    if (RM) return;
+    const layer = $('#units');
+    for (let i = 0; i < n; i++){
+      const s = document.createElement('i'); s.className = 'spark';
+      s.style.cssText = `left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${color};box-shadow:0 0 6px 1px ${color}`;
+      layer.appendChild(s);
+      const a = Math.random() * Math.PI * 2, d = spread * (.4 + Math.random() * .6);
+      s.animate([{transform:'translate(-50%,-50%) scale(1)', opacity:1},
+                 {transform:`translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + gravity}px)) scale(.2)`, opacity:0}],
+                {duration:D(dur * (.7 + Math.random() * .5)), easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(() => s.remove());
+    }
+  },
+  flash(el){ if (!el) return; el.classList.remove('hitfx'); void el.offsetWidth; el.classList.add('hitfx'); },
+  banner(text, cls = ''){
+    $('#bwrap .turnban')?.remove();
+    const d = document.createElement('div'); d.className = 'turnban ' + cls; d.innerHTML = `<b>${text}</b>`; $('#bwrap').appendChild(d);
+    return d.animate([{opacity:0, transform:'scaleY(.2)'}, {opacity:1, transform:'none', offset:.14}, {opacity:1, offset:.72}, {opacity:0, transform:'scaleX(1.04)'}],
+      {duration:D(1500), easing:'cubic-bezier(.2,.8,.2,1)'}).finished.then(() => d.remove());
+  },
+  shatter(el){
+    const b = box(el), layer = $('#units');
+    const P = [[0,0, 58,0, 46,46, 0,38], [58,0, 100,0, 100,52, 46,46], [0,38, 46,46, 30,100, 0,100], [46,46, 100,52, 100,100, 30,100]];
+    const DIR = [[-1,-1], [1,-1], [-1,1], [1,1]];
+    return Promise.all(P.map((q, i) => {
+      const c = el.cloneNode(true); c.classList.remove('hitfx', 'ready', 'tgt', 'sel'); c.style.pointerEvents = 'none'; c.style.visibility = 'visible';
+      c.style.clipPath = `polygon(${q[0]}% ${q[1]}%, ${q[2]}% ${q[3]}%, ${q[4]}% ${q[5]}%, ${q[6]}% ${q[7]}%)`; layer.appendChild(c);
+      const [dx, dy] = DIR[i], m = b.w * .28;
+      return c.animate([{transform:'none', opacity:1, filter:'grayscale(.6) brightness(.9)'},
+                        {transform:`translate(${dx * m * .5}px,${dy * m * .3}px) rotate(${dx * 8}deg)`, opacity:1, offset:.3, filter:'grayscale(1) brightness(.6)'},
+                        {transform:`translate(${dx * m}px,${dy * m * .4 + b.h * .45}px) rotate(${dx * 24}deg)`, opacity:0, filter:'grayscale(1) brightness(.4)'}],
+                       {duration:D(560), easing:'cubic-bezier(.4,0,.8,.6)'}).finished.then(() => c.remove());
+    }));
+  },
+};
 function ringAt(el, color){
   const b = box(el), r = document.createElement('div'); r.className = 'ring';
   Object.assign(r.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px', boxShadow:`0 0 0 2px ${color}, 0 0 12px ${color}`});
@@ -769,7 +1183,9 @@ function ringAt(el, color){
 }
 function flashHP(badge){
   if (!badge) return;
-  badge.animate([{background:'#0b0d10'}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fff, 0 0 16px #ef4444', offset:.15}, {background:'#ef4444', color:'#fff', boxShadow:'0 0 0 2px #fca5a5, 0 0 10px #ef4444', offset:.5}, {background:'#0b0d10'}], {duration:D(650), easing:'ease-out'});
+  badge.animate([{filter:'none'}, {filter:'brightness(1.8) drop-shadow(0 0 8px #ff4a3a)', offset:.15}, {filter:'none'}], {duration:D(650), easing:'ease-out'});
+  const hero = badge.closest('.hero');
+  if (hero){ FX.shake(hero, 7, 320); hero.querySelector('.ava').animate([{boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #ff4a3a, 0 0 30px 8px rgba(255,60,40,.8)'}, {boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #6b4a1c, 0 8px 16px rgba(0,0,0,.6)'}], {duration:D(600)}); }
 }
 async function flyTo(html, from, toEl, spin){
   const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
@@ -787,8 +1203,18 @@ async function flyTo(html, from, toEl, spin){
 }
 
 /* ---------- actions ---------- */
+async function burnCard(){
+  const deck = $('#deck').getBoundingClientRect(), el = document.createElement('div'); el.className = 'fly burn';
+  const c = newCard('p'); el.innerHTML = cardFace(c.type); document.body.appendChild(el);
+  const x = deck.left - 30, y = deck.top - 40;
+  Sfx.play('burn'); $('#hint').textContent = `Рука полна (${HAND_MAX}): карта «${F.p.units[c.type].name}» сгорела.`;
+  await el.animate([{transform:`translate(${x}px,${y + 40}px) scale(.7)`, opacity:0, filter:'none'}, {transform:`translate(${x - 60}px,${y - 40}px) scale(.9)`, opacity:1, filter:'none', offset:.3},
+    {transform:`translate(${x - 70}px,${y - 90}px) scale(.85) rotate(-6deg)`, opacity:0, filter:'sepia(1) saturate(4) hue-rotate(-20deg) brightness(.5) blur(2px)'}], {duration:D(900), easing:'ease-in'}).finished;
+  el.remove();
+}
 async function drawCards(side, k, animate){
-  for (let i = 0; i < k && S.hand[side].length < HAND_MAX; i++){
+  for (let i = 0; i < k; i++){
+    if (S.hand[side].length >= HAND_MAX){ if (side === 'p' && animate) await burnCard(); continue; }
     const card = newCard(side); S.hand[side].push(card);
     if (side !== 'p') continue;
     const el = cardEl(card), deck = $('#deck');
@@ -878,7 +1304,7 @@ async function fromCamp(u, dest){
 }
 async function kill(v){
   const el = TILES.get(v.id); Sfx.die(v);
-  if (el) await el.animate([{transform:'scale(1)', opacity:1, filter:'none'}, {transform:'scale(.92) translateY(3px)', opacity:.8, filter:'grayscale(1) brightness(.6)', offset:.4}, {transform:'scale(.75) translateY(8px)', opacity:0, filter:'grayscale(1) brightness(.4)'}], {duration:D(360), easing:'ease-in'}).finished;
+  if (el){ el.style.visibility = 'hidden'; FX.shake($('#bwrap'), 3, 160); await FX.shatter(el); }
   S.units = S.units.filter(x => x !== v); syncUnits();
   /* a melee ally standing behind steps into the gap; ranged units stay in the rear */
   if (v.where === 'f' && v.r === FRONT[v.side]){
@@ -906,11 +1332,15 @@ async function damage(t, raw){
   t.hp -= dmg; const el = TILES.get(t.id);
   Sfx.hurt(t);
   if (el){
-    el.animate([{filter:'brightness(2)'}, {filter:'none'}], {duration:D(220)});
+    const b = box(el), cx = b.x + b.w / 2, cy = b.y + b.h * .45;
+    FX.flash(el);
+    FX.shake($('#bwrap'), dmg >= 10 ? 9 : dmg >= 6 ? 6 : dmg >= 3 ? 4 : 2, dmg >= 6 ? 280 : 180);
+    FX.sparks(cx, cy, {n:6 + Math.min(dmg, 10), color:t.side === 'p' ? '#ffd48a' : '#ff9a6a', spread:b.w * .42});
+    el.animate([{transform:'none'}, {transform:`translate(${(Math.random() - .5) * 6}px, ${FWD[t.side] * -5}px) scale(.96)`, offset:.2}, {transform:'none'}], {duration:D(260), easing:'ease-out'});
     const hb = el.querySelector('.st.h'); if (hb){ hb.querySelector('b').textContent = Math.max(0, t.hp); hb.classList.add('d'); flashHP(hb); }
-    const b = box(el); floatAt(b.x + b.w * .78, b.y + b.h * .56, `−${dmg}`);
+    floatAt(cx, cy, `−${dmg}`, dmg >= 5 ? 'big' : '');
   }
-  await wait(360);
+  await wait(t.hp <= 0 ? 150 : 380);
   if (t.hp <= 0) await kill(t);
 }
 /* Dragged attacks strike from where the unit was released: a hit (or a shot) from that spot, then it flies back to its slot. */
@@ -1049,12 +1479,13 @@ function checkOver(){
   if (S.over){
     Sfx.play(S.over);
     $('#bwrap').insertAdjacentHTML('beforeend', `<div class="over"><b>${S.over === 'win' ? 'Победа' : 'Поражение'}</b><button class="btn" type="button" id="again">Ещё бой</button></div>`);
-    $('#again').onclick = newGame;
+    $('#again').onclick = restart;
     renderAll();
   }
   return !!S.over;
 }
 async function startTurn(side, first){
+  FX.banner(side === 'p' ? 'Ваш ход' : 'Ход противника', side === 'p' ? '' : 'e');
   S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = apMax(u); u.acted = false; } u.retalUsed = false; });
   S.mana[side] = Math.min(S.turn, MANA_MAX);
   for (const u of onField(side).filter(v => U(v).heal)){
@@ -1088,7 +1519,7 @@ function cellScore(side, type, r, c){
 }
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
 /* A short, uneven pause before each move, as if the opponent is thinking. */
-const think = () => new Promise(r => setTimeout(r, RM ? 0 : 240 + Math.random() * 560));
+const think = () => new Promise(r => setTimeout(r, RM || S.fast ? 0 : S.turn <= 1 ? 320 : 110 + Math.random() * 190));
 /* The AI merges trios whenever it can, into the unit whose row suits the next tier. */
 async function aiUpgrades(side){
   for (let g = 0; g < 8 && !S.over; g++){
@@ -1172,16 +1603,21 @@ async function aiAttacks(side){
 }
 
 /* ---------- turn flow ---------- */
-async function endTurn(){
-  if (S.side !== 'p' || S.busy || S.over) return;
+let turnTask = Promise.resolve();
+function endTurn(){
+  if (S.side !== 'p' || S.busy || S.over) return turnTask;
+  turnTask = runEnemyTurn(); return turnTask;
+}
+async function runEnemyTurn(){
   S.busy = true; S.sel = null; renderAll();
   await chain;
   if (S.over){ S.busy = false; return; }
-  S.side = 'e'; Sfx.play('turn');
-  await startTurn('e', S.turn === 1); await wait(180);
-  await aiTurn(); await wait(180);
+  S.side = 'e'; S.fast = false; Sfx.play('turn');
+  await startTurn('e', S.turn === 1); await wait(70);
   if (S.over){ S.busy = false; return; }
-  S.turn++; S.side = 'p'; Sfx.play('turn');
+  await aiTurn(); await wait(70);
+  if (S.over){ S.busy = false; return; }
+  S.turn++; S.side = 'p'; S.fast = false; Sfx.play('turn');
   S.busy = false;
   await startTurn('p', false);
   renderAll();
@@ -1237,19 +1673,36 @@ function perform(sel, dest, fromRect){
   renderAll(); enqueue(act);
   return true;
 }
+/* A tap or Space during the enemy turn plays the rest of it faster. */
+function speedUp(){ if (S && S.side === 'e' && !S.over && !S.fast){ S.fast = true; renderBars(); } }
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('select, input, textarea')) return;
+  if (e.key === ' ' && S && S.side === 'e'){ e.preventDefault(); speedUp(); }
+  else if ((e.key === 'e' || e.key === 'E' || e.key === 'у' || e.key === 'У') && S && S.side === 'p' && !S.busy && !S.over) endTurn();
+});
+/* Say why a press did nothing, with a small shake. */
+function nope(el, text){ if (el){ el.classList.remove('nope'); void el.offsetWidth; el.classList.add('nope'); } if (text) $('#hint').textContent = text; Sfx.play('nope'); }
+function whyIdle(u){
+  if (u.sleep) return u.stun ? `${U(u).name} ослеплён и пропускает ход.` : `${U(u).name} спит: только что выставлен или улучшен. Бьёт со следующего хода.`;
+  if ((u.atks || 0) <= 0) return `${U(u).name} уже походил в этом ходу.`;
+  if (!U(u).ranged && u.r !== FRONT[u.side]) return `${U(u).name} бьёт только из переднего ряда: сначала сделайте шаг вперёд.`;
+  return `${U(u).name}: сейчас некого бить.`;
+}
 document.addEventListener('pointerdown', e => {
+  if (S && S.side === 'e' && !S.over && e.target.closest && e.target.closest('.arena') && !e.target.closest('button, select')) speedUp();
   if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
   const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
   const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
   const fieldUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'f');
   if (fieldUnit){
-    if (!(canAttack(fieldUnit) || canMove(fieldUnit))) return;
+    if (!(canAttack(fieldUnit) || canMove(fieldUnit))){ nope(tile, whyIdle(fieldUnit)); return; }
     e.preventDefault();
     drag = {sel:{unit:fieldUnit.id}, src:tile, field:true, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
     return;
   }
   if (!card && !campUnit) return;
   e.preventDefault();
+  if (card){ const c = S.hand.p.find(h => h.uid === +card.dataset.uid); if (c && c.type + 1 > S.mana.p){ nope(card, `Не хватает маны: ${F.p.units[c.type].name} стоит ${c.type + 1}, у вас ${S.mana.p}.`); return; } }
   if (campUnit && S.sel && targetsFor(S.sel).ups.includes(campUnit)) return;
   if (campUnit && campUnit.sleep){ $('#hint').textContent = 'Юнит в лагере спит: сдвинуть его можно со следующего хода. Такую же карту можно положить на него сразу.'; return; }
   drag = {sel:card ? {card:+card.dataset.uid} : {unit:campUnit.id}, src:card || tile, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
@@ -1275,11 +1728,11 @@ document.addEventListener('pointerup', async e => {
   if (!drag) return;
   const d = drag; drag = null; document.documentElement.classList.remove('dragging');
   document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
-  if (!d.on && d.field) return;
+  if (!d.on && d.field){ S.sel = S.sel && S.sel.unit === d.sel.unit ? null : d.sel; Sfx.play('pick'); skipClick = true; renderAll(); if (S.sel && !canAttack(selUnit())) $('#hint').textContent = whyIdle(selUnit()); return; }
   if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = d.sel.unit != null; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
   const dest = dropAt(e.clientX, e.clientY);
-  if (!perform(d.sel, dest, rect)){ S.sel = null; renderAll(); }
+  if (!perform(d.sel, dest, rect)){ S.sel = null; renderAll(); if (dest && dest.el) nope(null, d.field ? 'Сюда нельзя: цели в красной рамке, шаг — на соседнюю клетку.' : 'Сюда нельзя: карты выставляются на подсвеченные клетки двух нижних линий.'); }
 });
 document.addEventListener('pointercancel', () => { document.documentElement.classList.remove('dragging'); if (drag){ drag.ghost?.remove(); drag.src.style.opacity = ''; drag.src.classList.remove('ghosted'); drag = null; } });
 document.addEventListener('dragstart', e => { if (e.target.closest && e.target.closest('.arena')) e.preventDefault(); });
@@ -1300,21 +1753,28 @@ $('#bwrap').addEventListener('click', async e => {
   if (!dest || !dest.unit || dest.unit.where !== 'c'){ S.sel = null; renderAll(); }
 });
 $('#end').onclick = endTurn;
-$('#reset').onclick = () => { if (!S.busy || S.over) newGame(); };
+/* Restart at any moment: stop the AI, let queued actions and the running turn wind down on the old game, then start fresh. */
+let restarting = false;
+async function restart(){
+  if (restarting) return; restarting = true;
+  if (S && !S.over) S.over = 'reset';
+  await chain; await turnTask;
+  restarting = false; newGame();
+}
+$('#reset').onclick = restart;
 const sndBtn = $('#snd'), sndShow = () => { sndBtn.textContent = 'Звук: ' + (Sfx.on ? 'вкл' : 'выкл'); sndBtn.setAttribute('aria-pressed', Sfx.on); };
 sndBtn.onclick = () => { Sfx.toggle(); sndShow(); }; sndShow();
 
 function renderModes(){
-  $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}">${m.name}<small>${m.tag}</small></button>`).join('');
-  $('#modes').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if (S && S.busy && !S.over) return; MODE_ID = b.dataset.m; try { localStorage.setItem('fieldMode', MODE_ID); } catch (e) {} newGame(); });
+  $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}" title="${m.tag}">${m.name}<small>${m.tag}</small></button>`).join('');
+  $('#modes').querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if (b.dataset.m === MODE_ID) return; MODE_ID = b.dataset.m; try { localStorage.setItem('fieldMode', MODE_ID); } catch (e) {} restart(); });
   $('#mdesc').textContent = M().desc; $('#howto').textContent = M().howto;
   $('#eyebrow').textContent = `${M().name} · ${F.p.name} против ${F.e.name}`;
-  $('#races').innerHTML = [['p', 'Вы'], ['e', 'Противник']].map(([side, label]) => `<div class="rgroup" role="group" aria-label="${label}: раса"><span class="label">${label}</span>`
-    + Object.entries(FAC).map(([k, f]) => `<button class="rbtn" type="button" data-side="${side}" data-race="${k}" aria-pressed="${RACE[side] === k}" style="--rc:${f.col}"><i>${svg(f.heroIcon)}</i>${f.name}</button>`).join('') + `</div>`).join('');
-  $('#races').querySelectorAll('[data-race]').forEach(b => b.onclick = () => {
-    if (S && S.busy && !S.over) return;
-    RACE[b.dataset.side] = b.dataset.race; try { localStorage.setItem('fieldRaces', JSON.stringify(RACE)); } catch (e) {}
-    newGame();
+  $('#races').innerHTML = [['p', 'Вы'], ['e', 'Враг']].map(([side, label]) => `<label class="rsel" style="--rc:${FAC[RACE[side]].col}"><i>${svg(FAC[RACE[side]].heroIcon)}</i><span>${label}</span>`
+    + `<select data-side="${side}" aria-label="${label}: раса">${Object.entries(FAC).map(([k, f]) => `<option value="${k}"${RACE[side] === k ? ' selected' : ''}>${f.name}</option>`).join('')}</select></label>`).join('');
+  $('#races').querySelectorAll('select').forEach(sel => sel.onchange = () => {
+    RACE[sel.dataset.side] = sel.value; try { localStorage.setItem('fieldRaces', JSON.stringify(RACE)); } catch (e) {}
+    restart();
   });
 }
 
