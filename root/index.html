@@ -2485,7 +2485,7 @@ function render(now) {
   const t = now / 1000, dark = PAL.dark;
   if (gridPat) { const ox = ((-cam.x * cam.z) % 26 + 26) % 26, oy = ((-cam.y * cam.z) % 26 + 26) % 26; ctx.save(); ctx.translate(ox, oy); ctx.fillStyle = gridPat; ctx.fillRect(-26, -26, V.w + 52, V.h + 52); ctx.restore(); }
   if (!G) return;
-  const S = cam.z, N = G.nodes;
+  const S = cam.z, N = G.nodes, sz = Math.max(7, 12 * S);
   const shownOwner = p => p.vis ? p.owner : p.lastOwner, shownV = p => p.vis ? p.vd : p.lastV;
 
   // conduits & cables
@@ -2655,7 +2655,7 @@ function render(now) {
   // bundles are never seen, not even next to your nodes: only the ▼ over a node says that something is coming
   const hidden = o => G.fog && o !== 1;
   if (dark) ctx.globalCompositeOperation = 'lighter';
-  const sz = Math.max(7, 12 * S), heads = [];
+  const heads = [];
   for (const e of G.edges) for (const a of e.ar) {
     if (a.dead || hidden(a.o) || !edgeShown(e)) continue;
     const [hx, hy] = posAt(e, a.dir, a.d);
