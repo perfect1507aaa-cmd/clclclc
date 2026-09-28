@@ -237,6 +237,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
 .end-title.win{ color:var(--c1); }
 .end-title.lose{ color:var(--c2); }
 .end-sub{ margin:8px 0 22px; color:var(--fg2); font-size:12px; }
+.brief{ margin:0 0 18px; line-height:1.55; } .brief b{ display:block; color:var(--fg); font-weight:500; margin-bottom:4px; }
 .stats{ display:grid; grid-template-columns:repeat(3,1fr); margin-bottom:22px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .stats div{ padding:12px 0; }
 .stats div + div{ border-left:1px solid var(--line); padding-left:12px; }
@@ -335,6 +336,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   <div class="card panel">
     <div class="titlebar"><span class="path">процесс приостановлен</span><span class="led"></span></div>
     <div class="body">
+      <p class="end-sub brief" id="pauseBrief" hidden></p>
       <div class="stack">
         <button class="btn primary" id="btnResume"><span class="lbl">продолжить</span><span class="hint">esc</span></button>
         <button class="btn" id="btnRestart"><span class="lbl">начать заново</span></button>
@@ -388,6 +390,7 @@ const HQ = { def: 1.5, regen: 1.25 };
 const tierOf = v => v >= 500 ? 4 : v >= 100 ? 3 : v >= 50 ? 2 : v >= 20 ? 1 : 0;
 /* The class of a node: by its packets, but never above its ceiling. */
 const tierN = p => Math.min(tierOf(p.v), p.maxT);
+const TIER_TO = ['', 'станции', 'сервера', 'мейнфрейма', 'кластера']; // for "до сервера: 12"
 const radiusFor = v => 16 + Math.sqrt(Math.max(0, v)) * 3.4;
 const REF_R = [radiusFor(19.99), radiusFor(49.99), radiusFor(99.99), radiusFor(200), radiusFor(600)];
 /* How big a node is drawn: it grows with its packets, up to 350. */
@@ -527,12 +530,14 @@ const SFX = {
   flowOn() { if (sfxOk()) { blip(880, 0, 0.03, 0.018); blip(1320, 0.04, 0.05, 0.016); } },
   flowOff() { if (sfxOk()) { blip(1320, 0, 0.03, 0.016); blip(660, 0.04, 0.06, 0.016); } },
   queue() { if (sfxOk()) { blip(990, 0, 0.025, 0.014, 'triangle'); blip(990, 0.07, 0.025, 0.01, 'triangle'); } },
+  // a waiting order finally goes: a soft rising pair, unlike the queue's tick-tick
+  release() { if (sfxOk()) { blip(660, 0, 0.06, 0.012, 'sine'); blip(990, 0.06, 0.09, 0.011, 'sine'); } },
   win() { if (!sfxOk()) return; [880, 1046.5, 1318.5, 1760, 2093].forEach((f, i) => blip(f, i * 0.09, 0.08, 0.022)); bell(1760, 0.5, 0.016, 3, 0.9); },
   lose() { if (!sfxOk()) return; [440, 392, 330, 220].forEach((f, i) => blip(f, i * 0.2, 0.18, 0.026, 'square', f * 0.97)); noise(0, 1.4, 0.03, 'lowpass', 800, 80, 0.6, 0.6); },
 };
 /* throttle: never stack the same sound faster than its interval */
 (() => {
-  const gap = { impact: 90, alarm: 1500, daemon: 200, infect: 300, ui: 40, select: 60, link: 120, live: 150, cut: 150, error: 150, capture: 400, lost: 400, tier: 300, flowOn: 90, flowOff: 90, queue: 90 };
+  const gap = { impact: 90, alarm: 1500, daemon: 200, infect: 300, ui: 40, select: 60, link: 120, live: 150, cut: 150, error: 150, capture: 400, lost: 400, tier: 300, flowOn: 90, flowOff: 90, queue: 90, release: 250 };
   const lastT = {};
   for (const k of Object.keys(gap)) { const f = SFX[k]; if (!f) continue; SFX[k] = (...a) => { const n = performance.now(); if (lastT[k] && n - lastT[k] < gap[k]) return; lastT[k] = n; try { f(...a); } catch (e) {} }; }
 })();
@@ -1230,12 +1235,14 @@ function orderState(q) {
 }
 function runQueue() {
   if (!G.queue.length) return;
-  G.queue = G.queue.filter(q => { const s = orderState(q); return s.dead ? false : s.wait ? true : !sendArmy(s.hops[0].e, q.i, q.o, s.n, q.j); });
+  let rel = false;
+  G.queue = G.queue.filter(q => { const s = orderState(q); if (s.dead) return false; if (s.wait) return true; if (!sendArmy(s.hops[0].e, q.i, q.o, s.n, q.j)) return true; if (q.o === 1 && G.time - q.born > 0.2) rel = true; return false; });
+  if (rel && !G.demo) SFX.release();
 }
 /* Any number of orders may wait; a new order for a node that already has one replaces it. true when it has to wait. */
 function enqueue(i, j, o, pct) {
   G.queue = G.queue.filter(q => !(q.o === o && q.i === i));
-  G.queue.push({ i, j, o, pct });
+  G.queue.push({ i, j, o, pct, born: G.time });
   runQueue();
   return G.queue.some(q => q.o === o && q.i === i);
 }
@@ -1356,7 +1363,7 @@ function startLive() {
   G.nodeT = 3; G.botT = LIVE.firstBot; G.botsMade = 0;
   for (let k = 0; k < 6; k++) spawnNeutral();
   enterGame();
-  setTimeout(() => { if (G && G.meta.endless && !G.ended) toast('живая сеть: карта растёт, появляются новые узлы и боты. побеждённые боты со временем возвращаются. держитесь как можно дольше.', 8000); }, 900);
+  setTimeout(() => { if (G && G.meta.endless && !G.ended) toast('живая сеть: карта растёт, появляются новые узлы и боты. побеждённые боты со временем возвращаются. держитесь как можно дольше.', 8000, 2); }, 900);
 }
 
 /* ---------- new nodes ----------
@@ -1539,7 +1546,7 @@ function spawnDaemon(h, first) {
   const D = G.daemon; D.state = 'idle'; D.node = h.i;
   G.waves.push({ x: h.x, y: h.y, r: nr(h, h.v), life: 1, max: 1, o: -1 });
   SFX.daemon();
-  if (first && !store.dhint2) { store.dhint2 = 1; save(); toast('узел вырос до мейнфрейма и открыл демона: синяя иконка λ. перетащите её на вражеский узел, соединённый каналом с вашей сетью.', 9000); }
+  if (first && !store.dhint2) { store.dhint2 = 1; save(); toast('узел вырос до мейнфрейма и открыл демона: синяя иконка λ. перетащите её на вражеский узел, соединённый каналом с вашей сетью.', 9000, 2); }
   else if (first) toast('открыт демон: синяя иконка λ у мейнфрейма.', 3500);
 }
 function stepDaemon(dt) {
@@ -1693,14 +1700,15 @@ function setRoute(i, j) {
   G.routeFrom = -1;
   const A = G.nodes[i];
   if (A.owner !== 1) return;
-  if (j === i) { if (A.route != null) { A.route = null; SFX.flowOff(); toast('маршрут снят', 2000); } return; }
+  if (j === i) { if (A.route != null) { A.route = null; SFX.flowOff(); toast('маршрут снят', 2000, 3); } return; }
   if (!routePath(i, j, 1)) { refuse('к этому узлу нет пути по вашим каналам'); return; }
   for (let k = j, guard = 0; k != null && guard < 64; k = G.nodes[k].route, guard++) if (k === i) { refuse('маршрут замкнулся бы в кольцо'); return; }
   A.route = j; SFX.flowOn();
 }
 function captureNode(B, o, leftover) {
   releaseFlows(B);
-  const old = B.owner;
+  const old = B.owner, wasHq = B.hq;
+  if (wasHq && !G.demo) { if (old === 1) G.lossCause = 'hq'; else G.lastHq = { x: B.x, y: B.y, t: G.time }; }
   let bounty = Math.max(0, Math.round(B.base || 0));
   if (old >= 2) bounty = Math.round(bounty * 0.5);
   B.route = null;
@@ -1717,8 +1725,10 @@ function captureNode(B, o, leftover) {
   if (!G.demo && (o === 1 || old === 1) && B.cap >= 70) G.shake = Math.min(16, G.shake + 7);
   if (G.demo) return;
   if (o === 1) { G.stats.captured++; SFX.capture(); if (G.tut && G.tut < 4) { G.tut = 4; tutNext(); } }
-  else if (old === 1) SFX.lost();
+  else if (old === 1) { SFX.lost(); lostMark([B]); G.lostAgg = G.lostAgg || { n: 0, t0: G.time }; G.lostAgg.n++; }
 }
+/* Lost nodes leave a short-lived marker at the screen edge when they are out of view. */
+function lostMark(list) { if (G.demo) return; G.lostMarks = (G.lostMarks || []).filter(m => G.time - m.t < 3).concat(list.map(p => ({ x: p.x, y: p.y, t: G.time }))).slice(-12); }
 /* A network lives from its datacenter and as one piece. When a capture splits o's nodes into parts (joined by
    finished channels between o's own nodes), the part with the most nodes stays (on a tie, the one with more packets),
    and so does the datacenter's part; the rest go grey. Without its datacenter the whole network goes grey.
@@ -1768,6 +1778,7 @@ function goGrey(P) {
     spark(x, y, o);
   }
   G.queue = G.queue.filter(q => q.i !== P.i);
+  P.greyFrom = o; P.greyT = G.time;
   releaseFlows(P); P.route = null; P.owner = 0; P.v = 0; P.vd = Math.min(P.vd, 12); P.base = 0; P.held = 0; P.infect = 0; P.pop = 1; P.glitch = 0.9;
   G.waves.push({ x: P.x, y: P.y, r: nr(P, 30), life: 1.3, max: 1.3, o });
   G.floats.push({ x: P.x, y: P.y, txt: 'отключён', o, life: 1.8, max: 1.8 });
@@ -1799,7 +1810,7 @@ function prune(o, by) {
   const packets = lost.reduce((s, p) => s + p.v, 0), noHq = !hqOf(o);
   for (const P of lost) goGrey(P);
   if (!G.demo) {
-    if (o === 1) { SFX.lost(); toast(noHq ? 'датацентр потерян: вся сеть отключилась' : `сеть разорвана: меньшая часть — ${lost.length} узл. — отключилась (−${Math.round(packets)} пакетов)`, 4000); }
+    if (o === 1) { SFX.lost(); toast(noHq ? 'датацентр потерян: вся сеть отключилась' : `сеть разорвана: меньшая часть — ${lost.length} узл. — отключилась (−${Math.round(packets)} пакетов)`, 4000, 2); lostMark(lost); }
     else if (by === 1) { SFX.capture(); toast(noHq ? 'датацентр противника взят: вся его сеть отключилась' : `вы разорвали сеть противника: меньшая часть — ${lost.length} узл. — отключилась`, 4000); }
   }
   return lost.length;
@@ -1897,6 +1908,8 @@ function step(dt) {
     const t = tierN(p);
     if (t !== p.tier) {
       if (t > p.tier) { p.glitch = Math.max(p.glitch, 0.5); G.waves.push({ x: p.x, y: p.y, r: nr(p, p.v), life: 0.8, max: 0.8, o: p.owner, soft: true }); if (p.owner === 1 && !G.demo) SFX.tier(); }
+      // a node that first grows into a server may attack others' nodes: say so once, over the node
+      if (t >= 2 && p.tier < 2 && p.owner === 1 && !G.demo && !p.cued) { p.cued = true; G.floats.push({ x: p.x, y: p.y - iconBox(p, p.v)[1] - 34 / cam.z, txt: 'может атаковать', o: 1, life: 2.6, max: 2.6 }); }
       p.tier = t;
     }
     p.vd += (p.v - p.vd) * Math.min(1, dt * 4);
@@ -1908,7 +1921,9 @@ function step(dt) {
   for (const w of G.waves) w.life -= dt; G.waves = G.waves.filter(w => w.life > 0);
   for (const p of N) { if (p.numGlitch > 0) p.numGlitch = Math.max(0, p.numGlitch - dt * 1.6); }
   for (const f of G.floats) { f.life -= dt; f.y -= 18 * dt; } G.floats = G.floats.filter(f => f.life > 0);
-  for (const ai of G.ais) {
+  // mission 1: the opponents wait while the tutorial runs, until its first capture or a minute has passed
+  const tutHold = G.tut && G.tut < 4 && G.meta.level === 0 && G.time < 60;
+  if (!tutHold) for (const ai of G.ais) {
     // hands: like a person, a bot gives only so many orders a minute; unused ones pile up a little
     ai.hands = Math.min(AI_HANDS_MAX, (ai.hands ?? 1) + ai.d.apm / 60 * dt);
     // reflexes: threats are answered twice as often as plans are made
@@ -1920,6 +1935,7 @@ function step(dt) {
   G.visTimer += dt; if (G.visTimer > 0.12) { G.visTimer = 0; updateVision(); }
   if (!G.demo) { const pw = power(1); if (pw > G.stats.peak) G.stats.peak = pw; }
   G.endTimer += dt; if (G.endTimer > 0.5) { G.endTimer = 0; checkEnd(); }
+  if (G.winSeq && !G.ended) { G.winSeq.g += dt; if (G.winSeq.g > 1.4) finish(true, true); }
 }
 /* Enemy bundles on their way to the player's nodes: count and time to impact, for the warning above the node. */
 function scanIncoming() {
@@ -1935,6 +1951,15 @@ function scanIncoming() {
     if (a.n >= T.v * 0.8 && a.n >= 10) alarm = true;
   }
   for (const J of G.jumps) { const T = N[J.to]; if (J.o !== 1 && T.owner === 1) { T.incoming += J.n; T.incomingEta = Math.min(T.incomingEta, J.dur - J.t); T.incomingO = J.o; } }
+  // the datacenter is the one thing you cannot lose: anything heading for it or fighting at it raises its own alarm
+  const H = hqOf(1);
+  if (H && (H.incoming > 0 || (H.assault && H.assault.some(a => a.o !== 1 && a.n >= 1)))) {
+    G.hqAtk = G.time;
+    if (G.time - (G.hqAlarmT ?? -99) > 4) { G.hqAlarmT = G.time; alarm = true; }
+    if (G.time - (G.hqToastT ?? -99) > 15) { G.hqToastT = G.time; toast(touchUI || matchMedia('(pointer: coarse)').matches ? 'датацентр под атакой' : 'датацентр под атакой · H — к нему', 3500, 3); }
+  }
+  // losses in a burst come as one message
+  const L = G.lostAgg; if (L && G.time - L.t0 >= 1.5) { G.lostAgg = null; toast(L.n > 1 ? `потеряно ${L.n} узл.` : 'узел потерян', 3000, 2); }
   if (alarm) SFX.alarm();
 }
 const power = o => {
@@ -1947,13 +1972,23 @@ const power = o => {
 };
 const alive = o => G.nodes.some(p => p.owner === o) || G.nodes.some(p => p.assault && p.assault.some(a => a.o === o)) || G.edges.some(e => e.ar.some(a => a.o === o)) || G.jumps.some(J => J.o === o);
 function checkEnd() {
-  if (G.ended) return;
+  if (G.ended || G.winSeq) return;
   if (G.demo) {
     let c = 0; for (let o = 1; o <= 4; o++) if (alive(o)) c++;
     if (c <= 1 || G.time > 300) { G.ended = true; setTimeout(() => { if (G && G.demo) startDemo(); }, 2600); }
     return;
   }
-  if (!alive(1)) finish(false); else if (!G.meta.endless && G.ais.every(a => !alive(a.o))) finish(true);
+  if (!alive(1)) finish(false); else if (!G.meta.endless && G.ais.every(a => !alive(a.o))) winSeq();
+}
+/* The last enemy datacenter fell: the camera goes to it, time slows for a second, the enemy network greys out in a
+   cascade outward from it (it is already grey: the cascade only repaints), then the end card. */
+function winSeq() {
+  if (G.winSeq) return;
+  G.winSeq = { g: 0, t0: performance.now() }; G.sel = -1; G.group.clear(); G.routeFrom = -1; ptr = null;
+  const h = G.lastHq && G.time - G.lastHq.t < 5 ? G.lastHq : null, hx = h ? h.x : cam.x, hy = h ? h.y : cam.y;
+  if (h) focusOn(h.x, h.y, clamp(cam.z, 0.4, 0.8));
+  G.fog = false; updateVision(); updateFogBtn();
+  for (const p of G.nodes) if (p.owner === 0 && p.greyFrom >= 2 && G.time - p.greyT < 2) { p.paintFrom = p.greyFrom; p.paintT = G.time + Math.min(0.9, Math.hypot(p.x - hx, p.y - hy) / 2400); p.paintHold = true; }
 }
 
 /* ---------- AI ---------- */
@@ -2263,7 +2298,7 @@ function aimTarget(sx, sy, src, chans) {
   }
   return best;
 }
-const interactive = () => G && !G.demo && !G.paused && !G.ended;
+const interactive = () => G && !G.demo && !G.paused && !G.ended && !G.winSeq;
 function dragAction(i, j) {
   const N = G.nodes, e = edgeBetween(i, j);
   if (N[j].owner !== N[i].owner && !e) {
@@ -2288,6 +2323,8 @@ function doAction(i, j) {
 function queuedFx(ids) {
   const st = ids.map(orderOf).filter(Boolean).map(orderState);
   if (!st.length) return;
+  if (st.some(x => x.wait === SLOT_BUSY.out || x.wait === SLOT_BUSY.own)) tip('slot');
+  if (G.queue.filter(q => q.o === 1).length >= 2) tip('queue');
   if (st.some(x => !x.block)) { SFX.queue(); return; }
   SFX.ui(); note(`в очередь: ${st[0].wait}`, 'warn', 2600);
 }
@@ -2524,7 +2561,7 @@ function tapNode(i) {
   G.lastTap = { i, t: now };
   if (dbl && p.owner === 1 && routingOn()) {
     G.lastTap = null; G.sel = -1; G.routeFrom = i; SFX.select();
-    toast(p.route != null ? 'выберите новую цель маршрута. нажмите этот же узел, чтобы снять маршрут.' : 'маршрут: нажмите узел, куда этот узел будет пересылать все пакеты.', 3500);
+    toast(p.route != null ? 'выберите новую цель маршрута. нажмите этот же узел, чтобы снять маршрут.' : 'маршрут: нажмите узел, куда этот узел будет пересылать все пакеты.', 3500, 3);
     return;
   }
   // with an own node selected, a tap on another own node moves the selection there (a transfer between own nodes is a drag)
@@ -2764,7 +2801,8 @@ function render(now) {
         a0 += span;
       }
     }
-    const ik = p.hq ? 1 : ICON_K[tier], spr = nodeSprite(tier, ow, p.hq), scale = rd * ik * S / spr.u, size = spr.cv.width / d * scale;
+    // a node waiting for its turn in the win cascade still shows its old colour
+    const ik = p.hq ? 1 : ICON_K[tier], spr = nodeSprite(tier, p.paintHold && G.time < p.paintT ? p.paintFrom : ow, p.hq), scale = rd * ik * S / spr.u, size = spr.cv.width / d * scale;
     if (ow) {
       // owner under-glow: who holds a node reads from afar, and a stronger node glows wider
       const az = R * ik * (2.3 + 0.9 * Math.min(1, Math.sqrt(Math.max(0, vv)) / 16));
@@ -2897,7 +2935,12 @@ function render(now) {
       for (let k = 0; k < n; k++) { ctx.fillStyle = rgba(col, k <= cur ? (ow ? 0.9 : 0.6) : 0.28); ctx.fillRect(Math.round(x0 + k * (w + gap)), Math.round(yb), w, 3); }
       yb += 7;
     }
-    if (p.route != null && p.owner === 1 && lodTags) { const s = '→ маршрут'; ctx.font = `${tfs}px ${FONT}`; ctx.globalAlpha = 0.85; ctx.strokeText(s, TX, yb + tfs / 2 + 2); ctx.fillStyle = PAL.lab[1]; ctx.fillText(s, TX, yb + tfs / 2 + 2); ctx.globalAlpha = 1; }
+    if (p.route != null && p.owner === 1 && lodTags) { const s = '→ маршрут'; ctx.font = `${tfs}px ${FONT}`; ctx.globalAlpha = 0.85; ctx.strokeText(s, TX, yb + tfs / 2 + 2); ctx.fillStyle = PAL.lab[1]; ctx.fillText(s, TX, yb + tfs / 2 + 2); ctx.globalAlpha = 1; yb += tfs + 4; }
+    // the selected own node: how many packets to its next class
+    if (p.i === G.sel && p.owner === 1) {
+      const cur = tierN(p);
+      if (cur < p.maxT) { const s = `до ${TIER_TO[cur + 1]}: ${Math.ceil(TIERS[cur + 1].min - p.v)}`; ctx.font = `${tfs}px ${FONT}`; ctx.globalAlpha = 0.85; ctx.strokeText(s, TX, yb + tfs / 2 + 2); ctx.fillStyle = PAL.fg2; ctx.fillText(s, TX, yb + tfs / 2 + 2); ctx.globalAlpha = 1; }
+    }
   }
   drawArrivals(t);
   // fog
@@ -2958,6 +3001,7 @@ function render(now) {
     }
     if (hover >= 0 && hover !== G.sel && !ptr) { const p = N[hover]; ts(p.x, p.y); const r = (nr(p, p.vd) * 1.2 + 16) * S; ctx.strokeStyle = PAL.sel; ctx.globalAlpha = 0.35; ctx.lineWidth = 1; brackets(TX, TY, r, Math.max(6, r * 0.22)); ctx.globalAlpha = 1; }
     drawQueue(t);
+    drawAlerts(t);
     if (G.daemon) {
       const D = G.daemon;
       if (D.state === 'move' || D.state === 'idle') {
@@ -3002,6 +3046,27 @@ function render(now) {
     }
     drawNote();
   }
+}
+/* A marker at the screen edge pointing to a world point out of view (inside the HUD's margins). false when it is in view. */
+function edgeMark(wx, wy, col, txt, a) {
+  ts(wx, wy); const x = TX, y = TY, m = 10;
+  if (x > m && x < V.w - m && y > m && y < V.h - m) return false;
+  const mob = V.w < 600, top = 92, bot = V.h - (mob ? 160 : 72), l0 = 20, r0 = V.w - 20, cx = V.w / 2, cy = (top + bot) / 2, dx = x - cx, dy = y - cy;
+  const k = Math.min(dx ? ((dx > 0 ? r0 : l0) - cx) / dx : 1e9, dy ? ((dy > 0 ? bot : top) - cy) / dy : 1e9), ex = cx + dx * k, ey = cy + dy * k, an = Math.atan2(dy, dx);
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(ex, ey); ctx.rotate(an);
+  ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-7, -8); ctx.lineTo(-3, 0); ctx.lineTo(-7, 8); ctx.closePath();
+  ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.strokeStyle = PAL.bg0; ctx.stroke(); ctx.fillStyle = col; ctx.fill(); ctx.restore();
+  if (txt) {
+    ctx.save(); ctx.globalAlpha = a; ctx.font = `600 11px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(txt).width, tx = clamp(ex - Math.cos(an) * (w / 2 + 16), w / 2 + 6, V.w - w / 2 - 6), ty = clamp(ey - Math.sin(an) * 18, top - 10, bot + 10);
+    ctx.lineWidth = 3; ctx.strokeStyle = PAL.bg0; ctx.strokeText(txt, tx, ty); ctx.fillStyle = col; ctx.fillText(txt, tx, ty); ctx.restore();
+  }
+  return true;
+}
+function drawAlerts(t) {
+  const H = hqOf(1);
+  if (H && G.hqAtk != null && G.time - G.hqAtk < 1) edgeMark(H.x, H.y, PAL.lab[H.incomingO || (H.assault && H.assault.find(a => a.o !== 1) || {}).o || 2], 'датацентр', 0.65 + 0.35 * Math.sin(t * 7));
+  if (G.lostMarks) { G.lostMarks = G.lostMarks.filter(m => G.time - m.t < 3); for (const m of G.lostMarks) edgeMark(m.x, m.y, PAL.fg2, '', Math.min(1, (3 - (G.time - m.t)) / 1.2)); }
 }
 /* Waiting orders: a slow dotted trail along the way and a numbered badge by the node. */
 function drawQueue(t) {
@@ -3170,6 +3235,7 @@ function tick(now) {
   else { SHX = SHY = 0; if (G) G.shake = 0; }
   // hit-stop: time crawls for a blink after a capture that involves you, so the moment lands
   let hs = 1; if (G && G.hitStop > 0 && !G.paused) { G.hitStop -= dt; hs = 0.2; }
+  if (G && G.winSeq && now - G.winSeq.t0 < 1000) hs = 0.3; // the win: a second of slow motion
   if (G && !G.paused) { let rem = dt * G.speed * hs; while (rem > 1e-6) { const h = Math.min(rem, 1 / 60); step(h); rem -= h; } }
   if (G && !G.demo) {
     let kx = 0, ky = 0;
@@ -3278,19 +3344,49 @@ $('#btnCancel').addEventListener('click', () => {
   const n = G.queue.filter(q => q.o === 1).length;
   if (n && cancelOrders(q => q.o === 1)) { SFX.flowOff(); lastPx = V.w / 2; lastPy = V.h - 90; note(`отменено приказов: ${n}`, 'ok', 1600); } else SFX.error();
 });
-$('#toast').addEventListener('pointerdown', e => { e.stopPropagation(); hideToast(); });
+$('#toast').addEventListener('pointerdown', e => { e.stopPropagation(); toastNext(); });
 $('#btnSpeed').addEventListener('click', () => { SFX.ui(); if (!G) return; G.speed = G.speed === 1 ? 2 : 1; $('#btnSpeed').textContent = 'x' + G.speed; });
 
-let toastTimer = 0;
-function toast(msg, ms = 3500) { const el = $('#toast'); el.classList.add('show'); decode(el, msg, Math.min(700, 200 + msg.length * 6)); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), ms); }
-function hideToast() { clearTimeout(toastTimer); $('#toast').classList.remove('show'); }
+/* Toasts queue instead of overwriting each other. prio: 1 info, 2 tutorial / briefing / losses, 3 alarms. A higher one
+   cuts in (a cut-in lesson comes back after it); an equal or lower one waits until the current one has been up long
+   enough to read (2.5 s for info, about the reading time for a lesson). Stale info is dropped. */
+let toastTimer = 0, toastCur = null, toastQ = [];
+function toast(msg, ms = 3500, prio = 1) {
+  if (!msg || (toastCur && toastCur.msg === msg) || toastQ.some(q => q.msg === msg)) return;
+  const now = performance.now(), it = { msg, ms, prio, at: now };
+  if (toastCur && prio > toastCur.prio) {
+    const c = toastCur, left = c.ms - (now - c.t0);
+    if (c.prio >= 2 && left > 1500) toastQ.unshift({ msg: c.msg, ms: Math.max(3000, left), prio: c.prio, at: now });
+    toastCur = null;
+  }
+  if (!toastCur) return toastShow(it);
+  toastQ.push(it); toastQ.sort((a, b) => b.prio - a.prio); toastPlan();
+}
+function toastShow(it) { const el = $('#toast'); el.classList.add('show'); decode(el, it.msg, Math.min(700, 200 + it.msg.length * 6)); toastCur = Object.assign(it, { t0: performance.now() }); toastPlan(); }
+function toastPlan() {
+  clearTimeout(toastTimer); const c = toastCur; if (!c) return;
+  const read = c.prio >= 2 ? Math.min(c.ms, 1500 + c.msg.length * 45) : Math.min(c.ms, 2500);
+  toastTimer = setTimeout(toastNext, Math.max(0, c.t0 + (toastQ.length ? read : c.ms) - performance.now()));
+}
+function toastNext() {
+  const now = performance.now(); toastCur = null; clearTimeout(toastTimer);
+  toastQ = toastQ.filter(q => q.prio >= 2 || now - q.at < 8000);
+  const n = toastQ.shift(); if (n) toastShow(n); else $('#toast').classList.remove('show');
+}
+function hideToast() { clearTimeout(toastTimer); toastCur = null; toastQ = []; $('#toast').classList.remove('show'); }
 const TUT = {
   1: 'потяните от зелёного узла к серому: проложится канал. канал стоит пакетов и остаётся навсегда.',
   2: 'канал готов. нажмите на серый узел — с вашего узла по каналу уйдёт пачка: все пакеты, с зажатым Shift — половина. если узел не может отправить её сейчас, приказ встанет в очередь — значок с номером у узла.',
   3: 'у чужого узла пакеты становятся символами и бьются с гарнизоном. чем больше сторона, тем быстрее она побеждает — кольцо вокруг узла показывает баланс.',
-  4: 'узел взломан. ваш главный узел — датацентр: возьмите датацентр противника, чтобы победить, и не отдайте свой. если сеть разорвут, меньшая часть станет серой. в воздухе у вас одна атака и одна пачка по своей сети, остальные приказы ждут в очереди. правая кнопка мыши отменяет их все.',
+  4: 'узел взломан. ваш главный узел — датацентр: возьмите датацентр противника и не отдайте свой. если сеть разорвут, меньшая часть станет серой.',
 };
-function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000); }
+function tutNext() { if (G && TUT[G.tut]) toast(TUT[G.tut], 8000, 2); }
+/* The rest of the rules come once each, the first time they matter. */
+const TIPS = {
+  slot: () => 'в воздухе одна атака и одна пачка по своей сети — следующие приказы ждут в очереди.',
+  queue: () => touchUI ? 'очередь: нажмите значок у узла, чтобы снять приказ, «отмена» — снять все.' : 'очередь: нажмите значок у узла, чтобы снять приказ, правая кнопка мыши — снять все.',
+};
+function tip(k) { if (!G || G.demo || (store.tips || {})[k]) return; store.tips = Object.assign({}, store.tips, { [k]: 1 }); save(); toast(TIPS[k](), 6000, 2); }
 
 let hudLast = 0;
 function updatePopbarColors() { document.querySelectorAll('#popbar i').forEach(el => { el.style.background = PAL.c[+el.dataset.o]; }); }
@@ -3329,8 +3425,8 @@ function startLevel(i) {
   if (L.me) for (const p of G.nodes) if (p.owner === 1) { p.v *= L.me; p.vd = p.base = p.lastV = p.v; p.tier = Math.min(tierOf(p.v), p.maxT); }
   enterGame();
   if (i === 0) setTimeout(() => { if (G && G.tut === 1) tutNext(); }, 700);
-  if (i === 1) setTimeout(() => { if (G && G.meta.level === 1 && !G.ended) toast('новое: маршрутизация. дважды нажмите на свой узел, затем на другой — узел будет пересылать туда все свои пакеты.', 9000); }, 900);
-  if (L.hint) setTimeout(() => { if (G && G.meta.level === i && !G.ended) toast(L.hint, 9000); }, 900);
+  if (L.hint) setTimeout(() => { if (G && G.meta.level === i && !G.ended) toast(L.hint, 9000, 2); }, 900);
+  if (i === 1) setTimeout(() => { if (G && G.meta.level === 1 && !G.ended) toast('новое: маршрутизация. дважды нажмите на свой узел, затем на другой — узел будет пересылать туда все свои пакеты.', 9000, 2); }, 950);
 }
 function startQuick() {
   const q = store.quick;
@@ -3364,12 +3460,18 @@ function startDemo() {
   buildGame(genMap(quickSpec(opp, 1)), Array.from({ length: opp + 1 }, (_, k) => k % 2 ? 'normal' : 'hard'), { demo: true, level: -1 });
   resize();
 }
-function pauseGame() { if (!G || G.demo || G.ended || G.paused) return; G.paused = true; ptr = null; show('scrPause'); }
+function pauseGame() {
+  if (!G || G.demo || G.ended || G.paused || G.winSeq) return; G.paused = true; ptr = null;
+  // campaign: the mission briefing to read again (mission 1 has none: the current tutorial step instead)
+  const L = G.meta.level >= 0 ? LEVELS[G.meta.level] : null, txt = L ? L.hint || TUT[Math.min(4, G.tut || 4)] : '', el = $('#pauseBrief');
+  el.hidden = !txt; el.innerHTML = ''; if (txt) { const b = document.createElement('b'); b.textContent = G.meta.title; el.append(b, txt); }
+  show('scrPause');
+}
 function resumeGame() { if (!G) return; G.paused = false; show(null); }
 function restart() { if (!G) return; const m = G.meta; if (m.endless) startLive(); else if (m.quick) startQuick(); else startLevel(m.level); }
 function toMenu() { hideToast(); startDemo(); show('scrMenu'); }
 let endAction = null;
-function finish(win) {
+function finish(win, soon) {
   G.ended = true; G.sel = -1; G.group.clear(); G.routeFrom = -1; ptr = null; closePop();
   const m = G.meta, stats = G.stats, time = G.time;
   if (win) SFX.win(); else SFX.lose();
@@ -3382,7 +3484,7 @@ function finish(win) {
     title.className = 'end-title ' + (win ? 'win' : 'lose');
     $('#endPath').textContent = win ? 'сессия завершена: 0' : 'сессия завершена: 1';
     if (m.endless) { const best = Math.max(store.liveBest || 0, Math.floor(time)); store.liveBest = best; save(); }
-    $('#endSub').textContent = m.endless ? `вы продержались ${Math.floor(time / 60)}:${String(Math.floor(time % 60)).padStart(2, '0')}, ботов уничтожено: ${stats.kills}. рекорд ${Math.floor((store.liveBest || 0) / 60)}:${String((store.liveBest || 0) % 60).padStart(2, '0')}.` : win ? (m.level >= 0 ? (lastLevel ? 'кампания пройдена. вся сеть под вашим контролем.' : `уровень «${LEVELS[m.level].name}» пройден.`) : 'сеть под вашим контролем.') : 'все ваши узлы потеряны. попробуйте другой маршрут.';
+    $('#endSub').textContent = m.endless ? `вы продержались ${Math.floor(time / 60)}:${String(Math.floor(time % 60)).padStart(2, '0')}, ботов уничтожено: ${stats.kills}. рекорд ${Math.floor((store.liveBest || 0) / 60)}:${String((store.liveBest || 0) % 60).padStart(2, '0')}.` : win ? (m.level >= 0 ? (lastLevel ? 'кампания пройдена. вся сеть под вашим контролем.' : `уровень «${LEVELS[m.level].name}» пройден.`) : 'сеть под вашим контролем.') : (G.lossCause === 'hq' ? 'датацентр взят — вся сеть отключилась.' : 'сеть уничтожена: все узлы потеряны.') + ' попробуйте другой маршрут.';
     const mm = Math.floor(time / 60), ss = Math.floor(time % 60);
     $('#stTime').textContent = `${mm}:${String(ss).padStart(2, '0')}`;
     $('#stCap').textContent = stats.captured; $('#stBuilt').textContent = stats.peak;
@@ -3393,7 +3495,7 @@ function finish(win) {
     else { lbl = 'ещё раз'; endAction = () => restart(); }
     const ml = $('#endMainLbl'); ml.textContent = lbl; ml.dataset.text = lbl;
     show('scrEnd'); decode(title, win ? 'доступ получен' : 'соединение потеряно', 1100);
-  }, 1500);
+  }, soon ? 700 : 1500);
 }
 $('#btnEndMain').addEventListener('click', () => { SFX.ui(); if (endAction) endAction(); });
 
@@ -3435,7 +3537,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN, qPos: i => { const b = qPos(G.nodes[i]); return [b.x, b.y]; }, get note() { return NOTE; } };
+window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN, qPos: i => { const b = qPos(G.nodes[i]); return [b.x, b.y]; }, get note() { return NOTE; }, get toasts() { return { cur: toastCur && toastCur.msg, q: toastQ.map(x => x.msg) }; }, SFX, scanIncoming };
 })();
 </script>
 
