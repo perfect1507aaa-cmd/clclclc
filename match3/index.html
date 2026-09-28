@@ -920,20 +920,14 @@
       this.tone(220, 0.09, { type: 'triangle', vol: 0.09 });
       this.tone(165, 0.12, { type: 'triangle', vol: 0.09, delay: 0.08 });
     },
-    // mouse-over tick: a dry, tiny click with no pitch
-    hover() {
-      if (!this.ok('hover', 0.03)) return;
-      this.noise(0.016, 0.05, { type: 'bandpass', f0: 2600, q: 1.1, attack: 0.001, wet: 0 });
-    },
-    // select: a soft muted "tuk"
+    // select: a dry, tiny click with no pitch
     select() {
-      if (!this.ok('select', 0.04)) return;
-      this.noise(0.04, 0.08, { type: 'bandpass', f0: 1200, q: 2.2, attack: 0.001, wet: 0.08 });
-      this.tone(190, 0.05, { vol: 0.05, slide: 0.6, attack: 0.002, wet: 0 });
+      if (!this.ok('select', 0.03)) return;
+      this.noise(0.016, 0.06, { type: 'bandpass', f0: 2600, q: 1.1, attack: 0.001, wet: 0 });
     },
     deselect() {
-      if (!this.ok('select', 0.04)) return;
-      this.noise(0.035, 0.05, { type: 'bandpass', f0: 950, q: 2.2, attack: 0.001, wet: 0.05 });
+      if (!this.ok('select', 0.03)) return;
+      this.noise(0.014, 0.04, { type: 'bandpass', f0: 2000, q: 1.1, attack: 0.001, wet: 0 });
     },
     land() {
       if (!this.ok('land', 0.045)) return;
@@ -948,6 +942,10 @@
       this.noise(0.05, 0.06, { type: 'lowpass', f0: 2200, q: 0.5, attack: 0.002, delay: 0.045, pan: pan * 0.5, wet: 0.2 });
       this.noise(0.35, 0.022, { type: 'highpass', f0: 7500, attack: 0.02, delay: 0.03, pan, wet: 1 });
       this.tone(110, 0.07, { vol: 0.07, slide: 0.65, attack: 0.003, wet: 0 });
+      // bright ring on top: one clear note, lightly chorused
+      this.tone(2093 * k, 0.32, { vol: 0.045, attack: 0.002, delay: 0.01, pan, wet: 0.6 });
+      this.tone(2099 * k, 0.26, { vol: 0.03, attack: 0.002, delay: 0.012, pan: -pan, wet: 0.6 });
+      this.tone(4186 * k, 0.12, { type: 'triangle', vol: 0.01, attack: 0.001, delay: 0.01, pan, wet: 0.4 });
     },
     create() {
       if (!this.ok('create')) return;
@@ -2625,7 +2623,6 @@
   canvas.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'mouse' && !drag) {
       const h = state === 'play' ? cellFromEvent(e) : null;
-      if (h && (!hover || h.r !== hover.r || h.c !== hover.c)) Sound.hover();
       hover = h;
     }
     if (!drag || state !== 'play') return;
