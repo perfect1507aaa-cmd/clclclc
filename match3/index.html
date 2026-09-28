@@ -857,7 +857,7 @@
       if (name) this.last[name] = now;
       return true;
     },
-    out(node, pan) {
+    out(node, pan, wet = 1) {
       const c = this.ctx;
       let tail = node;
       if (pan && c.createStereoPanner) {
@@ -866,10 +866,15 @@
         tail = node.connect(p);
       }
       tail.connect(this.master);
-      tail.connect(this.send);
+      if (wet >= 1) tail.connect(this.send);
+      else if (wet > 0) {
+        const w = c.createGain();
+        w.gain.value = wet;
+        tail.connect(w).connect(this.send);
+      }
     },
     track(src) { this.voices++; src.onended = () => { this.voices--; }; },
-    tone(freq, dur, { type = 'sine', vol = 0.12, delay = 0, slide = 0, pan = 0, attack = 0.008 } = {}) {
+    tone(freq, dur, { type = 'sine', vol = 0.12, delay = 0, slide = 0, pan = 0, attack = 0.008, wet = 1 } = {}) {
       const c = this.ctx, t0 = c.currentTime + delay;
       const o = c.createOscillator(), g = c.createGain();
       o.type = type;
@@ -879,7 +884,7 @@
       g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       o.connect(g);
-      this.out(g, pan);
+      this.out(g, pan, wet);
       this.track(o);
       o.start(t0);
       o.stop(t0 + dur + 0.05);
@@ -888,7 +893,7 @@
       [[1, 1, 1], [2, 0.35, 0.58], [3.01, 0.18, 0.33], [4.2, 0.08, 0.2]].forEach(([m, g, d]) =>
         this.tone(freq * m, dur * d, { type: 'sine', vol: vol * g, delay, pan, attack: 0.004 }));
     },
-    noise(dur, vol, { type = 'lowpass', f0 = 1000, f1 = 0, q = 0.8, delay = 0, pan = 0 } = {}) {
+    noise(dur, vol, { type = 'lowpass', f0 = 1000, f1 = 0, q = 0.8, delay = 0, pan = 0, wet = 1, attack = 0.01 } = {}) {
       const c = this.ctx, t0 = c.currentTime + delay;
       const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
       src.buffer = this.noiseBuf;
@@ -897,10 +902,10 @@
       f.frequency.setValueAtTime(f0, t0);
       if (f1) f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + attack);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       src.connect(f).connect(g);
-      this.out(g, pan);
+      this.out(g, pan, wet);
       this.track(src);
       src.start(t0, Math.random() * 0.5);
       src.stop(t0 + dur + 0.05);
@@ -915,21 +920,47 @@
       this.tone(220, 0.09, { type: 'triangle', vol: 0.09 });
       this.tone(165, 0.12, { type: 'triangle', vol: 0.09, delay: 0.08 });
     },
-    select() { if (this.ok('select')) this.tone(1250, 0.05, { type: 'triangle', vol: 0.03 }); },
+    // soft glass tap: a quick falling sine blip over a tiny airy click
+    select() {
+      if (!this.ok('select', 0.04)) return;
+      this.tone(1650, 0.07, { vol: 0.055, slide: 0.72, attack: 0.002, wet: 0.35 });
+      this.tone(3300, 0.035, { vol: 0.012, slide: 0.8, attack: 0.001, wet: 0.2 });
+      this.noise(0.025, 0.035, { type: 'highpass', f0: 6500, attack: 0.001, wet: 0 });
+    },
+    deselect() {
+      if (!this.ok('select', 0.04)) return;
+      this.tone(1200, 0.06, { vol: 0.04, slide: 0.7, attack: 0.002, wet: 0.3 });
+    },
     land() {
       if (!this.ok('land', 0.045)) return;
       this.noise(0.04, 0.05, { type: 'bandpass', f0: 2600, q: 2 });
     },
     match(cascade, pan) {
       if (!this.ok('match', 0.05)) return;
-      const f = NOTES[Math.min(cascade - 1, NOTES.length - 1)];
-      this.bell(f, 0.11, { pan });
-      this.bell(f * 1.5, 0.04, { pan: -pan, delay: 0.04, dur: 0.4 });
-      this.noise(0.12, 0.07, { type: 'highpass', f0: 5000, pan });
+      const k = Math.pow(2, (Math.min(cascade, 8) - 1) * 2 / 12);
+      // crack transient
+      this.noise(0.045, 0.3, { type: 'highpass', f0: 2200, q: 0.7, pan, attack: 0.001, wet: 0.15 });
+      // gritty crunch sweeping down
+      this.noise(0.14, 0.14, { type: 'bandpass', f0: 4200 * k, f1: 1800 * k, q: 1.1, pan, attack: 0.002, wet: 0.3 });
+      // glassy body with a fast pitch drop
+      this.tone(640 * k, 0.13, { vol: 0.12, slide: 0.55, pan, attack: 0.002, wet: 0.4 });
+      this.tone(1290 * k, 0.07, { type: 'triangle', vol: 0.025, slide: 0.6, pan, attack: 0.001, wet: 0.3 });
+      // falling shards
+      for (let i = 0; i < 4; i++) {
+        const f = (2800 + Math.random() * 3200) * k;
+        this.tone(f, 0.025 + Math.random() * 0.045, {
+          vol: 0.014 + Math.random() * 0.01, attack: 0.001, wet: 0.5,
+          delay: 0.015 + i * 0.022 + Math.random() * 0.015, pan: pan + (Math.random() - 0.5) * 0.5,
+        });
+      }
+      // weight
+      this.tone(150, 0.09, { vol: 0.13, slide: 0.5, attack: 0.002, wet: 0 });
     },
     create() {
       if (!this.ok('create')) return;
-      [1, 1.25, 1.5, 2].forEach((m, i) => this.bell(880 * m, 0.05, { delay: i * 0.05, dur: 0.4 }));
+      this.noise(0.32, 0.1, { type: 'bandpass', f0: 500, f1: 5500, q: 2.2, attack: 0.03, wet: 0.6 });
+      this.tone(380, 0.3, { vol: 0.06, slide: 2.4, attack: 0.03, wet: 0.6 });
+      this.tone(384, 0.3, { vol: 0.03, slide: 2.4, attack: 0.03, delay: 0.015, pan: 0.3, wet: 0.6 });
     },
     line(pan) {
       if (!this.ok('line', 0.06)) return;
@@ -943,11 +974,13 @@
     },
     magic() {
       if (!this.ok('magic', 0.1)) return;
-      [0, 1, 2, 3, 4, 5, 6].forEach((i) => this.bell(NOTES[i + 2], 0.045, { delay: i * 0.04, pan: (i - 3) * 0.15, dur: 0.5 }));
-      this.noise(0.6, 0.08, { type: 'bandpass', f0: 3000, f1: 8000, q: 3 });
+      this.noise(0.55, 0.12, { type: 'bandpass', f0: 1500, f1: 9000, q: 2.5, attack: 0.05 });
+      this.tone(520, 0.5, { vol: 0.05, slide: 4, attack: 0.05, pan: -0.3 });
+      this.tone(526, 0.5, { vol: 0.04, slide: 4, attack: 0.06, delay: 0.02, pan: 0.3 });
+      this.noise(0.25, 0.08, { type: 'highpass', f0: 7000, delay: 0.3, wet: 1 });
     },
     star(i) { if (this.ok(null)) this.bell([783.99, 987.77, 1318.51][i] || 1318.51, 0.12, { dur: 0.9 }); },
-    tick() { if (this.ok('tick', 0.04)) this.bell(1760, 0.03, { dur: 0.25 }); },
+    tick() { if (this.ok('tick', 0.04)) this.tone(2100, 0.05, { vol: 0.04, slide: 0.75, attack: 0.001, wet: 0.4 }); },
     win() { if (this.ok('win')) [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((f, i) => this.bell(f, 0.09, { delay: i * 0.1, dur: 0.9 })); },
     lose() { if (this.ok('lose')) [392, 329.63, 261.63].forEach((f, i) => this.tone(f, 0.45, { type: 'triangle', vol: 0.08, delay: i * 0.18 })); },
   };
@@ -2591,6 +2624,8 @@
     if (!cell) { selected = null; return; }
     idle = 0; hint = null;
     cursor = { ...cell };
+    const same = selected && selected.r === cell.r && selected.c === cell.c;
+    if (!same && !(selected && isAdj(selected, cell))) Sound.select();
     drag = { cell, x: e.clientX, y: e.clientY, axis: null, vx: 0, vy: 0, eff: 0, raw: 0 };
     try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   });
@@ -2629,9 +2664,8 @@
     const cell = drag.cell;
     drag = null;
     if (selected && isAdj(selected, cell)) { const a = selected; selected = null; trySwap(a, cell); return; }
-    if (selected && selected.r === cell.r && selected.c === cell.c) { selected = null; return; }
+    if (selected && selected.r === cell.r && selected.c === cell.c) { selected = null; Sound.deselect(); return; }
     selected = cell;
-    Sound.select();
   });
   canvas.addEventListener('pointercancel', () => releaseDrag());
   canvas.addEventListener('pointerleave', () => { hover = null; });
@@ -2658,6 +2692,7 @@
       if (state === 'bonus') { fast = true; return; }
       if (state !== 'play') return;
       selected = selected && selected.r === cursor.r && selected.c === cursor.c ? null : { ...cursor };
+      if (selected) Sound.select(); else Sound.deselect();
     } else if (e.key === 'Escape') {
       selected = null;
     }
