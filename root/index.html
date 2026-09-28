@@ -106,7 +106,7 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
 .info-b b{ font-weight:500; color:var(--fg); }
 .info-b .bad{ color:var(--c2); }
 #mini{ position:absolute; right:16px; top:calc(env(safe-area-inset-top,0px) + 60px); width:176px; height:112px; border-radius:8px; pointer-events:auto; cursor:crosshair; touch-action:none; }
-@media (max-width:600px){ #mini{ width:120px; height:80px; right:12px; } }
+@media (max-width:600px){ #mini{ width:120px; height:80px; right:10px; top:calc(env(safe-area-inset-top,0px) + 84px); } }
 .pop{ position:absolute; min-width:230px; max-width:min(320px, calc(100vw - 24px)); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:5px; pointer-events:auto; z-index:5; }
 .pop[hidden]{ display:none; }
 .pop .pt{ font-size:11px; color:var(--fg2); padding:2px 4px 4px; line-height:1.4; }
@@ -135,7 +135,22 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   opacity:0; transition:opacity .4s ease, transform .4s ease; pointer-events:none;
 }
 .toast::before{ content:"> "; color:var(--c1); }
-.toast.show{ opacity:1; transform:translate(-50%,0); }
+.toast.show{ opacity:1; transform:translate(-50%,0); pointer-events:auto; cursor:pointer; }
+/* touch: no keyboard hints, but on-screen stand-ins for Shift (50%) and the right button (cancel the orders) */
+.touch{ display:none; }
+.touch-ui .touch{ display:block; }
+.touch-ui .kbd, .touch-ui #pctLabel{ display:none; }
+.touch-ui .grp{ height:36px; }
+.grp.dim{ color:var(--fg3); }
+/* a phone: the top bar fits in 390 px, and hints go to the bottom, full width, clear of the minimap */
+@media (max-width:600px){
+  .hud-top{ gap:6px; padding-inline:10px; }
+  .hud-right{ gap:6px; }
+  .hud-center{ min-width:0; flex:1 1 0; max-width:none; padding:7px 10px 8px; }
+  .hud-row{ gap:8px; }
+  .toast{ left:12px; right:12px; top:auto; bottom:calc(env(safe-area-inset-bottom,0px) + 72px); max-width:none; transform:translateY(6px); }
+  .toast.show{ transform:none; }
+}
 
 /* Screens */
 .screen{
@@ -248,7 +263,9 @@ button:focus-visible{ outline:1px solid var(--c1); outline-offset:3px; }
   <div class="hud-bottom">
     <div class="pill panel">
       <button class="grp" id="btnAll" aria-pressed="false"></button>
-      <span class="pill-label" id="pctLabel">пачка 100% · shift — 50%</span>
+      <button class="grp touch" id="btnPct" aria-pressed="false" aria-label="Пачка 50%">50%</button>
+      <button class="grp touch" id="btnCancel" aria-label="Отменить все приказы">отмена</button>
+      <span class="pill-label" id="pctLabel">пачка 100%<span class="kbd"> · shift — 50%</span></span>
     </div>
   </div>
   <canvas id="mini" class="panel" aria-label="Мини-карта"></canvas>
@@ -409,14 +426,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 /* ---------- storage ---------- */
 const STORE_KEY = 'root:v3';
-/* Batch size: everything by default, half while Shift is held. */
-let shiftHeld = false;
-function setShift(on) {
-  if (on === shiftHeld) return;
-  shiftHeld = on;
+/* Batch size: everything by default, half while Shift is held or while the touch button «50%» is on. */
+let shiftHeld = false, halfLock = false;
+function setShift(on) { if (on === shiftHeld) return; shiftHeld = on; updatePct(); }
+function updatePct() {
+  const on = shiftHeld || halfLock;
   if (G) G.pct = on ? 0.5 : 1;
-  const el = document.getElementById('pctLabel');
-  if (el) { el.textContent = on ? 'пачка 50%' : 'пачка 100% · shift — 50%'; el.classList.toggle('half', on); }
+  const el = document.getElementById('pctLabel'), b = document.getElementById('btnPct');
+  if (el) { el.innerHTML = on ? 'пачка 50%' : 'пачка 100%<span class="kbd"> · shift — 50%</span>'; el.classList.toggle('half', on); }
+  if (b) b.setAttribute('aria-pressed', halfLock ? 'true' : 'false');
 }
 let store = { unlocked: 1, done: {}, music: true, sfx: true, pct: 0.5, quick: { opp: 1, diff: 'normal', map: 1, fog: 1 } };
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); o.quick = Object.assign({}, store.quick, o.quick || {}); store = Object.assign(store, o); } } catch (e) {}
@@ -970,7 +988,7 @@ function buildGame(map, aiNames, meta) {
   const used = new Set();
   const nodes = map.nodes.map((d, i) => makeNode(d, i, used));
   G = { W: map.W, H: map.H, nodes, edges: [], hash: new Map(), parts: [], waves: [], floats: [], jumps: [], time: 0, sel: -1, group: new Set(), routeFrom: -1, lastTap: null, speed: 1, visC: [], fog: !!meta.fog && !meta.demo && !store.noFog,
-    pct: shiftHeld ? 0.5 : 1,
+    pct: shiftHeld || halfLock ? 0.5 : 1,
     ais: aiNames.map((d, k) => ({ o: k + 2, d: aiOf(d), next: 1.5 + k * 0.6 + aiOf(d).think * 0.5 })),
     demo: !!meta.demo, meta, stats: { captured: 0, peak: 0, kills: 0 }, ended: false, paused: false, endTimer: 0, visTimer: 0, tut: meta.level === 0 ? 1 : 0,
     used, shake: 0, queue: [] };
@@ -1198,9 +1216,11 @@ function orderState(q) {
   const N = G.nodes, A = N[q.i], T = N[q.j];
   if (!A || !T || A.owner !== q.o) return { dead: true };
   if (A.infect > 0) return { wait: 'узел заражён демоном' };
-  if (!mayStrike(A, T, q.o)) return { wait: 'атаковать может только сервер и выше' };
+  // block: the order waits for the node itself to change (class, route), not for a free slot
+  if (!mayStrike(A, T, q.o)) return { wait: 'атаковать может только сервер и выше', block: true };
   const r = bestRoute(q.i, q.j, q.o);
-  if (!r.hops) { const e = edgeBetween(q.i, q.j); return { wait: e && e.state !== 'up' ? 'канал ещё прокладывается' : r.err || 'нет маршрута' }; }
+  if (!r.hops) { const e = edgeBetween(q.i, q.j), grow = e && e.state !== 'up'; return { wait: grow ? 'канал ещё прокладывается' : r.err || 'нет маршрута', block: !grow }; }
+  if (tierN(A) === 0) return { wait: 'ноутбук не отправляет: уйдёт со станции (20)', hops: r.hops, block: true };
   const lb = launchBlock(q.i, q.j); if (lb) return { wait: lb, hops: r.hops };
   const n = sendCount(q.i, q.pct); if (n < 1) return { wait: 'в узле нет пакетов', hops: r.hops };
   const ok = canSend(r.hops[0].e, q.i, q.o, n, q.j); if (ok !== true) return { wait: ok, hops: r.hops };
@@ -1672,8 +1692,8 @@ function setRoute(i, j) {
   const A = G.nodes[i];
   if (A.owner !== 1) return;
   if (j === i) { if (A.route != null) { A.route = null; SFX.flowOff(); toast('маршрут снят', 2000); } return; }
-  if (!routePath(i, j, 1)) { SFX.error(); toast('к этому узлу нет пути по вашим каналам', 2500); return; }
-  for (let k = j, guard = 0; k != null && guard < 64; k = G.nodes[k].route, guard++) if (k === i) { SFX.error(); toast('маршрут замкнулся бы в кольцо', 2500); return; }
+  if (!routePath(i, j, 1)) { refuse('к этому узлу нет пути по вашим каналам'); return; }
+  for (let k = j, guard = 0; k != null && guard < 64; k = G.nodes[k].route, guard++) if (k === i) { refuse('маршрут замкнулся бы в кольцо'); return; }
   A.route = j; SFX.flowOn();
 }
 function captureNode(B, o, leftover) {
@@ -2188,6 +2208,19 @@ function aiThink(o, D, reflexOnly, ai = { hands: 99 }) {
 /* ---------- input ---------- */
 let ptr = null, hover = -1, hoverEdge = null, pinch = null;
 const pointers = new Map();
+/* touchUI: the last pointer was a finger (bigger slop and hit areas, labels lifted above it). lastPx/lastPy: where it was. */
+let touchUI = false, lastPx = 0, lastPy = 0;
+function seePointer(e) {
+  lastPx = e.clientX; lastPy = e.clientY; touchUI = e.pointerType === 'touch' || e.pointerType === 'pen';
+  if (touchUI && !document.documentElement.classList.contains('touch-ui')) { document.documentElement.classList.add('touch-ui'); updatePct(); }
+}
+if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.add('touch-ui');
+/* A short note on the map by the pointer: every refusal shows there, not only as a beep a muted phone never plays.
+   kind: 'bad' (red), 'warn' (amber: accepted, but waits for the node itself), 'ok'. One at a time, the newest wins. */
+let NOTE = null;
+const WARN = () => PAL.dark ? [255, 184, 77] : [184, 106, 0];
+function note(txt, kind = 'bad', ms = 1900) { if (!G) return; const w = fromS(lastPx, lastPy); NOTE = { txt, kind, x: w.x, y: w.y, t0: performance.now(), ms, g: G }; }
+function refuse(txt) { SFX.error(); if (txt) note(txt, 'bad', 1700 + txt.length * 25); }
 function hit(wx, wy) {
   let best = -1, bd = 1e9;
   for (const p of G.nodes) {
@@ -2239,14 +2272,22 @@ function dragAction(i, j) {
   const st = orderState({ i, j, o: 1, pct: G.pct });
   if (st.dead) return { ok: false, label: 'это не ваш узел' };
   const repl = orderOf(i) ? ' · заменит приказ' : '', h = st.hops ? st.hops.length : 0, via = h > 1 ? `${h} прыж., ` : '';
-  if (st.wait) return { ok: true, kind: 'order', hops: st.hops, queued: true, label: `в очередь: ${st.wait}${repl}` };
+  if (st.wait) return { ok: true, kind: 'order', hops: st.hops, queued: true, warn: !!st.block, label: `в очередь: ${st.wait}${repl}` };
   return { ok: true, kind: 'order', hops: st.hops, label: `${via}отправить ${st.n}${repl}` };
 }
 function doAction(i, j) {
   const a = dragAction(i, j);
-  if (!a.ok) { SFX.error(); return; }
+  if (!a.ok) { refuse(a.label); return; }
   if (a.kind === 'build') build(i, j, 1, false);
-  else if (enqueue(i, j, 1, G.pct)) SFX.queue();
+  else if (enqueue(i, j, 1, G.pct)) queuedFx([i]);
+}
+/* Orders that just went to the queue: the queue sound when they only wait for a free slot; when all of them wait for
+   their node itself (a laptop, too low a class, no route) no success sound, but an amber note with the reason. */
+function queuedFx(ids) {
+  const st = ids.map(orderOf).filter(Boolean).map(orderState);
+  if (!st.length) return;
+  if (st.some(x => !x.block)) { SFX.queue(); return; }
+  SFX.ui(); note(`в очередь: ${st[0].wait}`, 'warn', 2600);
 }
 /* How many of these nodes could launch for node j right now: with one bundle of a kind in the air, at most one. */
 function launchNow(list, j) {
@@ -2274,17 +2315,23 @@ function groupPlan(j, set) {
 }
 function groupSend(j, set) {
   const plan = groupPlan(j, set);
-  if (!plan.list.length) { SFX.error(); toast(plan.label, 2500); return; }
+  if (!plan.list.length) { refuse(plan.label); return; }
   // weaker nodes queue first: a station needs a quiet network, a server or a mainframe can still go after it
-  let waiting = 0;
-  for (const it of plan.list.slice().sort((a, b) => tierN(G.nodes[a.i]) - tierN(G.nodes[b.i]))) if (enqueue(it.i, j, 1, G.pct)) waiting++;
-  if (waiting) SFX.queue();
+  const waiting = [];
+  for (const it of plan.list.slice().sort((a, b) => tierN(G.nodes[a.i]) - tierN(G.nodes[b.i]))) if (enqueue(it.i, j, 1, G.pct)) waiting.push(it.i);
+  queuedFx(waiting);
 }
-/* The badge of a waiting order sits at the lower right of its node; a click on it cancels the order. */
-function qPos(p) { const r = nr(p, p.vd) * 1.25 + 14; return { x: p.x + r * 0.75, y: p.y + r * 0.75 }; }
+/* The badge of a waiting order sits at the lower right of its node icon, at a screen offset, so zooming out never
+   slides it onto the node; a click on it cancels the order. Screen coordinates. */
+function qPos(p) { ts(p.x, p.y); const k = Math.max(nr(p, p.vd) * cam.z * 0.95, 12) + 9; return { x: TX + k * 0.75, y: TY + k * 0.75 }; }
 function qNear(sx, sy) {
-  for (const q of G.queue) { if (q.o !== 1) continue; const b = qPos(G.nodes[q.i]); ts(b.x, b.y); if (Math.hypot(TX - sx, TY - sy) < 13) return q; }
-  return null;
+  let best = null, bd = touchUI ? 20 : 13;
+  for (const q of G.queue) { if (q.o !== 1) continue; const b = qPos(G.nodes[q.i]), d = Math.hypot(b.x - sx, b.y - sy); if (d < bd) { bd = d; best = q; } }
+  if (!best) return null;
+  // near both a badge and a node the nearer one wins; a node counts from the inner half of its icon
+  const w = fromS(sx, sy), h = hit(w.x, w.y);
+  if (h >= 0) { const P = G.nodes[h]; ts(P.x, P.y); if (Math.max(0, Math.hypot(TX - sx, TY - sy) - nr(P, P.vd) * cam.z * 0.5) < bd) return null; }
+  return best;
 }
 function ownNodes() { return G.nodes.filter(p => p.owner === 1).map(p => p.i); }
 function selectAll() {
@@ -2308,15 +2355,15 @@ cv.addEventListener('wheel', e => {
   cam.z = clamp(cam.z * Math.exp(-e.deltaY * 0.0015), l.min, l.max); cam.tx = null;
   cam.x = w.x - (e.clientX - V.w / 2) / cam.z; cam.y = w.y - (e.clientY - V.h / 2) / cam.z; clampCam();
 }, { passive: false });
-cv.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; }
-});
+/* Esc, the right button or a drag back to where it started: a drag in progress is dropped. */
+function cancelDrag() { if (!ptr || !['link', 'daemon', 'retreat', 'box'].includes(ptr.mode)) return false; ptr.cancel = true; ptr.target = -1; return true; }
+cv.addEventListener('contextmenu', e => { e.preventDefault(); cancelDrag(); });
 cv.addEventListener('pointerdown', e => {
   audioInit(); if (!G || G.demo) return;
+  seePointer(e);
   // the right button: cancels a drag in progress; otherwise drops every waiting order and the selection
   if (e.button === 2) {
-    if (ptr && (ptr.mode === 'link' || ptr.mode === 'retreat')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (cancelDrag()) return;
     if (interactive() && cancelOrders(q => q.o === 1)) SFX.flowOff();
     G.sel = -1; G.routeFrom = -1; clearGroup(); return;
   }
@@ -2338,9 +2385,36 @@ cv.addEventListener('pointerdown', e => {
   if (e.shiftKey && interactive()) {
     if (p < 0) { ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p: -1, moved: false, mode: 'box', target: -1 }; return; }
   }
-  ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false,
+  // a finger jitters more than a mouse: it gets a bigger slop before a press becomes a drag
+  ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, p, moved: false, far: 0, slop: touchUI ? 12 : 7,
     mode: p >= 0 && G.nodes[p].owner === 1 ? 'link' : p >= 0 && myAssault(p) && retreatExits(p).length ? 'retreat' : 'pan', target: -1, chain: p >= 0 ? [p] : [], shift: e.shiftKey };
 });
+/* The exit of a retreat the pointer is at: an own node linked to the besieged node i, within 40 px of its icon or of
+   its channel (the stretch outside the besieged icon); -1 when none. */
+function retreatAim(i, sx, sy) {
+  const B = G.nodes[i]; let best = -1, bd = 40;
+  for (const e of retreatExits(i)) {
+    const k = other(e, i), Q = G.nodes[k], fwd = e.a === i; ts(Q.x, Q.y);
+    let d = Math.max(0, Math.hypot(TX - sx, TY - sy) - nr(Q, Q.vd) * cam.z);
+    for (let s = nr(B, B.vd) * 1.1 + 30 / cam.z; s < e.len && d >= bd * 0.5; s += 8 / cam.z) { const [x, y] = ptAt(e, fwd ? s : e.len - s); ts(x, y); d = Math.min(d, Math.hypot(TX - sx, TY - sy)); }
+    if (d < bd) { bd = d; best = k; }
+  }
+  return best;
+}
+/* Does the start of a drag from besieged node i head for one of its exits (within ~37 degrees)? */
+function headsToExit(i, x0, y0, x, y) {
+  const dx = x - x0, dy = y - y0, dl = Math.hypot(dx, dy) || 1;
+  return retreatExits(i).some(e => { const Q = G.nodes[other(e, i)]; ts(Q.x, Q.y); const qx = TX - x0, qy = TY - y0, ql = Math.hypot(qx, qy) || 1; return (dx * qx + dy * qy) / (dl * ql) > 0.8; });
+}
+/* Gathering own nodes into a drag: the pointer has to dwell ~150 ms on one, or cross its icon core at a normal zoom;
+   merely brushing past a node on the way no longer turns a drag into a group order. */
+const DWELL_MS = 150;
+function gatherCheck(now) {
+  if (!ptr || ptr.mode !== 'link' || ptr.cancel || !ptr.dwell) return;
+  const d = ptr.dwell, w = fromS(ptr.x, ptr.y);
+  if (hit(w.x, w.y) !== d.i) { ptr.dwell = null; return; }
+  if ((d.core || now - d.t >= DWELL_MS) && !ptr.chain.includes(d.i)) { ptr.chain.push(d.i); SFX.select(); }
+}
 cv.addEventListener('pointermove', e => {
   if (!G) return;
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -2351,26 +2425,35 @@ cv.addEventListener('pointermove', e => {
     return;
   }
   const w = fromS(e.clientX, e.clientY);
+  if (!ptr || ptr.id === e.pointerId) seePointer(e);
   hover = interactive() ? hit(w.x, w.y) : -1;
   let overD = false; if (!ptr && interactive() && G.daemon && G.daemon.state === 'idle') { const dp = daemonPos(); ts(dp.x, dp.y); overD = Math.hypot(TX - e.clientX, TY - e.clientY) < 18; }
   G.overQ = !ptr && interactive() ? qNear(e.clientX, e.clientY) : null; if (G.overQ) overD = true;
   G.overDaemon = overD;
   cv.style.cursor = hover >= 0 || overD ? 'pointer' : ptr && ptr.mode === 'pan' && ptr.moved ? 'grabbing' : 'default';
   if (!ptr || ptr.id !== e.pointerId) return;
-  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'retreat') && (e.buttons & 2)) { ptr.cancel = true; ptr.target = -1; }
-  ptr.x = e.clientX; ptr.y = e.clientY;
-  if (!ptr.moved && Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0) > 7) { ptr.moved = true; closePop(); }
+  if ((ptr.mode === 'link' || ptr.mode === 'daemon' || ptr.mode === 'retreat') && (e.buttons & 2)) cancelDrag();
+  ptr.x = e.clientX; ptr.y = e.clientY; ptr.far = Math.max(ptr.far, Math.hypot(ptr.x - ptr.x0, ptr.y - ptr.y0));
+  if (!ptr.moved && ptr.far > ptr.slop) {
+    ptr.moved = true; closePop();
+    // a drag from a besieged node retreats only when it heads for an exit; any other drag there pans the map
+    if (ptr.mode === 'retreat' && retreatAim(ptr.p, ptr.x, ptr.y) < 0 && !headsToExit(ptr.p, ptr.x0, ptr.y0, ptr.x, ptr.y)) { ptr.mode = 'pan'; ptr.lx = ptr.x0; ptr.ly = ptr.y0; }
+  }
   if (ptr.mode === 'retreat') {
-    // the exit nearest to the pointer; only own nodes linked to the battle count
-    if (ptr.moved && !ptr.cancel) { let best = -1, bd = 1e9; for (const e of retreatExits(ptr.p)) { const q = G.nodes[other(e, ptr.p)]; ts(q.x, q.y); const d = Math.hypot(TX - ptr.x, TY - ptr.y); if (d < bd) { bd = d; best = q.i; } } ptr.target = best; }
+    // only an exit the pointer is at counts: released anywhere else, the retreat is called off
+    if (ptr.moved && !ptr.cancel) ptr.target = retreatAim(ptr.p, ptr.x, ptr.y);
   }
   else if (ptr.mode === 'link' || ptr.mode === 'daemon') {
     if (!ptr.cancel) {
       const exact = hit(w.x, w.y), h = ptr.mode === 'daemon' ? exact : aimTarget(ptr.x, ptr.y, ptr.p, ptr.mode === 'link');
-      if (h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1)) ptr.target = -1;
-      else if (h >= 0) ptr.target = h;
-      // dragging right over own nodes gathers them: all of them send to where the drag ends
-      if (ptr.mode === 'link' && exact >= 0 && exact !== ptr.p && G.nodes[exact].owner === 1 && !ptr.chain.includes(exact)) { ptr.chain.push(exact); SFX.select(); }
+      // the target follows the pointer: released away from every node (or back on the source), the drag is dropped
+      ptr.target = h === ptr.p || (ptr.mode === 'daemon' && h >= 0 && G.nodes[h].owner === 1) ? -1 : h;
+      // own nodes on the way join the drag on a dwell or a pass over the icon core: all of them send to where it ends
+      if (ptr.mode === 'link' && exact >= 0 && exact !== ptr.p && G.nodes[exact].owner === 1 && !ptr.chain.includes(exact)) {
+        const Q = G.nodes[exact]; ts(Q.x, Q.y); const core = cam.z >= 0.45 && Math.hypot(TX - ptr.x, TY - ptr.y) < nr(Q, Q.vd) * cam.z * 0.6;
+        if (!ptr.dwell || ptr.dwell.i !== exact) ptr.dwell = { i: exact, t: performance.now(), core }; else if (core) ptr.dwell.core = true;
+        gatherCheck(performance.now());
+      } else ptr.dwell = null;
     }
   }
   else if (ptr.moved && ptr.mode === 'pan') { cam.x -= (e.clientX - ptr.lx) / cam.z; cam.y -= (e.clientY - ptr.ly) / cam.z; cam.tx = null; clampCam(); }
@@ -2380,13 +2463,17 @@ function endPtr(e, cancel) {
   pointers.delete(e.pointerId);
   if (e.shiftKey != null) setShift(e.shiftKey);
   if (pinch) { if (pointers.size < 2) pinch = null; return; }
+  // a finger leaves no hover behind: no stale brackets or send preview after a tap
+  if (G && e.pointerType && e.pointerType !== 'mouse') { hover = -1; G.overQ = null; }
   if (!ptr || ptr.id !== e.pointerId) return;
   const p = ptr; ptr = null;
   if (cancel || !interactive()) return;
-  if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) SFX.error(); } return; }
-  if (p.mode === 'box') { if (p.moved) boxSelect(p.x0, p.y0, p.x, p.y); return; }
+  if (p.mode === 'daemon') { if (!p.cancel && p.target >= 0) { const r = sendDaemon(p.target); if (r !== true) refuse(typeof r === 'string' ? r : ''); } return; }
+  if (p.mode === 'box') { if (p.moved && !p.cancel) boxSelect(p.x0, p.y0, p.x, p.y); return; }
   if (p.mode === 'retreat' && p.moved) { if (!p.cancel && p.target >= 0) retreat(p.p, p.target); return; }
-  if (!p.moved && !p.cancel) {
+  // a short drag from a node that found no target is a tap that jittered
+  const short = p.mode === 'link' && p.target < 0 && p.far < 24;
+  if ((!p.moved || short) && !p.cancel) {
     if (p.shift && p.p >= 0 && G.nodes[p.p].owner === 1) { toggleGroup(p.p); return; }
     if (p.p >= 0) return tapNode(p.p);
     G.sel = -1; G.routeFrom = -1; clearGroup(); closePop(); return;
@@ -2413,7 +2500,7 @@ function retreatCheck(i, j) {
 }
 function retreat(i, j) {
   const r = retreatCheck(i, j);
-  if (typeof r === 'string') { SFX.error(); toast(r, 2200); return false; }
+  if (typeof r === 'string') { refuse(r); return false; }
   const B = G.nodes[i];
   B.assault = B.assault.filter(a => a !== r.s); if (!B.assault.length) B.assault = null;
   if (r.n >= 1) launch(r.e, dirFrom(r.e, i), 1, j, 0, 1, 0, r.n);
@@ -2438,7 +2525,8 @@ function tapNode(i) {
     toast(p.route != null ? 'выберите новую цель маршрута. нажмите этот же узел, чтобы снять маршрут.' : 'маршрут: нажмите узел, куда этот узел будет пересылать все пакеты.', 3500);
     return;
   }
-  if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { doAction(G.sel, i); G.sel = -1; return; }
+  // with an own node selected, a tap on another own node moves the selection there (a transfer between own nodes is a drag)
+  if (G.sel >= 0 && G.sel !== i && G.nodes[G.sel].owner === 1) { if (p.owner === 1) { G.sel = i; SFX.select(); return; } doAction(G.sel, i); G.sel = -1; return; }
   // a tap on a foreign node sends a bundle from every own node linked to it by a channel; one still being laid
   // takes the order too, and the bundle leaves as soon as the channel is up
   if (p.owner !== 1) {
@@ -2446,10 +2534,11 @@ function tapNode(i) {
     if (from.length) {
       // only nodes that may attack it get the order; each launches when its network has a free slot
       const srcs = from.map(e => other(e, i)).filter(k => mayStrike(G.nodes[k], p, 1)).sort((a, b) => tierN(G.nodes[a]) - tierN(G.nodes[b]));
-      if (!srcs.length) { SFX.error(); toast('атаковать может только сервер и выше', 2200); }
-      else { let waiting = 0; for (const k of srcs) if (enqueue(k, i, 1, G.pct)) waiting++; if (waiting) SFX.queue(); }
+      if (!srcs.length) refuse('атаковать может только сервер и выше');
+      else { const waiting = []; for (const k of srcs) if (enqueue(k, i, 1, G.pct)) waiting.push(k); queuedFx(waiting); }
       G.sel = -1; return;
     }
+    if (G.sel !== i) note('нет канала к узлу — потяните от своего узла', 'warn', 2600);
   }
   if (G.sel === i) { G.sel = -1; return; }
   G.sel = i; if (p.owner === 1) SFX.select();
@@ -2856,31 +2945,38 @@ function render(now) {
     else if (ptr && ptr.mode === 'retreat' && ptr.moved && !ptr.cancel) drawRetreatPreview(ptr.p, ptr.target, ptr.x, ptr.y, t);
     else if (!ptr && G.group.size && hover >= 0 && !G.overQ) drawGroupPreview(hover, null, null, t);
     else {
-      const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && !G.overQ && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel ? G.sel : -1);
+      // a tap on another own node only moves the selection, so hovering one previews nothing
+      const src = ptr && ptr.mode === 'link' && ptr.moved && !ptr.cancel ? ptr.p : (!ptr && !G.overQ && sel && sel.owner === 1 && hover >= 0 && hover !== G.sel && N[hover].owner !== 1 ? G.sel : -1);
       const tgt = ptr && ptr.mode === 'link' ? ptr.target : hover;
       if (src >= 0) drawPreview(src, tgt, ptr ? ptr.x : null, ptr ? ptr.y : null, t);
     }
-    if (!ptr && G.overQ && G.queue.includes(G.overQ)) {
-      const q = G.overQ, st = orderState(q), b = qPos(N[q.i]); ts(b.x, b.y);
-      label(`приказ · ${st.wait || 'сейчас уйдёт'} · нажмите, чтобы отменить`, TX, TY, true);
+    // a drag that points at nothing says what letting go does
+    if (ptr && ptr.moved && !ptr.cancel && ptr.target < 0 && (ptr.mode === 'link' || ptr.mode === 'retreat' || ptr.mode === 'daemon') && G.routeFrom < 0) {
+      if (ptr.mode === 'link' && ptr.far >= 24) { const A = N[ptr.p]; ts(A.x, A.y); ctx.setLineDash([2, 4]); ctx.strokeStyle = rgba(PAL.rgb[0], 0.7); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(TX, TY, (nr(A, A.vd) * 1.2 + 10) * S, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+      if (ptr.mode !== 'link' || ptr.far >= 24) label('отпустите здесь — отмена', ptr.x, ptr.y, true, PAL.rgb[0]);
     }
+    if (!ptr && G.overQ && G.queue.includes(G.overQ)) {
+      const q = G.overQ, st = orderState(q), b = qPos(N[q.i]);
+      label(`приказ · ${st.wait || 'сейчас уйдёт'} · нажмите, чтобы отменить`, b.x, b.y, true, st.block ? WARN() : null);
+    }
+    drawNote();
   }
 }
 /* Waiting orders: a slow dotted trail along the way and a numbered badge by the node. */
 function drawQueue(t) {
   let k = 0;
-  const c = PAL.rgb[1];
   for (const q of G.queue) {
     if (q.o !== 1) continue; k++;
-    const A = G.nodes[q.i], r = bestRoute(q.i, q.j, 1);
+    // amber: the order waits for the node itself (a laptop, too low a class, no route), not just for a free slot
+    const A = G.nodes[q.i], r = bestRoute(q.i, q.j, 1), block = !!orderState(q).block, c = block ? WARN() : PAL.rgb[1];
     if (r.hops) for (const hp of r.hops) if (pathRange(hp.e, rad(hp.e.a), hp.e.len - rad(hp.e.b))) {
       ctx.setLineDash([2, 7]); ctx.lineDashOffset = -t * 14 * (dirFrom(hp.e, hp.from) ? -1 : 1); ctx.strokeStyle = rgba(c, 0.5); ctx.lineWidth = Math.max(1, 1.4 * cam.z); ctx.stroke(); ctx.setLineDash([]);
     }
-    const b = qPos(A); ts(b.x, b.y); const x = TX, y = TY;
+    const b = qPos(A), x = b.x, y = b.y;
     ctx.beginPath(); ctx.arc(x, y, 8, 0, TAU); ctx.fillStyle = PAL.dark ? 'rgba(4,10,8,0.92)' : 'rgba(242,246,243,0.95)'; ctx.fill();
-    ctx.strokeStyle = rgba(c, 0.3); ctx.lineWidth = 1.2; ctx.stroke();
-    const a0 = t * 3.5; ctx.strokeStyle = rgba(c, 0.95); ctx.beginPath(); ctx.arc(x, y, 8, a0, a0 + 1.7); ctx.stroke();
-    ctx.fillStyle = PAL.lab[1]; ctx.font = `600 9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(k), x, y + 0.5);
+    ctx.strokeStyle = rgba(c, block ? 0.8 : 0.3); ctx.lineWidth = 1.2; ctx.stroke();
+    if (!block) { const a0 = t * 3.5; ctx.strokeStyle = rgba(c, 0.95); ctx.beginPath(); ctx.arc(x, y, 8, a0, a0 + 1.7); ctx.stroke(); }
+    ctx.fillStyle = block ? rgba(c, 1) : PAL.lab[1]; ctx.font = `600 9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(k), x, y + 0.5);
     if (G.overQ === q && !ptr) { ctx.strokeStyle = PAL.sel; ctx.lineWidth = 1; brackets(x, y, 13, 4); }
   }
 }
@@ -2922,7 +3018,7 @@ function drawComet(at, n, o, seed, t, sz, k0) {
 function drawPreview(src, tgt, px, py, t) {
   const A = G.nodes[src], S = cam.z;
   if (tgt >= 0 && tgt !== src) {
-    const B = G.nodes[tgt], a = dragAction(src, tgt), e = edgeBetween(src, tgt), col = a.ok ? PAL.rgb[1] : PAL.rgb[2];
+    const B = G.nodes[tgt], a = dragAction(src, tgt), e = edgeBetween(src, tgt), col = a.warn ? WARN() : a.ok ? PAL.rgb[1] : PAL.rgb[2];
     ts(B.x, B.y); const rr = (nr(B, B.vd) * 1.2 + 16) * S + 3 - (t * 20 % 6);
     ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 1.4; brackets(TX, TY, rr, Math.max(8, rr * 0.3));
     if (a.hops) {
@@ -2933,7 +3029,7 @@ function drawPreview(src, tgt, px, py, t) {
       const [d1, d2] = e ? [rad(e.a), e.len - rad(e.b)] : [r1, L.len - r2];
       if (pathRange(L, d1, d2)) { ctx.setLineDash([4, 6]); ctx.lineDashOffset = -t * 40 * (fromA ? 1 : -1); ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 1.6; ctx.stroke(); ctx.setLineDash([]); }
     }
-    label(a.label, px != null ? px : TX, py != null ? py : TY, a.ok);
+    label(a.label, px != null ? px : TX, py != null ? py : TY, a.ok, a.warn ? WARN() : null);
   } else if (px != null) {
     ts(A.x, A.y); ctx.beginPath(); ctx.moveTo(TX, TY); ctx.lineTo(px, py); ctx.setLineDash([2, 6]); ctx.strokeStyle = rgba(PAL.rgb[1], 0.5); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
   }
@@ -2968,11 +3064,26 @@ function drawGroupPreview(tgt, px, py, t, set) {
   }
   label(plan.label, px != null ? px : bx, py != null ? py : by, ok);
 }
+/* A label by the pointer; a long one wraps to fit a phone, and under a finger it sits higher, clear of the fingertip. */
 function label(txt, x, y, ok, colRgb) {
-  ctx.font = `500 11px ${FONT}`; const tw = ctx.measureText(txt).width + 16, lx = clamp(x + 14, 6, V.w - tw - 6), ly = clamp(y - 34, 6, V.h - 28);
+  ctx.font = `500 11px ${FONT}`;
+  const maxW = Math.min(420, V.w - 12) - 16, lines = []; let cur = '';
+  for (const w of txt.split(' ')) { const t = cur ? cur + ' ' + w : w; if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t; }
+  lines.push(cur);
+  const tw = Math.max(...lines.map(l => ctx.measureText(l).width)) + 16, h = 8 + lines.length * 14;
+  const lx = clamp(x + 14, 6, V.w - tw - 6), ly = clamp(y - 12 - h - (touchUI ? 40 : 0), 6, V.h - h - 6);
   ctx.fillStyle = PAL.dark ? 'rgba(4,10,8,0.92)' : 'rgba(242,246,243,0.95)'; ctx.strokeStyle = rgba(colRgb || (ok ? PAL.rgb[1] : PAL.rgb[2]), 0.6); ctx.lineWidth = 1;
-  roundRect(lx, ly, tw, 22, 4); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = colRgb ? rgba(colRgb, 1) : ok ? PAL.lab[1] : PAL.lab[2]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, lx + tw / 2, ly + 11.5);
+  roundRect(lx, ly, tw, h, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = colRgb ? rgba(colRgb, 1) : ok ? PAL.lab[1] : PAL.lab[2]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((l, k) => ctx.fillText(l, lx + tw / 2, ly + 11.5 + k * 14));
+}
+/* The current note: rises a little and fades out where it was given, following the map. */
+function drawNote() {
+  const n = NOTE; if (!n) return;
+  const a = (performance.now() - n.t0) / n.ms; if (a >= 1 || n.g !== G) { NOTE = null; return; }
+  ts(n.x, n.y); ctx.globalAlpha = Math.min(1, (1 - a) * 5);
+  label(n.txt, TX, TY - a * 8, n.kind !== 'bad', n.kind === 'warn' ? WARN() : null);
+  ctx.globalAlpha = 1;
 }
 /* minimap */
 const mini = $('#mini'), mctx = mini.getContext('2d');
@@ -3012,7 +3123,8 @@ function frame(now) {
   try { tick(now); } catch (err) { console.error(err); }
 }
 function tick(now) {
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // a slow device still runs the game in real time down to 10 fps; step() keeps its 1/60 substeps
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (G && G.shake > 0.05 && !G.paused) { G.shake *= Math.exp(-dt * 6); SHX = (Math.random() - 0.5) * G.shake; SHY = (Math.random() - 0.5) * G.shake; }
   else { SHX = SHY = 0; if (G) G.shake = 0; }
   // hit-stop: time crawls for a blink after a capture that involves you, so the moment lands
@@ -3028,7 +3140,7 @@ function tick(now) {
       if (Math.hypot(cam.tx - cam.x, cam.ty - cam.y) < 1 && Math.abs(cam.tz - cam.z) < 0.002) cam.tx = null;
     }
   }
-  render(now); hudTick(now); drawMini(now);
+  gatherCheck(now); render(now); hudTick(now); drawMini(now);
 }
 
 /* ---------- UI ---------- */
@@ -3115,10 +3227,17 @@ $('#btnAll').addEventListener('click', () => { SFX.ui(); if (G && !G.demo && !G.
 function updateGroupBtn() {
   const b = $('#btnAll'), n = G && !G.demo ? G.group.size : 0;
   b.setAttribute('aria-pressed', n ? 'true' : 'false');
-  b.innerHTML = n ? `выделено ${n}<span class="k">×</span>` : 'все узлы<span class="k">Q</span>';
+  b.innerHTML = n ? `выделено ${n}<span class="k">×</span>` : 'все узлы<span class="k kbd">Q</span>';
   b.setAttribute('aria-label', n ? `Выделено узлов: ${n}. Снять выделение` : 'Выделить все свои узлы');
 }
 $('#btnFog').addEventListener('click', () => { SFX.ui(); toggleFog(); });
+$('#btnPct').addEventListener('click', () => { SFX.ui(); halfLock = !halfLock; updatePct(); });
+$('#btnCancel').addEventListener('click', () => {
+  if (!interactive()) return;
+  const n = G.queue.filter(q => q.o === 1).length;
+  if (n && cancelOrders(q => q.o === 1)) { SFX.flowOff(); lastPx = V.w / 2; lastPy = V.h - 90; note(`отменено приказов: ${n}`, 'ok', 1600); } else SFX.error();
+});
+$('#toast').addEventListener('pointerdown', e => { e.stopPropagation(); hideToast(); });
 $('#btnSpeed').addEventListener('click', () => { SFX.ui(); if (!G) return; G.speed = G.speed === 1 ? 2 : 1; $('#btnSpeed').textContent = 'x' + G.speed; });
 
 let toastTimer = 0;
@@ -3139,7 +3258,7 @@ function setupHud() {
   $('#popbar').innerHTML = owners.map(o => `<i data-o="${o}" style="background:${PAL.c[o]};flex-grow:1"></i>`).join('');
   $('#popnums').innerHTML = owners.map(o => `<span data-o="${o}" style="color:var(--c${o})" title="${o === 1 ? 'вы' : COLOR_NAME[o]}"></span>`).join('');
   $('#btnSpeed').textContent = 'x1';
-  updateGroupBtn();
+  updateGroupBtn(); updatePct();
 }
 function hudTick(now) {
   if (!G || G.demo || now - hudLast < 150) return;
@@ -3148,15 +3267,15 @@ function hudTick(now) {
   // balance of forces: every player's packets on nodes, in flight and in battle
   const pw = {}; let sum = 0;
   document.querySelectorAll('#popbar i').forEach(el => { const o = +el.dataset.o; pw[o] = power(o); sum += pw[o]; });
-  // the bar shows real shares of all packets in play (a thin sliver keeps a live player visible); the others' exact
-  // numbers stay glyphs, and a player out of the game has no segment at all
-  document.querySelectorAll('#popbar i').forEach(el => { const v = pw[+el.dataset.o]; el.style.flexGrow = v > 0 ? Math.max(v / (sum || 1), 0.03) : 0; });
+  // the fog keeps the others' strength secret: every live player gets an equal segment, one out of the game has none
+  document.querySelectorAll('#popbar i').forEach(el => { el.style.flexGrow = pw[+el.dataset.o] > 0 ? 1 : 0; });
   document.querySelectorAll('#popnums span').forEach(el => { const o = +el.dataset.o; el.textContent = o === 1 ? pw[o] : secret(o * 977, now / 1000, 3); el.style.opacity = pw[o] ? 1 : 0.35; });
   const mm = Math.floor(G.time / 60), ss = Math.floor(G.time % 60);
   let fl = 0; for (const e of G.edges) for (const a of e.ar) if (a.o === 1 && !a.dead) fl++;
   for (const J of G.jumps) if (J.o === 1) fl++;
   const qn = G.queue.filter(q => q.o === 1).length;
   $('#hudCount').textContent = `${mm}:${String(ss).padStart(2, '0')} · в полёте ${fl}${qn ? ` · очередь ${qn}` : ''}`;
+  const bc = $('#btnCancel'); bc.textContent = qn ? `отмена ${qn}` : 'отмена'; bc.classList.toggle('dim', !qn);
 }
 
 function startLevel(i) {
@@ -3241,7 +3360,7 @@ addEventListener('keydown', e => {
   if (!G || G.demo) return;
   const k = e.key.toLowerCase();
   if (k === 'escape') {
-    if (ptr && (ptr.mode === 'link' || ptr.mode === 'daemon')) { ptr.cancel = true; ptr.target = -1; return; }
+    if (cancelDrag()) return;
     if (!G.paused && G.routeFrom >= 0) { G.routeFrom = -1; return; }
     if (!G.paused && G.group.size) { clearGroup(); return; }
     if (G.paused) resumeGame(); else pauseGame(); return;
@@ -3275,7 +3394,7 @@ startDemo();
 resize();
 decode($('#wm'), 'root', 1100);
 requestAnimationFrame(frame);
-window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN };
+window.__root = { get G() { return G; }, buildGame, quickSpec, flyingOf, captureNode, DIFF, startLive, spawnBot, cam, groupPlan, groupSend, setRoute, routePath, startLevel, startQuick, step: dt => step(dt), toScreen: (x, y) => { ts(x, y); return [TX, TY]; }, build, sendArmy, edgeBetween, canBuild, packetRoute, genMap, LEVELS, sendDaemon, daemonRoute, enqueue, launchBlock, tierN, qPos: i => { const b = qPos(G.nodes[i]); return [b.x, b.y]; }, get note() { return NOTE; } };
 })();
 </script>
 
