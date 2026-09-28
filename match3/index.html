@@ -155,7 +155,7 @@
   }
   .moves.low #moves-num { color: #ffd6cc; }
   @keyframes lowPulse { 50% { transform: scale(1.07); } }
-  .moves.tick { animation: tickPop 0.25s ease-out; }
+  .moves.pop { animation: tickPop 0.25s ease-out; }
   @keyframes tickPop { 40% { transform: scale(0.9); } }
 
   .hud-mid { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
@@ -2073,13 +2073,13 @@
   }
   document.addEventListener('animationend', (e) => {
     const t = e.target;
-    if (t.classList && ['tickPop', 'goalBump', 'scoreBump'].includes(e.animationName)) t.classList.remove('tick', 'bump');
+    if (t.classList && ['tickPop', 'goalBump', 'scoreBump'].includes(e.animationName)) t.classList.remove('pop', 'bump');
   });
   function bumpMoves() {
     const m = $('moves');
-    m.classList.remove('tick');
+    m.classList.remove('pop');
     void m.offsetWidth;
-    m.classList.add('tick');
+    m.classList.add('pop');
   }
 
   function updateHud(scoreChanged) {
