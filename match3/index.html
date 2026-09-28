@@ -1777,6 +1777,12 @@
   window.addEventListener('resize', resize);
   if (document.fonts && document.fonts.load) document.fonts.load("40px 'Ruslan Display'").catch(() => {});
 
+  // Test hook for automated screenshots.
+  window.__m3 = {
+    autoMove() { const m = findMove(); if (!m || busy) return false; trySwap(m[0], m[1]); return true; },
+    startLevel: (i) => startLevel(i),
+  };
+
   resize();
   startLevel(Math.min(save.unlocked, LEVELS.length) - 1);
   requestAnimationFrame(frame);
