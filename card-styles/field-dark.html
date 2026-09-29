@@ -654,6 +654,24 @@ body{background:
 .over.win::before{content:""; position:absolute; left:50%; top:50%; width:140%; aspect-ratio:1; translate:-50% -50%; z-index:-1; pointer-events:none;
   background:repeating-conic-gradient(from 0deg, rgba(255,226,150,.13) 0 6deg, transparent 6deg 18deg); mask:radial-gradient(closest-side, #000 25%, transparent 70%); -webkit-mask:radial-gradient(closest-side, #000 25%, transparent 70%); animation:halo 30s linear infinite;}
 .over{isolation:isolate; overflow:hidden;}
+
+/* ---- drag: a physical piece ---- */
+.fly.tilefly{opacity:1; filter:drop-shadow(0 14px 12px rgba(0,0,0,.55)) drop-shadow(0 30px 28px rgba(0,0,0,.35)); transform-origin:50% 50%; will-change:transform;}
+/* ---- summon: the frame burns away from the edges ---- */
+@property --dv{syntax:'<percentage>'; inherits:false; initial-value:0%;}
+.fly.dissolve{-webkit-mask:radial-gradient(closest-side, #000 calc(100% - var(--dv)), transparent calc(118% - var(--dv))); mask:radial-gradient(closest-side, #000 calc(100% - var(--dv)), transparent calc(118% - var(--dv))); animation:dissolve .48s ease-in forwards;}
+@keyframes dissolve{0%{--dv:0%; opacity:1;} 70%{opacity:.85;} 100%{--dv:100%; opacity:0;}}
+@media (prefers-reduced-motion: reduce){ .fly.dissolve{animation-duration:.1s;} }
+/* ---- bonus mana ---- */
+.mgem{position:fixed; left:0; top:0; z-index:210; pointer-events:none; width:0; height:0;}
+.mgem i{position:absolute; left:-11px; top:-14px; width:22px; height:28px; clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%);
+  background:linear-gradient(135deg, transparent 0 48%, rgba(0,0,0,.25) 48% 100%), linear-gradient(225deg, rgba(255,255,255,.6) 0 22%, transparent 22%), linear-gradient(180deg, #e8f6ff, #4a93ea 45%, #1b4a9a);}
+.mgem::before{content:""; position:absolute; left:-26px; top:-26px; width:52px; height:52px; border-radius:50%; background:radial-gradient(closest-side, rgba(120,190,255,.75), transparent);}
+.mgem b{position:absolute; left:14px; top:-12px; font:700 18px/1 var(--fd); color:#fff; -webkit-text-stroke:3px #0b1d3a; paint-order:stroke fill; white-space:nowrap;}
+.mana.gain{animation:managain .7s ease-out;}
+@keyframes managain{0%{box-shadow:0 0 0 0 rgba(120,190,255,0);} 25%{box-shadow:0 0 0 4px rgba(150,205,255,.85), 0 0 26px 6px rgba(80,150,255,.7); transform:scale(1.08);} 100%{box-shadow:0 0 0 0 rgba(120,190,255,0); transform:none;}}
+.gems i.bonus::before{background:linear-gradient(135deg, transparent 0 48%, rgba(0,0,0,.25) 48% 100%), linear-gradient(225deg, rgba(255,255,255,.7) 0 22%, transparent 22%), linear-gradient(180deg, #fff6d0, #e2bb62 45%, #8a6124);}
+.gems em{font:700 12px/1 var(--fd); font-style:normal; color:#9cc8ff; margin-left:4px; align-self:center;}
 </style>
 
 <div class="wrap">
@@ -704,6 +722,8 @@ body{background:
         <li>Шаг: перетащите своего юнита на соседнюю пустую клетку или на соседнего своего (обмен местами). Вбок, вперёд или назад, не по диагонали. Тратит очко хода. Менять местами можно только с тем, кто в этом ходу ещё не действовал.</li>
         <li>Суккуб бьёт цепью: 2 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
+        <li>Бонусная мана (тестовый режим): слияние юнитов даёт +1 камень маны, убийство вражеского юнита — +1. Если бонус пришёл в чужой ход, он добавится в начале вашего.</li>
+        <li>Стрелок, стоящий в переднем ряду, получает сдачу по обычным правилам. Из заднего ряда стрелки бьют без сдачи.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую. Рас шесть: Альянс, Инферно, Эльфы, Лига Теней, Некрополис, Академия.</li>
         <li>Лазутчик травит: выживший теряет 1 ХП в начале своего хода. Нежить (весь Некрополис) яд не берёт.</li>
         <li>Бестия и ракшас бьют без сдачи. Минотавр даёт сдачу, даже когда спит или ослеплён.</li>
@@ -738,6 +758,9 @@ body{background:
 </div>
 
 <script>
+/* ---------- test tuning: bonus mana (change freely) ---------- */
+const MANA_ON_MERGE = 1;   // mana crystals for merging units into a higher tier
+const MANA_ON_KILL = 1;    // mana crystals for each enemy unit killed
 /* ---------- unit icons: approved one-colour figures; a few units still offer a choice ---------- */
 const ICONS = {
   lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
@@ -1056,7 +1079,7 @@ const wait = ms => new Promise(r => setTimeout(r, D(ms)));
 /* ---------- sound ----------
    Real recordings only (CC0, see sfx/CREDITS.md): cards, footsteps, bows, blades, hooves, voices, a real dog.
    Each event has a few takes in sfx/; one is picked at random and nudged slightly in pitch and level. */
-const SFX_TAKES = {"angel":2,"archer":4,"bdragon":2,"blind":1,"breath":2,"burn":2,"camp":2,"cavalier":3,"chain":2,"charger":2,"colossus":2,"dancer":3,"danger":1,"deal":1,"demon":3,"deny":2,"devil":2,"die-armor":2,"die-beast":2,"die-bone":2,"die-bull":2,"die-demon":2,"die-dog":2,"die-dragon":2,"die-fae":2,"die-ghost":2,"die-man":3,"die-metal":2,"die-reptile":2,"die-small":2,"die-stone":2,"die-woman":2,"die-wood":1,"die-zombie":2,"djinn":2,"draw":3,"druid":2,"fiend":2,"fly":4,"footman":3,"gargoyle":2,"gdragon":2,"ghost":2,"golem":2,"gremlin":2,"griffin":2,"heal":2,"hero":3,"hound":3,"hunter":4,"hurt-armor":3,"hurt-beast":3,"hurt-bone":3,"hurt-bull":3,"hurt-demon":3,"hurt-dog":3,"hurt-dragon":3,"hurt-fae":2,"hurt-ghost":2,"hurt-man":5,"hurt-metal":3,"hurt-reptile":3,"hurt-small":3,"hurt-stone":3,"hurt-woman":4,"hurt-wood":3,"hurt-zombie":3,"hydra":2,"imp":3,"lich":2,"lose":1,"mage":2,"maiden":3,"merge":1,"minotaur":3,"move":3,"nope":2,"peasant":3,"pick":3,"pixie":3,"place":4,"priest":2,"raider":3,"rakshasa":2,"scout":3,"sdragon":2,"skeleton":3,"spill":2,"succubus":2,"summon":1,"treant":2,"turn":2,"turn-e":2,"turn-p":2,"unicorn":2,"up":2,"vampire":2,"wight":2,"win":1,"witch":2,"zombie":3};
+const SFX_TAKES = {"angel":2,"archer":4,"bdragon":2,"blind":1,"breath":2,"burn":2,"camp":2,"cavalier":3,"chain":2,"charger":2,"colossus":2,"dancer":3,"danger":1,"deal":1,"demon":3,"deny":2,"devil":2,"die-armor":2,"die-beast":2,"die-bone":2,"die-bull":2,"die-demon":2,"die-dog":2,"die-dragon":2,"die-fae":2,"die-ghost":2,"die-man":3,"die-metal":2,"die-reptile":2,"die-small":2,"die-stone":2,"die-woman":2,"die-wood":1,"die-zombie":2,"djinn":2,"draw":3,"druid":2,"fiend":2,"fly":4,"footman":3,"gargoyle":2,"gdragon":2,"ghost":2,"golem":2,"gremlin":2,"griffin":2,"heal":2,"hero":3,"hound":3,"hunter":4,"hurt-armor":3,"hurt-beast":3,"hurt-bone":3,"hurt-bull":3,"hurt-demon":3,"hurt-dog":3,"hurt-dragon":3,"hurt-fae":2,"hurt-ghost":2,"hurt-man":5,"hurt-metal":3,"hurt-reptile":3,"hurt-small":3,"hurt-stone":3,"hurt-woman":4,"hurt-wood":3,"hurt-zombie":3,"hydra":2,"imp":3,"land":3,"lich":2,"lose":1,"mage":2,"maiden":3,"mana":2,"merge":1,"minotaur":3,"move":3,"nope":2,"peasant":3,"pick":3,"pixie":3,"place":4,"priest":2,"raider":3,"rakshasa":2,"scout":3,"sdragon":2,"skeleton":3,"spill":2,"succubus":2,"summon":1,"treant":2,"turn":2,"turn-e":2,"turn-p":2,"unicorn":2,"up":2,"vampire":2,"wight":2,"win":1,"witch":2,"zombie":3};
 const SFX_KIND = {"peasant":"man","archer":"man","priest":"man","hunter":"man","druid":"man","dancer":"man","footman":"armor","cavalier":"armor","angel":"armor","griffin":"beast","unicorn":"beast","charger":"beast","hound":"dog","imp":"demon","demon":"demon","fiend":"demon","devil":"demon","pixie":"fae","succubus":"fae","treant":"wood","scout":"man","maiden":"woman","minotaur":"bull","raider":"reptile","hydra":"reptile","witch":"woman","sdragon":"dragon","skeleton":"bone","zombie":"zombie","ghost":"ghost","vampire":"man","lich":"bone","wight":"ghost","bdragon":"bone","gremlin":"small","gargoyle":"stone","golem":"metal","mage":"man","djinn":"ghost","rakshasa":"beast","colossus":"stone","gdragon":"dragon"};
 const Sfx = (() => {
   let ctx = null, bus = null, amb = null, ambSrc = null, on = true;
@@ -1078,7 +1101,7 @@ const Sfx = (() => {
       .then(a => a && new Promise(res => ctx.decodeAudioData(a, res, () => res(null)))).catch(() => null));
   }
   const ALIAS = {dodge:'fly', poison:'hurt-small', curse:'blind', raise:'summon', nope:'deny', turn:'turn-p'};
-  function play(name, vol = 1){
+  function play(name, vol = 1, rate = 1){
     if (!SFX_TAKES[name] && ALIAS[name]) name = ALIAS[name];
     const n = SFX_TAKES[name]; if (!on || !n || !init()) return;
     if (ctx.state === 'suspended') ctx.resume();
@@ -1087,7 +1110,7 @@ const Sfx = (() => {
     load(`${name}-${i}`).then(b => {
       if (!b || !on || performance.now() - asked > 250) return;   // never play a sound late, out of step with the picture
       const src = ctx.createBufferSource(), g = ctx.createGain();
-      src.buffer = b; src.playbackRate.value = 1 + (Math.random() - .5) * .07; g.gain.value = vol * (.88 + Math.random() * .12);
+      src.buffer = b; src.playbackRate.value = rate * (1 + (Math.random() - .5) * .07); g.gain.value = vol * (.88 + Math.random() * .12);
       src.connect(g).connect(bus); src.start();
     });
   }
@@ -1232,7 +1255,6 @@ function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {le
 function syncUnits(dropId){
   const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), trios = readyTrios();
   const myTurn = S.side === 'p' && !S.busy && !S.over, su = selUnit(), AT = myTurn && su && su.side === 'p' && canAttack(su) ? attackTargets(su) : {units:[], hero:false};
-  $('#arena').classList.toggle('aiming', AT.units.length > 0 || !!AT.hero);
   for (const u of S.units){
     let el = TILES.get(u.id);
     if (!el){ el = document.createElement('div'); el.dataset.id = u.id; layer.appendChild(el); TILES.set(u.id, el); placeTile(el, u);
@@ -1246,7 +1268,7 @@ function syncUnits(dropId){
     if (AT.units.includes(u) || T.reach.has(u)) el.classList.add('tgt');
     if (myTurn && u.side === 'p' && u.where === 'f' && !u.sleep){ if (canAttack(u) && !sel) el.classList.add('ready'); else if ((u.atks || 0) === 0) el.classList.add('spent'); }
     el.title = `${U(u).name}: урон ${U(u).atk}, ХП ${u.hp}/${U(u).hp}${u.where === 'c' ? ', в лагере' : ''}${u.stun ? `, ${u.stunTxt || 'ослеплён'}` : ''}${u.poison ? ', отравлен' : ''}${u.curse ? ', проклят' : ''}${dodges(u) ? ', следующий удар — промах' : ''}. ${U(u).ab}${head ? `\nНажмите: тройка сольётся сюда → ${next}` : ''}`;
-    el.innerHTML = tileInner(u, (mg ? `<span class="mgl">↑ ${next}</span>` : head ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : '') + (AT.units.includes(u) ? preview(su, u) : ''));
+    el.innerHTML = tileInner(u, (mg ? `<span class="mgl">↑ ${next}</span>` : head ? `<span class="mgl tri">↑</span>` : swp ? `<span class="mgl swl">⇄</span>` : ''));
     placeTile(el, u); seen.add(u.id);
   }
   for (const [id, el] of TILES) if (!seen.has(id)){ el.remove(); TILES.delete(id); }
@@ -1317,8 +1339,8 @@ function heroHTML(side){
   return `<div class="hero" id="hero-${side}" style="--team:${side === 'p' ? 'var(--tp)' : 'var(--te)'}"><div class="ava">${svg(F[side].heroIcon)}</div><div><b>${F[side].hero}</b><div class="hb"><i style="width:${hp / HERO_HP * 100}%"></i></div></div><span class="hv">${hp}</span></div>`;
 }
 function manaHTML(side){
-  const cap = Math.min(S.turn, MANA_MAX), m = S.mana[side];
-  return `<div class="mana" title="Мана ${m} из ${cap}"><b>${m}/${cap}</b><span class="gems">${Array.from({length:MANA_MAX}, (_, i) => `<i class="${i < m ? 'on' : i < cap ? 'cap' : ''}"></i>`).join('')}</span></div>`;
+  const cap = Math.min(S.turn, MANA_MAX), m = S.mana[side], next = S.manaNext[side] || 0;
+  return `<div class="mana" id="mana-${side}" title="Мана ${m} из ${cap}${next ? `, +${next} в следующий ход` : ''}"><b>${m}/${cap}</b><span class="gems">${Array.from({length:Math.max(MANA_MAX, m)}, (_, i) => `<i class="${i < m ? 'on' : i < cap ? 'cap' : ''}${i >= cap && i < m ? ' bonus' : ''}"></i>`).join('')}${next ? `<em>+${next}</em>` : ''}</span></div>`;
 }
 function renderBars(){
   const me = S.side === 'p' && !S.busy && !S.over, a = $('#arena');
@@ -1401,6 +1423,19 @@ const FX = {
     if (RM) return; const d = document.createElement('div'); d.className = 'slash'; d.style.cssText = `left:${p.x}px;top:${p.y}px;width:${w}px;rotate:${ang}rad`; $('#units').appendChild(d);
     d.animate([{transform:'translate(-50%,-50%) scaleX(0)', opacity:1}, {transform:'translate(-50%,-50%) scaleX(1)', opacity:1, offset:.45}, {transform:'translate(-50%,-50%) scaleX(1.1)', opacity:0}], {duration:D(200), easing:'ease-out'}).finished.then(() => d.remove());
   },
+  frameSparks(b){
+    if (RM) return; const layer = $('#units'), n = 26;
+    for (let i = 0; i < n; i++){
+      const t = i / n, side = Math.floor(t * 4), f = (t * 4) % 1;
+      const px = side === 0 ? b.x + f * b.w : side === 1 ? b.x + b.w : side === 2 ? b.x + (1 - f) * b.w : b.x;
+      const py = side === 0 ? b.y - b.h * .2 : side === 1 ? b.y - b.h * .2 + f * b.h * 1.4 : side === 2 ? b.y + b.h * 1.2 : b.y + b.h * 1.2 - f * b.h * 1.4;
+      const s = document.createElement('i'); s.className = 'spark'; const c = i % 3 ? '#ffe39a' : '#fff6d8', z = 2 + Math.random() * 3;
+      s.style.cssText = `left:${px}px;top:${py}px;width:${z}px;height:${z}px;background:${c};box-shadow:0 0 8px 2px ${c}`; layer.appendChild(s);
+      const dx = (px - (b.x + b.w / 2)) * .25, dy = (py - (b.y + b.h / 2)) * .25 - 18;
+      s.animate([{transform:'translate(-50%,-50%) scale(0)', opacity:0}, {transform:'translate(-50%,-50%) scale(1.3)', opacity:1, offset:.25}, {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.2)`, opacity:0}],
+        {duration:D(520 + Math.random() * 380), delay:D(Math.random() * 180), easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(() => s.remove());
+    }
+  },
   flash(el){ if (!el) return; el.classList.remove('hitfx'); void el.offsetWidth; el.classList.add('hitfx'); },
   banner(text, cls = ''){
     $('#bwrap .turnban')?.remove();
@@ -1435,7 +1470,7 @@ function flashHP(badge){
   const hero = badge.closest('.hero');
   if (hero){ FX.shake(hero, 7, 320); hero.querySelector('.ava').animate([{boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #ff4a3a, 0 0 30px 8px rgba(255,60,40,.8)'}, {boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #6b4a1c, 0 8px 16px rgba(0,0,0,.6)'}], {duration:D(600)}); }
 }
-async function flyTo(html, from, toEl, spin){
+async function flyTo(html, from, toEl, spin, summon){
   const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
   const to = toEl.getBoundingClientRect(), s = to.width / 108;
   const x0 = from.left + from.width / 2 - 54, y0 = from.top + from.height / 2 - 77;
@@ -1446,8 +1481,14 @@ async function flyTo(html, from, toEl, spin){
     {transform:`translate(${x0}px,${y0}px) rotate(${spin ? 0 : -6}deg) scale(${spin ? .5 : 1})`},
     {transform:`translate(${mx}px,${my}px) rotate(${spin ? 180 : 3}deg) scale(1.08)`, offset:.55},
     {transform:`translate(${x1}px,${y1}px) rotate(0deg) scale(${s})`},
-  ], {duration:D(420), easing:'cubic-bezier(.35,.1,.25,1)'}).finished;
-  fly.remove();
+  ], {duration:D(420), easing:'cubic-bezier(.35,.1,.25,1)', fill:summon ? 'forwards' : 'none'}).finished;
+  if (!summon){ fly.remove(); return; }
+  /* summon, Hearthstone-style: the frame burns away from the edges with golden sparks while the card settles into the square tile; not awaited */
+  const cell = toEl, cb = box(cell);
+  fly.classList.add('dissolve');
+  fly.animate([{transform:`translate(${x1}px,${y1}px) scale(${s})`, filter:'brightness(1)'}, {transform:`translate(${x1}px,${to.top}px) scale(${s},${s * 108 / 154})`, filter:'brightness(1.6) sepia(.4)'}],
+    {duration:D(480), easing:'cubic-bezier(.3,.6,.4,1)', fill:'forwards'}).finished.then(() => fly.remove());
+  FX.frameSparks(cb);
 }
 
 /* ---------- actions ---------- */
@@ -1489,6 +1530,7 @@ async function absorb(into, list){
 }
 async function promote(target, fromDesc){
   const side = target.side, next = F[side].units[target.type + 1];
+  gainMana(side, MANA_ON_MERGE, TILES.get(target.id) || slotEl(target));
   note(side, `${U(target).name} + ${fromDesc} → ${next.name}`);
   Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
   if (M().unlock) S.unlocked[side] = Math.max(S.unlocked[side], Math.min(target.type, 2));
@@ -1501,6 +1543,19 @@ async function promote(target, fromDesc){
     if (spots.length){ Sfx.play('summon'); spawnT1(side, target, false); }
   }
   await wait(260);
+}
+/* Bonus mana: a crystal flies from where it was earned to the owner's mana bar. Earned on the other side's turn, it waits for the owner's next turn. */
+function gainMana(side, n, fromEl){
+  if (!n || !S || S.over) return;
+  if (S.side === side) S.mana[side] += n; else S.manaNext[side] = (S.manaNext[side] || 0) + n;
+  const bar = $('#mana-' + side), a = fromEl && fromEl.getBoundingClientRect ? fromEl.getBoundingClientRect() : null;
+  const done = () => { renderBars(); const b2 = $('#mana-' + side); if (b2){ b2.classList.remove('gain'); void b2.offsetWidth; b2.classList.add('gain'); } Sfx.play('mana'); };
+  if (!bar || !a || RM){ done(); return; }
+  const b = bar.getBoundingClientRect(), g = document.createElement('div'); g.className = 'mgem'; g.innerHTML = `<i></i><b>+${n}</b>`; document.body.appendChild(g);
+  const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2, x1 = b.left + 40, y1 = b.top + b.height / 2, mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 70;
+  g.animate([{transform:`translate(${x0}px,${y0}px) scale(.3)`, opacity:0}, {transform:`translate(${x0}px,${y0 - 24}px) scale(1.25)`, opacity:1, offset:.18},
+    {transform:`translate(${mx}px,${my}px) scale(1.1)`, offset:.55}, {transform:`translate(${x1}px,${y1}px) scale(.8)`, opacity:1}], {duration:D(760), easing:'cubic-bezier(.4,0,.3,1)'}).finished.then(() => { g.remove(); done(); });
+  Sfx.play('mana', .7);
 }
 /* Trio upgrade: the other two merge into the chosen unit, which then sleeps for a turn. */
 async function trioUpgrade(u){
@@ -1515,11 +1570,11 @@ async function deployCard(side, cardUid, dest, fromRect){
   if (!spendCard(side, cardUid)) return false;
   S.sel = null;
   const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
-  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
+  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e', !dest.camp);
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
   S.units.push(u);
-  Sfx.play(dest.camp ? 'camp' : 'place');
+  if (dest.camp) Sfx.play('camp'); else Sfx.play('land', .8 + u.type * .07, 1.04 - u.type * .035);
   syncUnits(u.id); renderBars(); FX.dust(toEl, u.type);
   await wait(120);
   return u;
@@ -1552,6 +1607,7 @@ async function fromCamp(u, dest){
 }
 async function kill(v){
   const el = TILES.get(v.id); Sfx.die(v);
+  if (!S.over) gainMana(other(v.side), MANA_ON_KILL, el || slotEl(v));
   if (el){ el.style.visibility = 'hidden'; FX.shake($('#bwrap'), 3, 160); await FX.shatter(el); }
   S.units = S.units.filter(x => x !== v); syncUnits();
   /* a melee ally standing behind steps into the gap; ranged units stay in the rear */
@@ -1724,7 +1780,7 @@ async function chainRest(u, hop1, from, t){
    except from the succubus. Nobody answers the hound. Blinded units can't answer. */
 function retaliates(u, t){
   const A = U(u), T = U(t);
-  return alive(t) && alive(u) && !S.over && t.where === 'f' && (T.brave || (!t.stun && !t.sleep)) && !A.noRetal && (!A.ranged || T.retalRanged) && (T.retalInf || !t.retalUsed);
+  return alive(t) && alive(u) && !S.over && t.where === 'f' && (T.brave || (!t.stun && !t.sleep)) && !A.noRetal && (!A.ranged || u.r === FRONT[u.side] || T.retalRanged) && (T.retalInf || !t.retalUsed);
 }
 async function attack(u, t, fromRect){
   if (!alive(u) || !canAttack(u)) return false;
@@ -1770,7 +1826,7 @@ async function startTurn(side, first){
   S.units.forEach(u => { if (u.side !== side) u.curse = false; });
   for (const v of onField(side).filter(v => v.poison)){ const n = v.poison; v.poison = 0; const b = box(TILES.get(v.id) || slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h * .2, 'яд', 'p'); await damage(v, n); }
   S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = apMax(u); u.acted = false; } u.retalUsed = false; });
-  S.mana[side] = Math.min(S.turn, MANA_MAX);
+  S.mana[side] = Math.min(S.turn, MANA_MAX) + (S.manaNext[side] || 0); S.manaNext[side] = 0;
   let healed = false;
   for (const u of onField(side).filter(v => U(v).heal)){
     onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; healed = true; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); FX.sparks(b.x + b.w / 2, b.y + b.h * .7, {n:6, color:'#8ff0a4', spread:b.w * .25, gravity:-30, dur:700}); });
@@ -1947,7 +2003,7 @@ async function runEnemyTurn(){
 }
 async function newGame(){
   $('#bwrap .over')?.remove();
-  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, unlocked:{p:0, e:0}};
+  S = {turn:1, side:'p', busy:true, over:null, units:[], hero:{p:HERO_HP, e:HERO_HP}, mana:{p:0, e:0}, manaNext:{p:0, e:0}, hand:{p:[], e:[]}, sel:null, unlocked:{p:0, e:0}};
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
   buildBoard(); renderModes();
   for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
@@ -1997,6 +2053,16 @@ function perform(sel, dest, fromRect){
   renderAll(); enqueue(act);
   return true;
 }
+/* The carried unit leans into the motion and settles back when the hand stops. */
+function tiltLoop(d){
+  const step = () => {
+    if (drag !== d || !d.ghost) return;
+    d.vx *= .82; const want = Math.max(-9, Math.min(9, d.vx * .9)); d.tilt += (want - d.tilt) * .35;
+    if (d.gx != null) d.ghost.style.transform = `translate(${d.gx}px,${d.gy}px) rotate(${d.tilt.toFixed(2)}deg)`;
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 /* A tap or Space during the enemy turn plays the rest of it faster. */
 function speedUp(){ if (S && S.side === 'e' && !S.over && !S.fast){ S.fast = true; renderBars(); } }
 addEventListener('keydown', e => {
@@ -2037,14 +2103,15 @@ document.addEventListener('pointermove', e => {
     drag.on = true; document.documentElement.classList.add('dragging'); S.sel = drag.sel; renderAll(); Sfx.play('pick');
     const g = document.createElement('div'); g.className = 'fly';
     if (drag.sel.card != null){ const c = S.hand.p.find(h => h.uid === drag.sel.card); g.innerHTML = cardFace(c.type); }
-    else { const u = S.units.find(v => v.id === drag.sel.unit), b = drag.src.getBoundingClientRect(); g.classList.add('tilefly'); g.innerHTML = `<div class="tile p" style="position:relative;width:${b.width}px;height:${b.height}px;--t:${TC[u.type]}">${tileInner(u)}</div>`; }
+    else { const u = S.units.find(v => v.id === drag.sel.unit), b = drag.src.getBoundingClientRect(); g.classList.add('tilefly'); g.innerHTML = `<div class="tile p" style="position:relative;width:${b.width}px;height:${b.height}px;--t:${TC[u.type]}">${tileInner(u)}</div>`;
+      drag.ox = drag.x0 - b.left; drag.oy = drag.y0 - b.top; drag.vx = 0; drag.px = e.clientX; drag.tilt = 0; tiltLoop(drag); }
     document.body.appendChild(g); drag.ghost = g; drag.src.classList.add('ghosted'); drag.src.style.opacity = '.25';
   }
   if (drag.on){
     const w = drag.ghost.offsetWidth || 108, h = drag.ghost.offsetHeight || 154;
-    /* a unit's ghost floats small above the pointer so the target and its damage preview stay visible */
-    drag.ghost.style.transform = drag.field ? `translate(${e.clientX - w / 2}px,${e.clientY - h * .95}px) scale(.62) rotate(${Math.max(-10, Math.min(10, (e.clientX - (drag.px ?? e.clientX)) * .6))}deg)` : `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
-    drag.px = e.clientX;
+    /* a unit is carried at full size by the point where it was grabbed; the tilt follows the hand's speed */
+    if (drag.ox != null){ drag.vx += (e.clientX - drag.px) * .5; drag.px = e.clientX; drag.gx = e.clientX - drag.ox; drag.gy = e.clientY - drag.oy; drag.ghost.style.transform = `translate(${drag.gx}px,${drag.gy}px) rotate(${drag.tilt}deg)`; }
+    else drag.ghost.style.transform = `translate(${e.clientX - w / 2}px,${e.clientY - h / 2}px) scale(.95)`;
     document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
     const d = dropAt(e.clientX, e.clientY); if (d && d.el && ['drop', 'mg', 'tgt', 'swp', 'hdrop'].some(k => d.el.classList.contains(k))) d.el.classList.add('hov');
     e.preventDefault();
