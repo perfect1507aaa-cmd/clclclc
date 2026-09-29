@@ -593,7 +593,7 @@ body{background:
 /* ---------- PC stage: heroes on the left, the table in the middle, the end-turn jewel on the right, the hand below ---------- */
 .wrap{max-width:1440px;}
 @media (min-width:1000px){
-  .arena{--side:clamp(200px,17vw,250px); --bw:min(var(--bw-max,860px), max(460px, calc((100dvh - 240px) * 1.24)));
+  .arena{--side:clamp(200px,17vw,250px); --bw:min(var(--bw-max,860px), max(420px, calc((100dvh - 300px) * 1.24)));
     grid-template-columns:var(--side) var(--bw) 150px; grid-template-rows:auto auto 1fr auto auto;
     grid-template-areas:"setup setup setup" "top board ." "mid board ." "bot board ." "hand hand hand"; justify-content:center; align-items:start; gap:10px 22px;}
   .arena.camp{--bw:min(var(--bw-max,900px), max(520px, calc((100dvh - 240px) * 1.62)));}
@@ -638,6 +638,15 @@ body{background:
 .over{display:grid; place-items:center; align-content:center; gap:14px;}
 .over small{font:500 14px/1.4 var(--fb); color:var(--pa-200); letter-spacing:.02em;}
 .fly.tilefly{opacity:.9; filter:drop-shadow(0 18px 18px rgba(0,0,0,.6));}
+
+@media (min-width:1000px){
+  .bar{flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px;}
+  #botbar{flex-direction:row; flex-wrap:wrap-reverse;}
+  .bar .hero{flex:1 1 100%;}
+  .bar .mana,.bar .ehand,.bar .chip{align-self:center;}
+  .arena{grid-template-rows:auto auto 1fr auto 176px;}
+  #hand{height:176px; margin-top:0;} #hand .card{top:6px;} #deck{top:14px;}
+}
 </style>
 
 <div class="wrap">
@@ -674,6 +683,7 @@ body{background:
         <li>Автобоя нет. В свой ход перетащите своего юнита на врага в красной рамке — это атака.</li>
         <li>Очки хода: у юнита 1 очко (у охотника, танцора и жеребца — 2). Удар и шаг тратят по очку. Охотник может выстрелить дважды или выстрелить и отойти.</li>
         <li>Мана = номер хода, но не больше 4.</li>
+        <li>Усталость: с 14-го хода герой в начале своего хода теряет 1 ХП, на 15-м — 2, и так далее, каждый ход на 1 больше.</li>
         <li>Стрелки бьют только прямо: ближайшего врага в своей колонке, через своих.</li>
         <li>Ближний бой бьёт только прямо и только из переднего ряда: ближнюю клетку впереди или дальнюю, если ближняя пуста. Из заднего ряда боец сначала выходит вперёд. Адский пёс бьёт ещё и наискосок.</li>
         <li>Сдача: атакованный юнит отвечает своим уроном, один раз за ход. Грифон отвечает на каждый удар. Стрелкам сдачу не даёт никто, кроме суккуба. На удары адского пса и феи сдачи нет. Спящий и ослеплённый не отвечают.</li>
@@ -703,7 +713,7 @@ body{background:
         <li>Картой на юнита улучшить нельзя: все трое должны уже стоять на поле.</li>
       </ul></div>
       <div><h3>Режимы</h3><ul>
-        <li><b>Колонны:</b> поле 5×4, в руке I и II тир.</li>
+        <li><b>Колонны:</b> поле 5×4, в руке I–IV тир (старшие реже).</li>
         <li><b>Открытие:</b> поле 5×4, сначала в руку приходит только I тир. Сделали юнита II тира — в колоде появляется II, сделали III — появляется III.</li>
         <li><b>Лагерь:</b> поле 4×4 и лагерь на три места. Такой же юнит поверх другого (картой или из лагеря) — тир выше. Юнита в лагере нельзя убрать; пока он спит, его нельзя и сдвинуть, но такую же карту на него положить можно — будет улучшение. Проснувшись, он выходит из лагеря на поле бесплатно, обратно нельзя.</li>
       </ul></div>
@@ -713,7 +723,7 @@ body{background:
 
 
   <h2>Иконки</h2>
-  <p class="lede">Утверждённые иконки стоят по одной. Там, где вы просили новые варианты, их пять: нажмите на понравившийся, и он сразу станет иконкой юнита в игре.</p>
+  <p class="lede">Утверждённые иконки стоят по одной. У новых рас (Лига Теней, Некрополис, Академия) по три варианта: нажмите на понравившийся, и он сразу станет иконкой юнита в игре.</p>
   <div class="panel igal" id="icons"></div>
 
   <h2>Отряды</h2>
@@ -955,26 +965,26 @@ const FAC = {
   haven:{name:'Альянс', hero:'Лорд Годрик', heroIcon:'lord', castle:'Haven', col:'#8fb6e6', hi:'#e8f1ff', lo:'#142236', units:[
     {key:'peasant', name:'Ополченец', atk:1, hp:3, ab:'Дешёвая стена', homm:'Крестьянин', hs:'Атк 1 · Защ 1 · 1 · ХП 3'},
     {key:'archer', name:'Лучник', atk:1, hp:4, ranged:true, bolt:'arrow', ab:'Стреляет через своих', homm:'Лучник', hs:'Атк 4 · Защ 3 · 2–4 · ХП 7'},
-    {key:'footman', name:'Мечник', atk:2, hp:8, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
+    {key:'footman', name:'Мечник', atk:3, hp:9, shield:true, ab:'Щит: выстрелы по нему вдвое слабее', homm:'Мечник', hs:'Атк 4 · Защ 8 · 2–4 · ХП 16'},
     {key:'griffin', name:'Грифон', atk:2, hp:11, retalInf:true, ab:'Сдача без ограничений: отвечает на каждый удар вблизи', homm:'Грифон', hs:'Атк 7 · Защ 5 · 5–10 · ХП 30'},
     {key:'priest', name:'Монах', atk:5, hp:20, ranged:true, bolt:'orb', ab:'Стреляет через своих', homm:'Монах', hs:'Атк 12 · Защ 12 · 9–12 · ХП 54'},
     {key:'cavalier', name:'Рыцарь', atk:8, hp:32, pierce:true, ab:'Пронзает: задевает того, кто за целью, на 50%', homm:'Рыцарь', hs:'Атк 23 · Защ 21 · 20–30 · ХП 90'},
     {key:'angel', name:'Ангел', atk:13, hp:52, heal:3, ab:'В начале хода лечит соседей на 3', homm:'Ангел', hs:'Атк 27 · Защ 27 · 45 · ХП 180'},
   ]},
   inferno:{name:'Инферно', hero:'Лорд Инферно', heroIcon:'demonlord', castle:'Inferno', col:'#e0482e', hi:'#ffb35a', lo:'#2a0b07', units:[
-    {key:'imp', name:'Бес', atk:1, hp:3, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
-    {key:'demon', name:'Демон', atk:1, hp:6, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
-    {key:'hound', name:'Адский пёс', atk:2, hp:7, diagonal:true, noRetal:true, ab:'Бьёт прямо и наискосок, на его удар сдачи нет', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
+    {key:'imp', name:'Бес', atk:1, hp:4, quick:true, ab:'Проворный: не спит после высадки', homm:'Бес', hs:'Атк 2 · Защ 1 · 1–2 · ХП 4'},
+    {key:'demon', name:'Демон', atk:2, hp:7, ab:'Толстокожий: много ХП, слабый удар', homm:'Рогатый демон', hs:'Атк 1 · Защ 3 · 1–4 · ХП 13'},
+    {key:'hound', name:'Адский пёс', atk:2, hp:8, diagonal:true, noRetal:true, ab:'Бьёт прямо и наискосок, на его удар сдачи нет', homm:'Адский пёс', hs:'Атк 4 · Защ 3 · 3–5 · ХП 15'},
     {key:'succubus', name:'Суккуб', atk:2, hp:9, ranged:true, bolt:'fire', chain:true, retalRanged:true, ab:'Цепь по соседям: 2, потом 1 и 1. Даёт сдачу и стрелкам', homm:'Суккуб', hs:'Атк 6 · Защ 6 · 6–13 · ХП 20'},
-    {key:'charger', name:'Адский жеребец', atk:4, hp:18, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
+    {key:'charger', name:'Адский жеребец', atk:4, hp:16, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Адский жеребец', hs:'Атк 13 · Защ 13 · 8–16 · ХП 50'},
     {key:'fiend', name:'Пещерный демон', atk:8, hp:30, heroX2:true, ab:'Бьёт героя вдвое сильнее', homm:'Пещерный демон', hs:'Атк 21 · Защ 21 · 13–26 · ХП 110'},
     {key:'devil', name:'Дьявол', atk:13, hp:50, summon:true, ab:'Появляясь, призывает беса рядом', homm:'Дьявол', hs:'Атк 27 · Защ 25 · 36–66 · ХП 166'},
   ]},
   sylvan:{name:'Эльфы', hero:'Финдан', heroIcon:'elflord', castle:'Sylvan', col:'#86b95a', hi:'#e6d98f', lo:'#132210', units:[
     {key:'pixie', name:'Фея', atk:1, hp:2, ranged:true, bolt:'spark', noRetal:true, ab:'Пыльца: бьёт через своих, без сдачи', homm:'Фея', hs:'Атк 1 · Защ 1 · 1–2 · ХП 5'},
-    {key:'dancer', name:'Танцор клинков', atk:1, hp:6, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
-    {key:'hunter', name:'Охотник', atk:1, hp:6, ranged:true, double:true, bolt:'arrow', ab:'2 очка хода: два выстрела или выстрел и шаг', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
-    {key:'druid', name:'Друид', atk:3, hp:12, ranged:true, bolt:'leaf', heal:2, ab:'Стреляет; в начале хода лечит соседей на 2', homm:'Друид', hs:'Атк 7 · Защ 7 · 7–9 · ХП 34'},
+    {key:'dancer', name:'Танцор клинков', atk:1, hp:5, double:true, ab:'2 очка хода: два удара или удар и шаг', homm:'Танцующий с клинками', hs:'Атк 3 · Защ 2 · 2–5 · ХП 12'},
+    {key:'hunter', name:'Охотник', atk:1, hp:5, ranged:true, double:true, bolt:'arrow', ab:'2 очка хода: два выстрела или выстрел и шаг', homm:'Охотник', hs:'Атк 4 · Защ 1 · 4–7 · ХП 10'},
+    {key:'druid', name:'Друид', atk:2, hp:12, ranged:true, bolt:'leaf', heal:2, ab:'Стреляет; в начале хода лечит соседей на 2', homm:'Друид', hs:'Атк 7 · Защ 7 · 7–9 · ХП 34'},
     {key:'unicorn', name:'Единорог', atk:5, hp:20, blind:true, ab:'Ослепляет: выживший пропускает свой удар', homm:'Единорог', hs:'Атк 12 · Защ 12 · 10–20 · ХП 57'},
     {key:'treant', name:'Энт', atk:6, hp:36, armor:2, ab:'Кора: каждый удар по нему слабее на 2', homm:'Энт', hs:'Атк 19 · Защ 27 · 7–17 · ХП 175'},
     {key:'gdragon', name:'Зелёный дракон', atk:11, hp:50, breath:3, ab:'Дыхание: все враги за целью в колонке получают 3', homm:'Зелёный дракон', hs:'Атк 27 · Защ 25 · 30–50 · ХП 200'},
@@ -983,14 +993,14 @@ const FAC = {
     {key:'scout', name:'Лазутчик', atk:1, hp:2, ranged:true, bolt:'quarrel', poison:1, ab:'Яд: выживший теряет ещё 1 ХП в начале своего хода', homm:'Лазутчик', hs:'Атк 3 · Защ 3 · 2–4 · ХП 10'},
     {key:'maiden', name:'Бестия', atk:2, hp:4, noRetal:true, ab:'Удар и возврат: бьёт и отскакивает, сдачи нет', homm:'Бестия', hs:'Атк 4 · Защ 2 · 5–7 · ХП 16'},
     {key:'minotaur', name:'Минотавр', atk:2, hp:8, brave:true, ab:'Храбрость: даёт сдачу, даже когда спит или ослеплён', homm:'Минотавр', hs:'Атк 5 · Защ 2 · 4–7 · ХП 31'},
-    {key:'raider', name:'Наездник', atk:3, hp:11, charge:2, ab:'Разбег: +2 к удару через пустую клетку и по герою', homm:'Наездник на ящере', hs:'Атк 9 · Защ 7 · 7–12 · ХП 40'},
+    {key:'raider', name:'Наездник', atk:2, hp:11, charge:2, ab:'Разбег: +2 к удару через пустую клетку и по герою', homm:'Наездник на ящере', hs:'Атк 9 · Защ 7 · 7–12 · ХП 40'},
     {key:'hydra', name:'Гидра', atk:3, hp:22, splash:3, ab:'Три головы: бьёт и соседей цели по бокам', homm:'Гидра', hs:'Атк 15 · Защ 12 · 7–14 · ХП 80'},
     {key:'witch', name:'Ведьма', atk:6, hp:24, ranged:true, bolt:'shadow', blind:true, stunTxt:'замедлен', ab:'Замедление: выживший пропускает свой удар', homm:'Сумеречная ведьма', hs:'Атк 18 · Защ 18 · 17–24 · ХП 80'},
     {key:'sdragon', name:'Чёрный дракон', atk:13, hp:48, breath:3, ab:'Дыхание тьмы: все враги за целью в колонке получают 3', homm:'Сумеречный дракон', hs:'Атк 25 · Защ 24 · 45–70 · ХП 200'},
   ]},
   necropolis:{name:'Некрополис', hero:'Маркел', heroIcon:'necrolord', castle:'Necropolis', col:'#56c2a8', hi:'#d8fff0', lo:'#0c201b', units:[
     {key:'skeleton', name:'Костяной воин', atk:1, hp:3, undead:true, soak:true, ab:'Пушечное мясо: лишний урон на нём гаснет', homm:'Костяной воин', hs:'Атк 1 · Защ 2 · 1 · ХП 4'},
-    {key:'zombie', name:'Зомби', atk:1, hp:8, undead:true, slow:true, ab:'Медленный: сам не шагает, зато очень живучий', homm:'Зомби', hs:'Атк 1 · Защ 2 · 1–2 · ХП 17'},
+    {key:'zombie', name:'Зомби', atk:2, hp:8, undead:true, slow:true, ab:'Медленный: сам не шагает, зато очень живучий', homm:'Зомби', hs:'Атк 1 · Защ 2 · 1–2 · ХП 17'},
     {key:'ghost', name:'Привидение', atk:2, hp:5, undead:true, ethereal:true, ab:'Бестелесный: каждый второй удар по нему — промах', homm:'Привидение', hs:'Атк 5 · Защ 4 · 2–4 · ХП 16'},
     {key:'vampire', name:'Вампир', atk:2, hp:10, undead:true, drain:true, ab:'Осушение: после удара лечится на нанесённый урон', homm:'Вампир', hs:'Атк 6 · Защ 6 · 6–8 · ХП 30'},
     {key:'lich', name:'Лич', atk:4, hp:18, undead:true, ranged:true, bolt:'death', splash:1, ab:'Облако смерти: соседи цели по бокам получают по 1', homm:'Лич', hs:'Атк 15 · Защ 15 · 12–17 · ХП 50'},
@@ -998,8 +1008,8 @@ const FAC = {
     {key:'bdragon', name:'Костяной дракон', atk:11, hp:52, undead:true, curse:true, ab:'Проклятие: выживший бьёт вполсилы до конца своего хода', homm:'Костяной дракон', hs:'Атк 27 · Защ 28 · 15–30 · ХП 150'},
   ]},
   academy:{name:'Академия', hero:'Зехир', heroIcon:'magelord', castle:'Academy', col:'#e6cc62', hi:'#fff3c4', lo:'#241d0a', units:[
-    {key:'gremlin', name:'Гремлин', atk:1, hp:2, ranged:true, bolt:'shot', ab:'Пищаль: стреляет через своих', homm:'Гремлин', hs:'Атк 2 · Защ 2 · 1–2 · ХП 5'},
-    {key:'gargoyle', name:'Горгулья', atk:1, hp:5, armor:1, ab:'Каменная: каждый удар по ней слабее на 1', homm:'Каменная горгулья', hs:'Атк 3 · Защ 4 · 1 · ХП 15'},
+    {key:'gremlin', name:'Гремлин', atk:1, hp:3, ranged:true, bolt:'shot', ab:'Пищаль: стреляет через своих', homm:'Гремлин', hs:'Атк 2 · Защ 2 · 1–2 · ХП 5'},
+    {key:'gargoyle', name:'Горгулья', atk:1, hp:6, armor:1, ab:'Каменная: каждый удар по ней слабее на 1', homm:'Каменная горгулья', hs:'Атк 3 · Защ 4 · 1 · ХП 15'},
     {key:'golem', name:'Железный голем', atk:2, hp:9, shield:true, ab:'Непробиваемость магией: выстрелы по нему вдвое слабее', homm:'Железный голем', hs:'Атк 5 · Защ 5 · 3–5 · ХП 18'},
     {key:'mage', name:'Маг', atk:2, hp:9, ranged:true, bolt:'arcane', breath:2, ab:'Магическая атака: луч бьёт всех врагов в колонке', homm:'Маг', hs:'Атк 10 · Защ 10 · 7 · ХП 18'},
     {key:'djinn', name:'Джинн', atk:5, hp:18, curse:true, ab:'Проклятие: выживший бьёт вполсилы до конца своего хода', homm:'Джинн', hs:'Атк 11 · Защ 10 · 12–14 · ХП 40'},
@@ -1012,10 +1022,10 @@ const RACE = {p:'haven', e:'inferno'};
 try { const r = JSON.parse(localStorage.getItem('fieldRaces') || 'null'); if (r && FAC[r.p] && FAC[r.e]) Object.assign(RACE, r); } catch (e) {}
 const F = {get p(){ return FAC[RACE.p]; }, get e(){ return FAC[RACE.e]; }};
 const MODES = {
-  col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.65, .35, 0], bw:'860px',
-    desc:'Поле 5×4, в руке I и II тир. Три одинаковых юнита вплотную (не по диагонали) можно слить в юнита тиром выше в любой ход, если хотя бы у двоих есть ход.',
+  col:{name:'Колонны', tag:'5×4 · тройка при выставлении', cols:5, camp:false, upgrade:'trio', odds:[.45, .3, .17, .08], bw:'860px',
+    desc:'Поле 5×4, в руке I–IV тир (старшие реже). Три одинаковых юнита вплотную (не по диагонали) можно слить в юнита тиром выше в любой ход, если хотя бы у двоих есть ход.',
     howto:'Перетащите карту на пустую клетку двух нижних линий. Своих юнитов перетаскивайте на врага (атака), на пустую клетку врага (удар по герою) или на соседнюю клетку (шаг). Тройка с ходами загорается золотом — нажмите на юнита со стрелкой ↑.'},
-  unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.6, .28, .12], unlock:true, bw:'860px',
+  unlock:{name:'Открытие', tag:'5×4 · тиры открываются улучшением', cols:5, camp:false, upgrade:'trio', odds:[.55, .28, .17], unlock:true, bw:'860px',
     desc:'Как «Колонны», но сначала в руку приходит только I тир. Собрали юнита II тира — в колоде появляются карты II тира. Собрали III — появляется III.',
     howto:'Собирайте тройки, чтобы открыть карты старших тиров. Открытые тиры показаны рядом с вашей маной.'},
   camp:{name:'Лагерь', tag:'4×4 · лагерь · наложение', cols:4, camp:true, upgrade:'stack', odds:[.55, .30, .15], bw:'900px',
@@ -1025,8 +1035,8 @@ const MODES = {
 const TC = ['#8b93a1','#7d9a4a','#4f7bb8','#8065b3','#c08a2e','#b8423a','#d8d2c4'];
 const RO = ['I','II','III','IV','V','VI','VII'];
 const ROWS = 4, CAMP_N = 3, ZONE = {p:[2,3], e:[0,1]}, FWD = {p:-1, e:1}, BACK = {p:3, e:0}, FRONT = {p:2, e:1};
-const HERO_HP = 30, HAND_MAX = 9, MANA_MAX = 4;
-let MODE_ID = 'col';
+const HERO_HP = 30, HAND_MAX = 9, MANA_MAX = 4, FATIGUE = 14;
+let MODE_ID = 'unlock';
 try { const m = localStorage.getItem('fieldMode'); if (MODES[m]) MODE_ID = m; } catch (e) {}
 const M = () => MODES[MODE_ID];
 const U = u => F[u.side].units[u.type];
@@ -1060,7 +1070,9 @@ const Sfx = (() => {
     return bufs[f] || (bufs[f] = fetch(`sfx/${f}.mp3`).then(r => r.ok ? r.arrayBuffer() : null)
       .then(a => a && new Promise(res => ctx.decodeAudioData(a, res, () => res(null)))).catch(() => null));
   }
+  const ALIAS = {dodge:'fly', poison:'hurt-small', curse:'blind', raise:'summon', nope:'deny', turn:'turn-p'};
   function play(name, vol = 1){
+    if (!SFX_TAKES[name] && ALIAS[name]) name = ALIAS[name];
     const n = SFX_TAKES[name]; if (!on || !n || !init()) return;
     if (ctx.state === 'suspended') ctx.resume();
     let i = 1 + Math.floor(Math.random() * n); if (n > 1 && i === last[name]) i = i % n + 1; last[name] = i;
@@ -1102,10 +1114,10 @@ const onField = side => S.units.filter(u => u.side === side && u.where === 'f');
 /* Trios count only orthogonal neighbours: no diagonals. */
 const adj = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
 function rollType(side){
-  const o = M().odds.slice(), max = M().unlock ? S.unlocked[side] : 2;
-  for (let i = max + 1; i < 3; i++) o[i] = 0;
+  const o = M().odds.slice(), max = M().unlock ? S.unlocked[side] : o.length - 1;
+  for (let i = max + 1; i < o.length; i++) o[i] = 0;
   const sum = o.reduce((a, b) => a + b, 0); let x = Math.random() * sum;
-  for (let i = 0; i < 3; i++){ if ((x -= o[i]) < 0) return i; } return 0;
+  for (let i = 0; i < o.length; i++){ if ((x -= o[i]) < 0) return i; } return 0;
 }
 const newCard = side => ({uid:uid++, type:rollType(side)});
 const who = side => side === 'p' ? 'Вы' : F.e.name;
@@ -1311,7 +1323,7 @@ function renderBars(){
     + `<span class="chip turn${me ? ' me' : ''}">Ход <b>${S.turn}</b> · ${S.over ? 'бой окончен' : S.side === 'p' ? (S.busy ? 'ваш удар' : 'ваш ход') : 'ходит противник'}</span>`;
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>`;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : 'Выберите подсвеченную цель: золото — улучшение.')
+  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : (M().upgrade === 'stack' ? 'Выберите подсвеченную клетку: золото — улучшение.' : 'Перетащите карту на подсвеченную клетку.'))
     : readyTrios().heads.size ? 'Тройка готова: нажмите на юнита со стрелкой ↑ — двое других сольются в него. Сливать можно только в того, у кого есть ход.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
@@ -1739,6 +1751,15 @@ function checkOver(){
 }
 async function startTurn(side, first){
   FX.banner(side === 'p' ? 'Ваш ход' : 'Ход противника', side === 'p' ? '' : 'e');
+  /* fatigue: from turn FATIGUE the hero loses 1, 2, 3… HP at the start of its own turn */
+  if (S.turn >= FATIGUE){
+    const n = S.turn - FATIGUE + 1, x = mid(CELLS[0][Math.floor(COLS() / 2)]).x, y = side === 'e' ? CELLS[0][0].offsetTop - 20 : CELLS[3][0].offsetTop + CELLS[3][0].offsetHeight + 20;
+    S.hero[side] = Math.max(0, S.hero[side] - n); Sfx.play('hero'); renderBars();
+    const h = $('#hero-' + side); if (h) flashHP(h.querySelector('.hv'));
+    floatAt(x, y, `усталость −${n}`, 'g');
+    if (checkOver()) return;
+    await wait(300);
+  }
   S.units.forEach(u => { if (u.side !== side) u.curse = false; });
   for (const v of onField(side).filter(v => v.poison)){ const n = v.poison; v.poison = 0; const b = box(TILES.get(v.id) || slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h * .2, 'яд', 'p'); await damage(v, n); }
   S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = apMax(u); u.acted = false; } u.retalUsed = false; });
@@ -1776,17 +1797,43 @@ function cellScore(side, type, r, c){
   const behind = fieldAt(BACK[side], c);
   if (!A.ranged && r === FRONT[side] && behind && behind.side === side && U(behind).ranged) s += 2.8;
   if (A.ranged && r === BACK[side]){ const fr = fieldAt(FRONT[side], c); if (fr && fr.side === side) s += 1; }
+  /* guard the own hero: an empty own column facing enemy units is an open road to the hero */
+  if (foes.length && !S.units.some(u => u.where === 'f' && u.side === side && u.c === c)) s += 1.5 + foes.reduce((a, u) => a + atkOf(u), 0) * .3;
   return s + Math.random() * .3;
 }
 const fitNext = (side, type, r, where) => where === 'c' ? 2 : (type < 6 ? rowFit(side, type + 1, r) : 0);
 /* A short, uneven pause before each move, as if the opponent is thinking. */
 const think = () => new Promise(r => setTimeout(r, RM || S.fast ? 0 : S.turn <= 1 ? 320 : 110 + Math.random() * 190));
-/* The AI merges trios whenever it can, into the unit whose row suits the next tier. */
+/* How many own units of this type touch the cell (orthogonally): the AI grows pairs so trios come together. */
+const nearSame = (side, type, cell, excl = []) => onField(side).filter(w => w.type === type && adj(cell, w) && !excl.includes(w)).length;
+/* The AI merges trios whenever it can, into the unit whose row suits the next tier and that already touches units of that tier.
+   From tier III up it merges even if the new unit lands in the wrong row: a higher tier is worth a turn out of place. */
 async function aiUpgrades(side){
   for (let g = 0; g < 8 && !S.over; g++){
-    const best = onField(side).filter(x => upgradePair(x)).map(x => ({x, s:rowFit(side, x.type + 1, x.r) + x.type * .1 + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
-    if (!best || best.s < 0) return;
+    const best = onField(side).filter(x => upgradePair(x)).map(x => ({x, s:rowFit(side, x.type + 1, x.r) + x.type * .1 + nearSame(side, x.type + 1, x) * 1.5 + Math.random() * .1})).sort((a, b) => b.s - a.s)[0];
+    if (!best || (best.s < 0 && best.x.type < 2)) return;
     await think(); await trioUpgrade(best.x);
+  }
+}
+/* Before attacking: spend one step (or swap) if it lines up a trio of tier II or higher that can merge right away. */
+async function aiTrioStep(side){
+  if (M().upgrade !== 'trio') return;
+  for (let g = 0; g < 3 && !S.over; g++){
+    let best = null;
+    for (const u of onField(side).filter(canMove)){
+      const home = {r:u.r, c:u.c};
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]){
+        const r = u.r + dr, c = u.c + dc; if (!ZONE[side].includes(r) || c < 0 || c >= COLS()) continue;
+        const v = fieldAt(r, c); if (v && (v.side !== side || acted(v) || v.type === u.type)) continue;
+        Object.assign(u, {r, c}); if (v) Object.assign(v, home); u.atks--;
+        const heads = onField(side).filter(x => x.type >= 1 && upgradePair(x) && (x.type >= 2 || rowFit(side, x.type + 1, x.r) >= 0));
+        u.atks++; Object.assign(u, home); if (v) Object.assign(v, {r, c});
+        for (const x of heads){ const s = x.type * 2 - (U(u).ranged !== (r === BACK[side]) ? 1 : 0) + Math.random() * .1; if (!best || s > best.s) best = {u, dest:v || {r, c}, s}; }
+      }
+    }
+    if (!best) return;
+    await think(); if (!await maneuver(best.u, best.dest)) return;
+    await aiUpgrades(side);
   }
 }
 /* One move per turn: pull a ranged unit out of the front row, or push a melee unit forward to cover the rear. */
@@ -1801,8 +1848,8 @@ async function aiManeuver(side){
     if (!U(u).ranged && u.r === BACK[side] && !fieldAt(FRONT[side], u.c)){ await think(); await maneuver(u, {r:FRONT[side], c:u.c}); }
   }
 }
-async function aiTurn(){
-  const side = 'e', mine = () => S.units.filter(u => u.side === side);
+async function aiTurn(side = 'e'){
+  const mine = () => S.units.filter(u => u.side === side);
   const freeCells = () => { const f = []; ZONE[side].forEach(r => { for (let c = 0; c < COLS(); c++) if (!fieldAt(r, c)) f.push({r, c}); }); return f; };
   await think();
   if (M().camp){
@@ -1822,7 +1869,8 @@ async function aiTurn(){
       for (const f of freeCells()){
         const pair = M().upgrade === 'trio' ? completionAt(side, card.type, f) : null;
         let s = cellScore(side, card.type, f.r, f.c) + card.type * .5;
-        if (pair){ const fit = rowFit(side, card.type + 1, f.r); if (fit >= 0) s = Math.max(s, 3 + fit + card.type + 1); }
+        if (pair){ const fit = Math.max(...pair.map(v => rowFit(side, card.type + 1, v.r))); if (fit >= 0 || card.type >= 2) s = Math.max(s, 3 + Math.max(fit, 0) + card.type + 1); }
+        else if (M().upgrade === 'trio' && card.type < 6 && (card.type >= 2 || rowFit(side, card.type + 1, f.r) >= 0)) s += nearSame(side, card.type, f) * (.8 + card.type * .4);
         opts.push({card, kind:'cell', f, s});
       }
       if (M().upgrade === 'stack') mine().filter(u => u.type === card.type && u.type < 6).forEach(u => opts.push({card, kind:'onto', u, s:2 + fitNext(side, u.type, u.r, u.where)}));
@@ -1838,7 +1886,7 @@ async function aiTurn(){
     if (placed && placed.where === 'f' && M().upgrade === 'trio') await aiUpgrades(side);
     renderBars();
   }
-  if (!S.over && M().upgrade === 'trio') await aiUpgrades(side);
+  if (!S.over && M().upgrade === 'trio'){ await aiUpgrades(side); await aiTrioStep(side); }
   if (!S.over) await aiAttacks(side);
   if (!S.over) await aiManeuver(side);
 }
@@ -1963,7 +2011,7 @@ document.addEventListener('pointerdown', e => {
   const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
   const fieldUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'f');
   if (fieldUnit){
-    if (!(canAttack(fieldUnit) || canMove(fieldUnit))){ nope(tile, whyIdle(fieldUnit)); return; }
+    if (!(canAttack(fieldUnit) || canMove(fieldUnit)) && !readyTrios().heads.has(fieldUnit.id)){ nope(tile, whyIdle(fieldUnit)); skipClick = true; return; }
     e.preventDefault();
     drag = {sel:{unit:fieldUnit.id}, src:tile, field:true, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
     return;
@@ -1998,6 +2046,7 @@ document.addEventListener('pointerup', async e => {
   if (!drag) return;
   const d = drag; drag = null; document.documentElement.classList.remove('dragging');
   document.querySelectorAll('.hov').forEach(el => el.classList.remove('hov'));
+  if (!d.on && d.field && readyTrios().heads.has(d.sel.unit)){ const u = S.units.find(v => v.id === d.sel.unit); S.sel = null; skipClick = true; renderAll(); enqueue(() => trioUpgrade(u)); return; }
   if (!d.on && d.field){ S.sel = S.sel && S.sel.unit === d.sel.unit ? null : d.sel; Sfx.play('pick'); skipClick = true; renderAll(); if (S.sel && !canAttack(selUnit())) $('#hint').textContent = whyIdle(selUnit()); return; }
   if (!d.on){ S.sel = S.sel && JSON.stringify(S.sel) === JSON.stringify(d.sel) ? null : d.sel; Sfx.play('pick'); skipClick = d.sel.unit != null; renderAll(); return; }
   const rect = d.ghost.getBoundingClientRect(); d.ghost.remove(); d.src.style.opacity = ''; d.src.classList.remove('ghosted');
@@ -2030,7 +2079,7 @@ async function restart(){
   if (restarting) return; restarting = true;
   if (S && !S.over) S.over = 'reset';
   await chain; await turnTask;
-  restarting = false; newGame();
+  await newGame(); restarting = false;
 }
 $('#reset').onclick = restart;
 const sndBtn = $('#snd'), sndShow = () => { sndBtn.textContent = 'Звук: ' + (Sfx.on ? 'вкл' : 'выкл'); sndBtn.setAttribute('aria-pressed', Sfx.on); };
