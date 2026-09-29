@@ -46,3 +46,4 @@ and converted to mono MP3 for the game. No attribution is required; the sources 
     - Fireplace Sound loop (pagdev) — https://opengameart.org/content/fireplace-sound-loop
     - Loopable Dungeon Ambience (jaggedstone) — https://opengameart.org/content/loopable-dungeon-ambience
     - Wind (ignasd) — https://opengameart.org/content/wind
+  - Board thud (`land-*`) and mana chime (`mana-*`): «100 CC0 SFX v2» wood knock (OpenGameArt), «80 CC0 RPG SFX» stone and gem clinks by rubberduck (https://opengameart.org/content/80-cc0-rpg-sfx), Kenney RPG Audio book place (https://kenney.nl/assets).

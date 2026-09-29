@@ -625,12 +625,6 @@ body{background:
 
 /* ---- polish pass ---- */
 @media (min-width:1000px){ .arena{min-height:calc(100dvh - 24px); align-content:start;} }
-.arena.aiming .tile.e:not(.tgt){opacity:.5; filter:saturate(.6);}
-.tile .prev{position:absolute; left:50%; top:30%; translate:-50% -50%; z-index:4; padding:2px 9px; border-radius:999px; pointer-events:none;
-  font:700 max(12px,15cqmin)/1.1 var(--fd); color:#fff; -webkit-text-stroke:3px #3a0604; paint-order:stroke fill; background:radial-gradient(circle at 50% 35%, #e0442e, #7a120b); box-shadow:0 0 0 1.5px #1a0402, 0 0 14px rgba(255,74,58,.6);}
-.tile .prev.kill{background:radial-gradient(circle at 50% 35%, #2a2a2a, #050505); color:#ffd7cf; box-shadow:0 0 0 1.5px #ff4a3a, 0 0 16px rgba(255,74,58,.8); -webkit-text-stroke:0;}
-.tile .prev.miss{background:radial-gradient(circle at 50% 35%, #5f6f7a, #1d252b); -webkit-text-stroke:2px #0b1116;}
-.tile .prev.back{top:auto; bottom:24%; padding:1px 7px; font-size:max(10px,11cqmin); background:radial-gradient(circle at 50% 35%, #8a6a2a, #3a2a0e); -webkit-text-stroke:2.5px #1b1307; box-shadow:0 0 0 1.5px #1b1307;}
 .dust{position:absolute; z-index:5; pointer-events:none; border-radius:50%; background:radial-gradient(closest-side, rgba(190,160,110,.0) 55%, rgba(190,160,110,.45) 70%, rgba(190,160,110,0) 100%);}
 .slash{position:absolute; z-index:17; height:4px; border-radius:3px; pointer-events:none; background:linear-gradient(90deg, transparent, #fff 35%, #ffe8c8 65%, transparent); box-shadow:0 0 10px 2px rgba(255,220,180,.7);}
 .face .nm.l{font-size:11px; letter-spacing:0;} .face .nm.xl{font-size:10px; letter-spacing:-.01em;}
@@ -648,7 +642,7 @@ body{background:
   #hand{height:176px; margin-top:0;} #hand .card{top:6px;} #deck{top:14px;}
 }
 
-.tile .prev{top:70%;} .tile .prev.back{bottom:auto; top:88%;}
+
 .over.lose b{background-image:linear-gradient(180deg,#ffd9c8,#ff7a52 45%,#8a1c10); filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 30px rgba(255,80,50,.5));}
 .over.lose{background:radial-gradient(60% 50% at 50% 50%, rgba(40,6,4,.92), rgba(10,4,3,.8));}
 .over.win::before{content:""; position:absolute; left:50%; top:50%; width:140%; aspect-ratio:1; translate:-50% -50%; z-index:-1; pointer-events:none;
@@ -1257,13 +1251,6 @@ function tileInner(u, extra = ''){
     + (u.poison ? `<span class="fx-tag p" title="Отравлен: потеряет ${u.poison} в начале своего хода">яд</span>` : u.curse ? `<span class="fx-tag g" title="Проклят: бьёт вполсилы">прокл.</span>` : '')
     + `<span class="st a${armed(u) ? '' : ' off'}${u.curse ? ' cursed' : ''}" title="${armed(u) ? 'Может атаковать в этом ходу' : u.sleep ? 'Спит' : 'Уже атаковал или не может бить'}">${atkIcon(A.key)}${atkOf(u)}</span><span class="st h${d ? ' d' : ''}">${HEART}<b>${u.hp}</b></span>` + extra;
 }
-/* What a strike would do: "−3", a skull when it kills, "мимо" on a ghost's miss, and the answer blow if any. */
-function preview(a, t){
-  const A = U(a); let raw = atkOf(a) + (A.charge && Math.abs(t.r - a.r) > 1 ? A.charge : 0); if (A.ranged && U(t).shield) raw = Math.ceil(raw / 2);
-  if (dodges(t)) return `<span class="prev miss">мимо</span>`;
-  const d = eff(t, raw), kill = d >= t.hp, back = !kill && retaliates(a, t) ? atkOf(t) : 0;
-  return `<span class="prev${kill ? ' kill' : ''}">${kill ? '☠' : '−' + d}</span>${back ? `<span class="prev back" title="Сдача">↩ −${back}</span>` : ''}`;
-}
 function placeTile(el, u){ const b = box(slotEl(u)); Object.assign(el.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); }
 function syncUnits(dropId){
   const layer = $('#units'), seen = new Set(), T = targetsFor(S.sel), trios = readyTrios();
@@ -1351,7 +1338,7 @@ function targetsFor(sel){
 function heroFloat(side, text, label){
   const plate = $(`#hero-${side}`); if (!plate) return;
   const r = plate.getBoundingClientRect(), el = document.createElement('div'); el.className = 'hfloat'; el.innerHTML = `<b>${text}</b>${label ? `<small>${label}</small>` : ''}`;
-  el.style.left = r.left + r.width * .62 + 'px'; el.style.top = r.top + r.height / 2 + 'px'; document.body.appendChild(el);
+  el.style.left = r.right + 4 + 'px'; el.style.top = r.top + r.height / 2 + 'px'; document.body.appendChild(el);
   el.animate([{transform:'translate(-50%,-50%) scale(1.8)', opacity:0}, {transform:'translate(-50%,-50%) scale(1)', opacity:1, offset:.15}, {transform:'translate(-50%,-62%)', opacity:1, offset:.75}, {transform:'translate(-50%,-80%)', opacity:0}],
     {duration:D(1700), easing:'cubic-bezier(.2,.8,.2,1)'}).finished.then(() => el.remove());
 }
@@ -1378,7 +1365,7 @@ function renderBars(){
   const tired = S.turn >= FATIGUE - 2 ? `<span class="chip tiredchip" title="С ${FATIGUE}-го хода герой в начале своего хода теряет 1, 2, 3… ХП">${S.turn >= FATIGUE ? `Усталость: следующая <b>−${nextLoss('p')}</b>` : `Усталость с ${FATIGUE}-го хода`}</span>` : '';
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>` + tired;
   $('#end').disabled = !me;
-  $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : (M().upgrade === 'stack' ? 'Выберите подсвеченную клетку: золото — улучшение.' : 'Перетащите карту на подсвеченную клетку.'))
+  if (S.stickyHint && !S.over){ $('#hint').textContent = S.stickyHint; } else $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : (M().upgrade === 'stack' ? 'Выберите подсвеченную клетку: золото — улучшение.' : 'Перетащите карту на подсвеченную клетку.'))
     : readyTrios().heads.size ? 'Тройка готова: нажмите на юнита со стрелкой ↑ — двое других сольются в него. Сливать можно только в того, у кого есть ход.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
@@ -1602,7 +1589,7 @@ async function deployCard(side, cardUid, dest, fromRect){
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
   S.units.push(u);
-  if (dest.camp) Sfx.play('camp'); else { const t = u.type; setTimeout(() => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), D(200)); }
+  if (dest.camp) Sfx.play('camp'); else { const t = u.type; setTimeout(() => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), D(290)); }
   syncUnits(u.id); renderBars(); FX.dust(toEl, u.type);
   await wait(120);
   return u;
@@ -1804,8 +1791,8 @@ async function chainRest(u, hop1, from, t){
   if (!hop2 || !alive(hop2) || S.over) return;
   Sfx.play('chain'); await travel(mid(CELLS[p1.r][p1.c]), mid(slotEl(hop2))); await damage(hop2, 1);
 }
-/* Retaliation: every unit answers once per turn (the griffin every time). Ranged attackers get none,
-   except from the succubus. Nobody answers the hound. Blinded units can't answer. */
+/* Retaliation: every unit answers once per turn (the griffin every time). Ranged attackers in the back row get none
+   (except from the succubus); a ranged unit standing in the front row is answered like anyone else. Nobody answers the hound. Blinded units can't answer. */
 function retaliates(u, t){
   const A = U(u), T = U(t);
   return alive(t) && alive(u) && !S.over && t.where === 'f' && (T.brave || (!t.stun && !t.sleep)) && !A.noRetal && (!A.ranged || u.r === FRONT[u.side] || T.retalRanged) && (T.retalInf || !t.retalUsed);
@@ -1850,7 +1837,7 @@ async function startTurn(side, first){
     S.hero[side] = Math.max(0, S.hero[side] - n); Sfx.play('hero'); renderBars();
     const h = $('#hero-' + side);
     if (h){ flashHP(h.querySelector('.hv')); h.classList.remove('tired'); void h.offsetWidth; h.classList.add('tired'); heroFloat(side, `−${n}`, 'усталость'); }
-    if (!S.fatigueTold){ S.fatigueTold = true; $('#hint').textContent = `Усталость: с ${FATIGUE}-го хода каждый герой в начале своего хода теряет 1, потом 2, 3… ХП. Так бой не затягивается.`; }
+    if (!S.fatigueTold){ S.fatigueTold = true; S.stickyHint = `Усталость: с ${FATIGUE}-го хода каждый герой в начале своего хода теряет 1, потом 2, 3… ХП. Так бой не затягивается.`; }
     if (checkOver()) return;
     await wait(600);
   }
@@ -1863,6 +1850,7 @@ async function startTurn(side, first){
     onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; healed = true; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); FX.sparks(b.x + b.w / 2, b.y + b.h * .7, {n:6, color:'#8ff0a4', spread:b.w * .25, gravity:-30, dur:700}); });
   }
   if (healed) Sfx.play('heal');
+  if (side === 'p' && !first) S.busy = false;
   renderAll();
   if (!first) await drawCards(side, 3, side === 'p');
 }
@@ -2028,8 +2016,8 @@ async function runEnemyTurn(){
   await aiTurn(); await wait(70);
   if (S.over){ S.busy = false; return; }
   S.turn++; S.side = 'p'; S.fast = false; Sfx.play('turn-p');
+  await startTurn('p', false);   // hands control back (S.busy = false) once the turn is ready
   S.busy = false;
-  await startTurn('p', false);
   renderAll();
 }
 async function newGame(){
@@ -2110,6 +2098,7 @@ function whyIdle(u){
   return `${U(u).name}: сейчас некого бить.`;
 }
 document.addEventListener('pointerdown', e => {
+  if (S && S.stickyHint && S.side === 'p' && e.target.closest && e.target.closest('.arena')){ S.stickyHint = null; }
   if (S && S.side === 'e' && !S.over && e.target.closest && e.target.closest('.arena') && !e.target.closest('button, select')) speedUp();
   if (!S || S.side !== 'p' || S.busy || S.over || e.button > 0) return;
   const card = e.target.closest('#hand .card'), tile = e.target.closest('#units .tile.p');
