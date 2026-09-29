@@ -1365,7 +1365,7 @@ function renderBars(){
   const tired = S.turn >= FATIGUE - 2 ? `<span class="chip tiredchip" title="С ${FATIGUE}-го хода герой в начале своего хода теряет 1, 2, 3… ХП">${S.turn >= FATIGUE ? `Усталость: следующая <b>−${nextLoss('p')}</b>` : `Усталость с ${FATIGUE}-го хода`}</span>` : '';
   $('#botbar').innerHTML = heroHTML('p') + manaHTML('p') + unl('p') + `<span class="chip">Рука <b>${S.hand.p.length}/${HAND_MAX}</b></span>` + tired;
   $('#end').disabled = !me;
-  if (S.stickyHint && !S.over){ $('#hint').textContent = S.stickyHint; } else $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : (M().upgrade === 'stack' ? 'Выберите подсвеченную клетку: золото — улучшение.' : 'Перетащите карту на подсвеченную клетку.'))
+  if (S.stickyHint && !S.over){ $('#hint').textContent = S.stickyHint; } else $('#hint').textContent = S.over ? '' : !me ? (S.side === 'e' ? `${F.e.name}: ход противника… ${S.fast ? '(ускорено)' : 'Нажмите на поле или пробел — ускорить.'}` : S.turnStarting ? 'Ваш ход начинается…' : 'Ваши юниты бьют…') : S.sel ? (selUnit()?.where === 'f' ? '' : (M().upgrade === 'stack' ? 'Выберите подсвеченную клетку: золото — улучшение.' : 'Перетащите карту на подсвеченную клетку.'))
     : readyTrios().heads.size ? 'Тройка готова: нажмите на юнита со стрелкой ↑ — двое других сольются в него. Сливать можно только в того, у кого есть ход.' : !onField('p').some(canMove) ? 'Выставьте карты, потом «Конец хода».' : (onField('p').some(canAttack) ? 'Перетащите своего юнита на врага, чтобы атаковать, или на пустую клетку врага — удар по герою. ' : '') + 'Выставьте карты, потом «Конец хода».';
 }
 function cardFace(t, side = 'p'){
@@ -1517,6 +1517,9 @@ async function burnCard(){
   el.remove();
 }
 async function drawCards(side, k, animate){
+  const g = S; g.drawing = (g.drawing || 0) + 1; try { return await drawCardsNow(side, k, animate); } finally { g.drawing--; }
+}
+async function drawCardsNow(side, k, animate){
   for (let i = 0; i < k; i++){
     if (S.hand[side].length >= HAND_MAX){ if (side === 'p' && animate) await burnCard(); continue; }
     const card = newCard(side); S.hand[side].push(card);
@@ -1589,8 +1592,14 @@ async function deployCard(side, cardUid, dest, fromRect){
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
   S.units.push(u);
-  if (dest.camp) Sfx.play('camp'); else { const t = u.type; setTimeout(() => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), D(290)); }
   syncUnits(u.id); renderBars(); FX.dust(toEl, u.type);
+  if (dest.camp) Sfx.play('camp');
+  else {
+    /* the thud lands with the tile: the slam animation touches the board 290 ms after it really starts */
+    const t = u.type, thud = () => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), el = TILES.get(u.id);
+    if (RM || !el || !el.classList.contains('drop-in')) thud();
+    else el.addEventListener('animationstart', e => { if (e.animationName === 'slam') setTimeout(thud, 290); }, {once:true});
+  }
   await wait(120);
   return u;
 }
@@ -1850,7 +1859,7 @@ async function startTurn(side, first){
     onField(side).filter(v => v !== u && Math.abs(v.r - u.r) + Math.abs(v.c - u.c) === 1 && v.hp < U(v).hp).forEach(v => { const h = Math.min(U(u).heal, U(v).hp - v.hp); v.hp += h; healed = true; const b = box(slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h / 2, `+${h}`, 't'); FX.sparks(b.x + b.w / 2, b.y + b.h * .7, {n:6, color:'#8ff0a4', spread:b.w * .25, gravity:-30, dur:700}); });
   }
   if (healed) Sfx.play('heal');
-  if (side === 'p' && !first) S.busy = false;
+  if (side === 'p' && !first){ S.busy = false; S.turnStarting = false; }
   renderAll();
   if (!first) await drawCards(side, 3, side === 'p');
 }
@@ -2006,6 +2015,7 @@ function endTurn(){
   turnTask = runEnemyTurn(); return turnTask;
 }
 async function runEnemyTurn(){
+  while (S.drawing) await new Promise(r => setTimeout(r, 30));
   S.busy = true; S.sel = null; renderAll();
   await chain;
   if (S.over){ S.busy = false; return; }
@@ -2015,7 +2025,7 @@ async function runEnemyTurn(){
   if (S.over){ S.busy = false; return; }
   await aiTurn(); await wait(70);
   if (S.over){ S.busy = false; return; }
-  S.turn++; S.side = 'p'; S.fast = false; Sfx.play('turn-p');
+  S.turn++; S.side = 'p'; S.fast = false; S.turnStarting = true; Sfx.play('turn-p');
   await startTurn('p', false);   // hands control back (S.busy = false) once the turn is ready
   S.busy = false;
   renderAll();
