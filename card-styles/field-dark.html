@@ -2015,8 +2015,8 @@ function endTurn(){
   turnTask = runEnemyTurn(); return turnTask;
 }
 async function runEnemyTurn(){
+  S.busy = true; S.sel = null; renderAll();   // the turn is ending from the first press: further presses find it busy
   while (S.drawing) await new Promise(r => setTimeout(r, 30));
-  S.busy = true; S.sel = null; renderAll();
   await chain;
   if (S.over){ S.busy = false; return; }
   S.side = 'e'; S.fast = false; Sfx.play('turn-e');
