@@ -672,6 +672,11 @@ body{background:
 @keyframes managain{0%{box-shadow:0 0 0 0 rgba(120,190,255,0);} 25%{box-shadow:0 0 0 4px rgba(150,205,255,.85), 0 0 26px 6px rgba(80,150,255,.7); transform:scale(1.08);} 100%{box-shadow:0 0 0 0 rgba(120,190,255,0); transform:none;}}
 .gems i.bonus::before{background:linear-gradient(135deg, transparent 0 48%, rgba(0,0,0,.25) 48% 100%), linear-gradient(225deg, rgba(255,255,255,.7) 0 22%, transparent 22%), linear-gradient(180deg, #fff6d0, #e2bb62 45%, #8a6124);}
 .gems em{font:700 12px/1 var(--fd); font-style:normal; color:#9cc8ff; margin-left:4px; align-self:center;}
+
+.tile.drop-in{animation:slam .5s cubic-bezier(.3,.7,.4,1);}
+@keyframes slam{0%{transform:translateY(-14px) scale(1.16); opacity:0;} 38%{transform:translateY(-10px) scale(1.12); opacity:1;} 58%{transform:none; animation-timing-function:ease-out;} 70%{transform:scale(1.07,.9);} 84%{transform:scale(.97,1.04);} 100%{transform:none;}}
+@media (prefers-reduced-motion: reduce){ .tile.drop-in{animation:none;} }
+.sflash{position:absolute; z-index:16; pointer-events:none; border-radius:14px; background:radial-gradient(closest-side, rgba(255,246,210,.85), rgba(255,200,90,.35) 55%, transparent 80%); mix-blend-mode:screen;}
 </style>
 
 <div class="wrap">
@@ -1429,7 +1434,7 @@ const FX = {
       const t = i / n, side = Math.floor(t * 4), f = (t * 4) % 1;
       const px = side === 0 ? b.x + f * b.w : side === 1 ? b.x + b.w : side === 2 ? b.x + (1 - f) * b.w : b.x;
       const py = side === 0 ? b.y - b.h * .2 : side === 1 ? b.y - b.h * .2 + f * b.h * 1.4 : side === 2 ? b.y + b.h * 1.2 : b.y + b.h * 1.2 - f * b.h * 1.4;
-      const s = document.createElement('i'); s.className = 'spark'; const c = i % 3 ? '#ffe39a' : '#fff6d8', z = 2 + Math.random() * 3;
+      const s = document.createElement('i'); s.className = 'spark'; const c = ['#fffbe6', '#ffe28a', '#ffc93c', '#f5a623'][i % 4], z = 2 + Math.random() * 3;
       s.style.cssText = `left:${px}px;top:${py}px;width:${z}px;height:${z}px;background:${c};box-shadow:0 0 8px 2px ${c}`; layer.appendChild(s);
       const dx = (px - (b.x + b.w / 2)) * .25, dy = (py - (b.y + b.h / 2)) * .25 - 18;
       s.animate([{transform:'translate(-50%,-50%) scale(0)', opacity:0}, {transform:'translate(-50%,-50%) scale(1.3)', opacity:1, offset:.25}, {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.2)`, opacity:0}],
@@ -1489,6 +1494,8 @@ async function flyTo(html, from, toEl, spin, summon){
   fly.animate([{transform:`translate(${x1}px,${y1}px) scale(${s})`, filter:'brightness(1)'}, {transform:`translate(${x1}px,${to.top}px) scale(${s},${s * 108 / 154})`, filter:'brightness(1.6) sepia(.4)'}],
     {duration:D(480), easing:'cubic-bezier(.3,.6,.4,1)', fill:'forwards'}).finished.then(() => fly.remove());
   FX.frameSparks(cb);
+  if (!RM){ const f = document.createElement('div'); f.className = 'sflash'; Object.assign(f.style, {left:cb.x + 'px', top:cb.y + 'px', width:cb.w + 'px', height:cb.h + 'px'}); $('#units').appendChild(f);
+    f.animate([{opacity:0, transform:'scale(.7)'}, {opacity:1, transform:'scale(1.05)', offset:.3}, {opacity:0, transform:'scale(1.25)'}], {duration:D(420), easing:'ease-out'}).finished.then(() => f.remove()); }
 }
 
 /* ---------- actions ---------- */
@@ -1574,7 +1581,7 @@ async function deployCard(side, cardUid, dest, fromRect){
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
   S.units.push(u);
-  if (dest.camp) Sfx.play('camp'); else Sfx.play('land', .8 + u.type * .07, 1.04 - u.type * .035);
+  if (dest.camp) Sfx.play('camp'); else { const t = u.type; setTimeout(() => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), D(200)); }
   syncUnits(u.id); renderBars(); FX.dust(toEl, u.type);
   await wait(120);
   return u;
