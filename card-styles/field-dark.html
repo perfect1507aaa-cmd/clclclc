@@ -724,7 +724,7 @@ body{background:
         <li>Шаг: перетащите своего юнита на соседнюю пустую клетку или на соседнего своего (обмен местами). Вбок, вперёд или назад, не по диагонали. Тратит очко хода. Менять местами можно только с тем, кто в этом ходу ещё не действовал.</li>
         <li>Суккуб бьёт цепью: 2 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
-        <li>Бонусная мана (тестовый режим): убийство вражеского юнита даёт +1 камень маны. Если бонус пришёл в чужой ход, он добавится в начале вашего.</li>
+        <li>Улучшение (слияние юнитов) даёт +1 карту из колоды. Бонусная мана (тестовый режим): убийство вражеского юнита даёт +1 камень маны. Если бонус пришёл в чужой ход, он добавится в начале вашего.</li>
         <li>Стрелок, стоящий в переднем ряду, получает сдачу по обычным правилам. Из заднего ряда стрелки бьют без сдачи.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую. Рас шесть: Альянс, Инферно, Эльфы, Лига Теней, Некрополис, Академия.</li>
         <li>Лазутчик травит: выживший теряет 1 ХП в начале своего хода. Нежить (весь Некрополис) яд не берёт.</li>
@@ -764,6 +764,7 @@ body{background:
 const MANA_ON_MERGE = 0;   // mana crystals for merging units into a higher tier (0 = off)
 const MANA_ON_KILL = 1;    // mana crystals for each enemy unit killed
 const DRAW_PER_TURN = 2;   // cards drawn at the start of each turn
+const CARD_ON_MERGE = 1;   // cards drawn for merging units into a higher tier
 /* ---------- unit icons: approved one-colour figures; a few units still offer a choice ---------- */
 const ICONS = {
   lord:`<path d="M12 30C12 14 20 6 32 6s20 8 20 24v28H12z"/><path class="k" d="M18 28h28v6H18zM30 34h4v16h-4z"/><path d="M30 6c0-4 5-7 10-5-3 2-3 4-3 6z"/>`,
@@ -1510,6 +1511,7 @@ async function absorb(into, list){
 async function promote(target, fromDesc){
   const side = target.side, next = F[side].units[target.type + 1];
   gainMana(side, MANA_ON_MERGE, TILES.get(target.id) || slotEl(target));
+  if (CARD_ON_MERGE) await drawCards(side, CARD_ON_MERGE, side === 'p');
   note(side, `${U(target).name} + ${fromDesc} → ${next.name}`);
   Object.assign(target, {type:target.type + 1, hp:next.hp, sleep:true});
   if (M().unlock) S.unlocked[side] = Math.max(S.unlocked[side], Math.min(target.type, 2));
@@ -1577,7 +1579,7 @@ async function cardToTile(side, card, u, from, toEl){
   /* 1. morph in place: the box goes from the card's size to the tile's, the face gives way to the tile */
   const box0 = {transform:`translate(${fx - from.width / 2}px,${fy - from.height / 2}px)`, width:from.width + 'px', height:from.height + 'px', borderRadius:'11px'};
   const box1 = {transform:`translate(${fx - w / 2}px,${fy - h / 2}px)`, width:w + 'px', height:h + 'px', borderRadius:'12px'};
-  const tMorph = D(150);
+  const tMorph = D(195);
   m.animate([box0, box1], {duration:tMorph, easing:'cubic-bezier(.3,.7,.3,1)', fill:'forwards'});
   mf.animate([{transform:`translate(-50%,-50%) scale(${sc})`, opacity:1}, {transform:`translate(-50%,-50%) scale(${sc * Math.min(w / from.width, h / from.height)})`, opacity:0}], {duration:tMorph, easing:'ease-out', fill:'forwards'});
   mt.animate([{opacity:0}, {opacity:1}], {duration:tMorph * .8, easing:'ease-out', fill:'forwards'});
