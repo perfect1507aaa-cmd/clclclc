@@ -651,11 +651,6 @@ body{background:
 
 /* ---- drag: a physical piece ---- */
 .fly.tilefly{opacity:1; filter:drop-shadow(0 14px 12px rgba(0,0,0,.55)) drop-shadow(0 30px 28px rgba(0,0,0,.35)); transform-origin:50% 50%; will-change:transform;}
-/* ---- summon: the frame burns away from the edges ---- */
-@property --dv{syntax:'<percentage>'; inherits:false; initial-value:0%;}
-.fly.dissolve{-webkit-mask:radial-gradient(closest-side, #000 calc(100% - var(--dv)), transparent calc(118% - var(--dv))); mask:radial-gradient(closest-side, #000 calc(100% - var(--dv)), transparent calc(118% - var(--dv))); animation:dissolve .48s ease-in forwards;}
-@keyframes dissolve{0%{--dv:0%; opacity:1;} 70%{opacity:.85;} 100%{--dv:100%; opacity:0;}}
-@media (prefers-reduced-motion: reduce){ .fly.dissolve{animation-duration:.1s;} }
 /* ---- bonus mana ---- */
 .mgem{position:fixed; left:0; top:0; z-index:210; pointer-events:none; width:0; height:0;}
 .mgem i{position:absolute; left:-11px; top:-14px; width:22px; height:28px; clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%);
@@ -670,8 +665,16 @@ body{background:
 .tile.drop-in{animation:slam .5s cubic-bezier(.3,.7,.4,1);}
 @keyframes slam{0%{transform:translateY(-14px) scale(1.16); opacity:0;} 38%{transform:translateY(-10px) scale(1.12); opacity:1;} 58%{transform:none; animation-timing-function:ease-out;} 70%{transform:scale(1.07,.9);} 84%{transform:scale(.97,1.04);} 100%{transform:none;}}
 @media (prefers-reduced-motion: reduce){ .tile.drop-in{animation:none;} }
-.sflash{position:absolute; z-index:16; pointer-events:none; border-radius:14px; background:radial-gradient(closest-side, rgba(255,246,210,.85), rgba(255,200,90,.35) 55%, transparent 80%); mix-blend-mode:screen;}
 
+
+/* ---- summon: card → tile in place, then the tile settles onto its cell ---- */
+.morph{position:fixed; left:0; top:0; z-index:200; pointer-events:none; will-change:transform,width,height; border-radius:12px;}
+.morph .mface{position:absolute; left:50%; top:50%; width:108px; height:154px; transform-origin:50% 50%;}
+.morph .mface .face,.morph .mface .backf{transform:none;}
+.morph .tile{position:absolute; inset:0; width:100%; height:100%; box-sizing:border-box; opacity:0;}
+.tile.landed{animation:landed .22s cubic-bezier(.3,.7,.4,1);}
+@keyframes landed{0%{transform:scale(1.045,.93);} 55%{transform:scale(.985,1.02);} 100%{transform:none;}}
+@media (prefers-reduced-motion: reduce){ .tile.landed{animation:none;} }
 </style>
 
 <div class="wrap">
@@ -1409,25 +1412,11 @@ const FX = {
     if (!cell) return; const b = box(cell), r = document.createElement('div'); r.className = 'dust';
     Object.assign(r.style, {left:b.x + 'px', top:b.y + 'px', width:b.w + 'px', height:b.h + 'px'}); $('#units').appendChild(r);
     r.animate([{transform:'scale(.6)', opacity:.9}, {transform:'scale(1.55)', opacity:0}], {duration:D(420), easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(() => r.remove());
-    FX.sparks(b.x + b.w / 2, b.y + b.h * .8, {n:tier >= 6 ? 22 : 8, color:tier >= 6 ? '#ffe8a8' : '#a8916c', spread:b.w * (tier >= 6 ? .7 : .45), size:tier >= 6 ? 5 : 3, gravity:tier >= 6 ? -20 : 10});
     const amp = [0, 0, 2, 2, 4, 4, 7][tier]; if (amp) FX.shake($('#bwrap'), amp, tier >= 6 ? 320 : 200);
   },
   slash(p, ang, w){
     if (RM) return; const d = document.createElement('div'); d.className = 'slash'; d.style.cssText = `left:${p.x}px;top:${p.y}px;width:${w}px;rotate:${ang}rad`; $('#units').appendChild(d);
     d.animate([{transform:'translate(-50%,-50%) scaleX(0)', opacity:1}, {transform:'translate(-50%,-50%) scaleX(1)', opacity:1, offset:.45}, {transform:'translate(-50%,-50%) scaleX(1.1)', opacity:0}], {duration:D(200), easing:'ease-out'}).finished.then(() => d.remove());
-  },
-  frameSparks(b){
-    if (RM) return; const layer = $('#units'), n = 26;
-    for (let i = 0; i < n; i++){
-      const t = i / n, side = Math.floor(t * 4), f = (t * 4) % 1;
-      const px = side === 0 ? b.x + f * b.w : side === 1 ? b.x + b.w : side === 2 ? b.x + (1 - f) * b.w : b.x;
-      const py = side === 0 ? b.y - b.h * .2 : side === 1 ? b.y - b.h * .2 + f * b.h * 1.4 : side === 2 ? b.y + b.h * 1.2 : b.y + b.h * 1.2 - f * b.h * 1.4;
-      const s = document.createElement('i'); s.className = 'spark'; const c = ['#fffbe6', '#ffe28a', '#ffc93c', '#f5a623'][i % 4], z = 2 + Math.random() * 3;
-      s.style.cssText = `left:${px}px;top:${py}px;width:${z}px;height:${z}px;background:${c};box-shadow:0 0 8px 2px ${c}`; layer.appendChild(s);
-      const dx = (px - (b.x + b.w / 2)) * .25, dy = (py - (b.y + b.h / 2)) * .25 - 18;
-      s.animate([{transform:'translate(-50%,-50%) scale(0)', opacity:0}, {transform:'translate(-50%,-50%) scale(1.3)', opacity:1, offset:.25}, {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.2)`, opacity:0}],
-        {duration:D(520 + Math.random() * 380), delay:D(Math.random() * 180), easing:'cubic-bezier(.2,.7,.3,1)'}).finished.then(() => s.remove());
-    }
   },
   flash(el){ if (!el) return; el.classList.remove('hitfx'); void el.offsetWidth; el.classList.add('hitfx'); },
   banner(text, cls = ''){
@@ -1463,7 +1452,7 @@ function flashHP(badge){
   const hero = badge.closest('.hero');
   if (hero){ FX.shake(hero, 7, 320); hero.querySelector('.ava').animate([{boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #ff4a3a, 0 0 30px 8px rgba(255,60,40,.8)'}, {boxShadow:'0 0 0 1px #000, 0 0 0 4px #1d140a, 0 0 0 5px #6b4a1c, 0 8px 16px rgba(0,0,0,.6)'}], {duration:D(600)}); }
 }
-async function flyTo(html, from, toEl, spin, summon){
+async function flyTo(html, from, toEl, spin){
   const fly = document.createElement('div'); fly.className = 'fly'; fly.innerHTML = html; document.body.appendChild(fly);
   const to = toEl.getBoundingClientRect(), s = to.width / 108;
   const x0 = from.left + from.width / 2 - 54, y0 = from.top + from.height / 2 - 77;
@@ -1474,16 +1463,8 @@ async function flyTo(html, from, toEl, spin, summon){
     {transform:`translate(${x0}px,${y0}px) rotate(${spin ? 0 : -6}deg) scale(${spin ? .5 : 1})`},
     {transform:`translate(${mx}px,${my}px) rotate(${spin ? 180 : 3}deg) scale(1.08)`, offset:.55},
     {transform:`translate(${x1}px,${y1}px) rotate(0deg) scale(${s})`},
-  ], {duration:D(420), easing:'cubic-bezier(.35,.1,.25,1)', fill:summon ? 'forwards' : 'none'}).finished;
-  if (!summon){ fly.remove(); return; }
-  /* summon, Hearthstone-style: the frame burns away from the edges with golden sparks while the card settles into the square tile; not awaited */
-  const cell = toEl, cb = box(cell);
-  fly.classList.add('dissolve');
-  fly.animate([{transform:`translate(${x1}px,${y1}px) scale(${s})`, filter:'brightness(1)'}, {transform:`translate(${x1}px,${to.top}px) scale(${s},${s * 108 / 154})`, filter:'brightness(1.6) sepia(.4)'}],
-    {duration:D(480), easing:'cubic-bezier(.3,.6,.4,1)', fill:'forwards'}).finished.then(() => fly.remove());
-  FX.frameSparks(cb);
-  if (!RM){ const f = document.createElement('div'); f.className = 'sflash'; Object.assign(f.style, {left:cb.x + 'px', top:cb.y + 'px', width:cb.w + 'px', height:cb.h + 'px'}); $('#units').appendChild(f);
-    f.animate([{opacity:0, transform:'scale(.7)'}, {opacity:1, transform:'scale(1.05)', offset:.3}, {opacity:0, transform:'scale(1.25)'}], {duration:D(420), easing:'ease-out'}).finished.then(() => f.remove()); }
+  ], {duration:D(420), easing:'cubic-bezier(.35,.1,.25,1)'}).finished;
+  fly.remove();
 }
 
 /* ---------- actions ---------- */
@@ -1568,20 +1549,46 @@ async function deployCard(side, cardUid, dest, fromRect){
   if (!spendCard(side, cardUid)) return false;
   S.sel = null;
   const from = sourceRect(side, card, fromRect); renderBars(); syncUnits();
-  await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e', !dest.camp);
   const A = F[side].units[card.type];
   const u = dest.camp ? {id:uid++, side, type:card.type, hp:A.hp, where:'c', i:dest.i, sleep:!A.quick} : {id:uid++, side, type:card.type, hp:A.hp, where:'f', r:dest.r, c:dest.c, sleep:!A.quick, atks:A.double ? 2 : 1};
-  S.units.push(u);
-  syncUnits(u.id); renderBars(); FX.dust(toEl, u.type);
-  if (dest.camp) Sfx.play('camp');
-  else {
-    /* the thud lands with the tile: the slam animation touches the board 290 ms after it really starts */
-    const t = u.type, thud = () => Sfx.play('land', .8 + t * .07, 1.04 - t * .035), el = TILES.get(u.id);
-    if (RM || !el || !el.classList.contains('drop-in')) thud();
-    else el.addEventListener('animationstart', e => { if (e.animationName === 'slam') setTimeout(thud, 290); }, {once:true});
+  if (dest.camp){
+    await flyTo(side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`, from, toEl, side === 'e');
+    S.units.push(u); syncUnits(u.id); renderBars(); Sfx.play('camp');
+    await wait(120); return u;
   }
-  await wait(120);
+  const fly = await cardToTile(side, card, u, from, toEl);
+  S.units.push(u); syncUnits(); renderBars();
+  const el = TILES.get(u.id); if (el && !RM){ el.classList.add('landed'); el.addEventListener('animationend', () => el.classList.remove('landed'), {once:true}); }
+  fly.remove();
+  Sfx.play('land', .8 + u.type * .07, 1.04 - u.type * .035); FX.dust(toEl, u.type);
+  await wait(90);
   return u;
+}
+/* Summon: at the release point the card becomes the unit's tile at its board size (a quick, soft morph),
+   then the tile settles onto its cell: it comes down from a little height, its shadow tightening as it lands. */
+async function cardToTile(side, card, u, from, toEl){
+  const to = toEl.getBoundingClientRect(), w = to.width, h = to.height;
+  const fx = from.left + from.width / 2, fy = from.top + from.height / 2;
+  const m = document.createElement('div'); m.className = 'morph';
+  const face = side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`;
+  m.innerHTML = `<div class="mface">${face}</div><div class="tile ${side}" data-tier="${u.type}" style="--t:${TC[u.type]}">${tileInner(u)}</div>`;
+  document.body.appendChild(m);
+  const mf = m.querySelector('.mface'), mt = m.querySelector('.tile'), sc = from.width / 108;
+  /* 1. morph in place: the box goes from the card's size to the tile's, the face gives way to the tile */
+  const box0 = {transform:`translate(${fx - from.width / 2}px,${fy - from.height / 2}px)`, width:from.width + 'px', height:from.height + 'px', borderRadius:'11px'};
+  const box1 = {transform:`translate(${fx - w / 2}px,${fy - h / 2}px)`, width:w + 'px', height:h + 'px', borderRadius:'12px'};
+  const tMorph = D(150);
+  m.animate([box0, box1], {duration:tMorph, easing:'cubic-bezier(.3,.7,.3,1)', fill:'forwards'});
+  mf.animate([{transform:`translate(-50%,-50%) scale(${sc})`, opacity:1}, {transform:`translate(-50%,-50%) scale(${sc * Math.min(w / from.width, h / from.height)})`, opacity:0}], {duration:tMorph, easing:'ease-out', fill:'forwards'});
+  mt.animate([{opacity:0}, {opacity:1}], {duration:tMorph * .8, easing:'ease-out', fill:'forwards'});
+  await new Promise(r => setTimeout(r, tMorph));
+  /* 2. the tile settles onto its cell */
+  const dist = Math.hypot(to.left - (fx - w / 2), to.top - (fy - h / 2)), tLand = D(Math.max(170, Math.min(360, dist * .6)));
+  const lift = '0 26px 26px rgba(0,0,0,.45), 0 10px 10px rgba(0,0,0,.35)', flat = '0 3px 0 #050403, 0 10px 18px rgba(0,0,0,.6)';
+  await m.animate([{transform:box1.transform, width:box1.width, height:box1.height, borderRadius:'12px', boxShadow:lift},
+    {transform:`translate(${to.left}px,${to.top}px)`, width:box1.width, height:box1.height, borderRadius:'12px', boxShadow:flat}],
+    {duration:tLand, easing:'cubic-bezier(.45,.05,.55,.95)', fill:'forwards'}).finished;
+  return m;
 }
 async function upgradeWithCard(side, cardUid, target, fromRect){
   const card = S.hand[side].find(h => h.uid === cardUid);
