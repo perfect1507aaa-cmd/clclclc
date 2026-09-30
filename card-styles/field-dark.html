@@ -682,7 +682,7 @@ body{background:
     <div class="setup">
       <div class="modes" id="modes" role="group" aria-label="Режим"></div>
       <div class="races" id="races"></div>
-      <div class="sys"><button class="btn ghost sm" id="reset" type="button">Заново</button><button class="btn ghost sm" id="snd" type="button" aria-pressed="true">Звук: вкл</button></div>
+      <div class="sys"><button class="btn ghost sm" id="reset" type="button">Заново</button><button class="btn ghost sm" id="snd" type="button" aria-pressed="true">Звук: вкл</button><button class="btn ghost sm" id="upmode" type="button" aria-pressed="false" title="Вручную: тройку сливают нажатием, если у двоих есть ход. Сразу: собрали три одинаковых вплотную — они сливаются тут же.">Апгрейд: вручную</button></div>
     </div>
     <div class="bar" id="topbar"></div>
     <div class="board-wrap" id="bwrap"><div class="grid" id="grid"></div></div>
@@ -721,10 +721,11 @@ body{background:
         <li>Только что выставленный или улучшенный юнит спит и не бьёт до следующего хода.</li>
         <li>Лишний урон уходит в следующего врага за убитым, потом в героя (30 ХП).</li>
         <li>Погиб юнит в переднем ряду — боец ближнего боя, стоявший за ним, сразу шагает на его место. Стрелки всегда остаются в тылу.</li>
-        <li>Шаг: перетащите своего юнита на соседнюю пустую клетку или на соседнего своего (обмен местами). Вбок, вперёд или назад, не по диагонали. Тратит очко хода. Менять местами можно только с тем, кто в этом ходу ещё не действовал.</li>
+        <li>Шаг: перетащите своего юнита на соседнюю пустую клетку или на соседнего своего (обмен местами). Вбок, вперёд или назад, не по диагонали. Тратит очко хода. Меняться можно с любым своим соседом, даже с тем, кто уже ходил или спит. Спящий (только что выставленный или улучшенный) юнит может сам поменяться местами раз за ход — это не будит его и не тратит ход.</li>
         <li>Суккуб бьёт цепью: 2 цели, 1 врагу вплотную за целью (нет его — вплотную сбоку от цели) и 1 соседу этого второго (сбоку, иначе по диагонали). Цепь идёт только по соседям и не перелетает через пустую клетку. Лишний урон у суккуба не переносится.</li>
         <li>Выставленный или улучшенный юнит спит 1 ход. Бесы не спят. Ослеплённый единорогом пропускает свой следующий удар.</li>
         <li>Улучшение (слияние юнитов) даёт +1 карту из колоды. Бонусная мана (тестовый режим): убийство вражеского юнита даёт +1 камень маны. Если бонус пришёл в чужой ход, он добавится в начале вашего.</li>
+        <li>Юниты I тира сдачу не дают. Бойцы ближнего боя, стоящие в заднем ряду, тоже не дают сдачу.</li>
         <li>Стрелок, стоящий в переднем ряду, получает сдачу по обычным правилам. Из заднего ряда стрелки бьют без сдачи.</li>
         <li>Расу можно выбрать себе и противнику, в том числе одинаковую. Рас шесть: Альянс, Инферно, Эльфы, Лига Теней, Некрополис, Академия.</li>
         <li>Лазутчик травит: выживший теряет 1 ХП в начале своего хода. Нежить (весь Некрополис) яд не берёт.</li>
@@ -740,6 +741,7 @@ body{background:
         <li>Тройка — три одинаковых юнита на поле, стоящие вплотную по горизонтали или вертикали (не по диагонали).</li>
         <li>Слить тройку можно в любой ход, если хотя бы у двоих из трёх есть ход (не спят и ещё не действовали). Тройка загорается золотом, стрелка ↑ стоит над теми, в кого можно слить: только в юнита, у которого есть ход. Нажмите на него — двое других сольются в него, он станет тиром выше и уснёт на ход.</li>
         <li>Картой на юнита улучшить нельзя: все трое должны уже стоять на поле.</li>
+        <li>Кнопка «Апгрейд: вручную / сразу» наверху. «Сразу»: как только три одинаковых юнита встали вплотную, они тут же сливаются — у вас и у противника, без нажатий и без проверки ходов.</li>
       </ul></div>
       <div><h3>Режимы</h3><ul>
         <li><b>Колонны:</b> поле 5×4, в руке I–IV тир (старшие реже).</li>
@@ -761,7 +763,7 @@ body{background:
 
 <script>
 /* ---------- test tuning: bonus mana (change freely) ---------- */
-const MANA_ON_MERGE = 0;   // mana crystals for merging units into a higher tier (0 = off)
+const MANA_ON_MERGE = 1;   // mana crystals for merging units into a higher tier (0 = off)
 const MANA_ON_KILL = 1;    // mana crystals for each enemy unit killed
 const DRAW_PER_TURN = 2;   // cards drawn at the start of each turn
 const CARD_ON_MERGE = 1;   // cards drawn for merging units into a higher tier
@@ -1184,6 +1186,8 @@ function heroCells(u){
   return out;
 }
 const acted = u => !!u.acted;
+/* a unit that is still asleep (just summoned or upgraded) may swap places once a turn; it doesn't wake it or cost anything */
+const sleepSwap = u => !!u && u.where === 'f' && u.sleep && !u.swapUsed && !U(u).slow;
 /* every attack and every move spends one action point; most units have 1, a few have 2 */
 const apMax = u => U(u).double ? 2 : 1;
 const canMove = u => u && u.where === 'f' && !u.sleep && (u.atks || 0) > 0 && !U(u).slow;
@@ -1221,6 +1225,7 @@ function trioState(side){
   return {members, heads};
 }
 function readyTrios(){
+  if (INSTANT_UP) return {members:new Set(), heads:new Set()};
   if (!S || S.side !== 'p' || S.busy || S.over) return {members:new Set(), heads:new Set()};
   return trioState('p');
 }
@@ -1301,10 +1306,11 @@ function targetsFor(sel){
     /* once per turn: step to an empty neighbouring cell or swap with a neighbouring unit of yours */
     if (src.where === 'f'){
       out.hcells = heroCells(src);
-      if (!canMove(src)) return out;
+      const mv = canMove(src);
+      if (!mv && !sleepSwap(src)) return out;
       for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]){
         const r = src.r + dr, c = src.c + dc; if (!ZONE.p.includes(r) || c < 0 || c >= COLS()) continue;
-        const v = fieldAt(r, c); if (!v) out.cells.push(CELLS[r][c]); else if (v.side === 'p' && !acted(v)) out.swaps.push(v);
+        const v = fieldAt(r, c); if (!v){ if (mv) out.cells.push(CELLS[r][c]); } else if (v.side === 'p') out.swaps.push(v);
       }
       /* step + strike: enemies and hero cells that open up after one step into a free cell */
       if (!src.sleep && (src.atks || 0) > 1){
@@ -1484,7 +1490,9 @@ async function drawCards(side, k, animate){
 async function drawCardsNow(side, k, animate){
   for (let i = 0; i < k; i++){
     if (S.hand[side].length >= HAND_MAX){ if (side === 'p' && animate) await burnCard(); continue; }
-    const card = newCard(side); S.hand[side].push(card);
+    const card = newCard(side);
+    if (S.dealing && i === k - 1 && !S.hand[side].some(c => c.type === 0)) card.type = 0;   // the opening hand always has a tier I card
+    S.hand[side].push(card);
     if (side !== 'p') continue;
     const el = cardEl(card), deck = $('#deck');
     if (animate){ el.classList.add('back'); el.style.setProperty('--x', `${deck.offsetLeft}px`); el.style.setProperty('--y', '10px'); el.style.setProperty('--a', '8deg'); }
@@ -1521,7 +1529,7 @@ async function promote(target, fromDesc){
   if (el){ el.animate([{filter:'brightness(1.7) saturate(1.2)'}, {filter:'none'}], {duration:D(520)}); const tb = box(el); FX.sparks(tb.x + tb.w / 2, tb.y + tb.h * .6, {n:18, color:'#f1d68e', spread:tb.w * .55, gravity:-40, dur:760}); FX.shake($('#bwrap'), [0, 0, 2, 2, 4, 4, 7][target.type], 220); }
   if (next.summon && target.where === 'f'){
     const spots = []; for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++){ const r = target.r + dr, c = target.c + dc; if ((dr || dc) && ZONE[side].includes(r) && c >= 0 && c < COLS() && !fieldAt(r, c)) spots.push({r, c}); }
-    if (spots.length){ Sfx.play('summon'); spawnT1(side, target, false); }
+    if (spots.length){ Sfx.play('summon'); const im = spawnT1(side, target, false); await wait(200); await autoMerge(side, im); }
   }
   await wait(260);
 }
@@ -1537,6 +1545,20 @@ function gainMana(side, n, fromEl){
   g.animate([{transform:`translate(${x0}px,${y0}px) scale(.3)`, opacity:0}, {transform:`translate(${x0}px,${y0 - 24}px) scale(1.25)`, opacity:1, offset:.18},
     {transform:`translate(${mx}px,${my}px) scale(1.1)`, offset:.55}, {transform:`translate(${x1}px,${y1}px) scale(.8)`, opacity:1}], {duration:D(760), easing:'cubic-bezier(.4,0,.3,1)'}).finished.then(() => { g.remove(); done(); });
   Sfx.play('mana', .7);
+}
+/* Instant upgrades (a switch): three identical units standing together merge the moment they meet, for both sides.
+   The merge goes into the unit that completed the trio, else into the one whose row suits the next tier best. */
+let INSTANT_UP = false;
+try { INSTANT_UP = localStorage.getItem('fieldInstantUp') === '1'; } catch (e) {}
+async function autoMerge(side, pref){
+  if (!INSTANT_UP || !S || S.over || M().upgrade !== 'trio') return;
+  for (let g = 0; g < 8 && !S.over; g++){
+    const cands = onField(side).filter(x => triosOf(x).length);
+    if (!cands.length) return;
+    const x = pref && cands.includes(pref) ? pref : cands.map(x => ({x, s:rowFit(side, x.type + 1, x.r)})).sort((a, b) => b.s - a.s)[0].x;
+    await absorb(x, triosOf(x)[0]); await promote(x, 'тройка');
+    pref = x;
+  }
 }
 /* Trio upgrade: the other two merge into the chosen unit, which then sleeps for a turn. */
 async function trioUpgrade(u){
@@ -1564,12 +1586,14 @@ async function deployCard(side, cardUid, dest, fromRect){
   fly.remove();
   Sfx.play('land', .8 + u.type * .07, 1.04 - u.type * .035); FX.dust(toEl, u.type);
   await wait(90);
+  await autoMerge(side, u);
   return u;
 }
 /* Summon: at the release point the card becomes the unit's tile at its board size (a quick, soft morph),
    then the tile settles onto its cell: it comes down from a little height, its shadow tightening as it lands. */
 async function cardToTile(side, card, u, from, toEl){
   const to = toEl.getBoundingClientRect(), w = to.width, h = to.height;
+  if (!from) from = to;
   const fx = from.left + from.width / 2, fy = from.top + from.height / 2;
   const m = document.createElement('div'); m.className = 'morph';
   const face = side === 'p' ? cardFace(card.type) : `<div class="backf e" style="transform:none"></div>`;
@@ -1626,22 +1650,26 @@ async function kill(v){
   /* a melee ally standing behind steps into the gap; ranged units stay in the rear */
   if (v.where === 'f' && v.r === FRONT[v.side]){
     const b = fieldAt(BACK[v.side], v.c);
-    if (b && b.side === v.side && !U(b).ranged){ b.r = FRONT[v.side]; Sfx.play('move'); syncUnits(); await wait(300); }
+    if (b && b.side === v.side && !U(b).ranged){ b.r = FRONT[v.side]; Sfx.play('move'); syncUnits(); await wait(300); await autoMerge(b.side, b); }
   }
 }
 /* Once per turn: move one unit to a free neighbouring cell or swap two neighbouring units. */
 async function maneuver(u, dest){
-  if (!alive(u) || !canMove(u)) return false;
+  const asleep = !canMove(u) && dest.id != null && sleepSwap(u);
+  if (!alive(u) || !(canMove(u) || asleep)) return false;
   if (dest.id != null){
-    const v = dest; if (!alive(v) || v.side !== u.side || v.where !== 'f' || !adj(u, v) || acted(v)) return false;
+    const v = dest; if (!alive(v) || v.side !== u.side || v.where !== 'f' || !adj(u, v)) return false;
     const a = {r:u.r, c:u.c}; Object.assign(u, {r:v.r, c:v.c}); Object.assign(v, a);
   } else {
     if (fieldAt(dest.r, dest.c) || !ZONE[u.side].includes(dest.r) || !adj(u, dest)) return false;
     Object.assign(u, {r:dest.r, c:dest.c});
   }
-  u.atks--; u.acted = true; S.sel = null;
+  if (asleep) u.swapUsed = true; else { u.atks--; u.acted = true; }
+  S.sel = null;
   Sfx.play('move'); syncUnits(); renderBars();
-  await wait(340); return true;
+  await wait(340);
+  await autoMerge(u.side, u);
+  return true;
 }
 const eff = (t, dmg) => U(t).armor ? Math.max(1, dmg - U(t).armor) : dmg;
 /* curse halves a unit's blows until the end of its next turn; a ghost's next hit misses every other time */
@@ -1765,7 +1793,7 @@ async function hit(u, t, fromRect){
     await damage(u, atkOf(t));
   }
   if (A.drain && alive(u) && dealt > 0 && u.hp < A.hp){ const h = Math.min(dealt, A.hp - u.hp); u.hp += h; const b = box(TILES.get(u.id) || slotEl(u)); floatAt(b.x + b.w / 2, b.y + b.h * .45, `+${h}`, 't'); Sfx.play('heal'); syncUnits(); await wait(200); }
-  if (A.raise && alive(u) && !alive(t) && !S.over){ if (spawnT1(u.side, u, true)){ Sfx.play('raise'); await wait(260); } }
+  if (A.raise && alive(u) && !alive(t) && !S.over){ const sk = spawnT1(u.side, u, true); if (sk){ Sfx.play('raise'); await wait(260); await autoMerge(u.side, sk); } }
   if (A.chain){ await chainRest(u, hop1, {r:tr, c:tc}, t); return; }
   if (excess > 0 && !S.over) await carry(u, tr, tc, excess);
   if (behind && behind.side !== u.side && alive(behind)) await damage(behind, Math.max(1, Math.floor(dmg / 2)));
@@ -1793,6 +1821,7 @@ async function chainRest(u, hop1, from, t){
    (except from the succubus); a ranged unit standing in the front row is answered like anyone else. Nobody answers the hound. Blinded units can't answer. */
 function retaliates(u, t){
   const A = U(u), T = U(t);
+  if (t.type === 0 || (!T.ranged && t.r === BACK[t.side])) return false;   // tier I units and melee units in the back row don't answer
   return alive(t) && alive(u) && !S.over && t.where === 'f' && (T.brave || (!t.stun && !t.sleep)) && !A.noRetal && (!A.ranged || u.r === FRONT[u.side] || T.retalRanged) && (T.retalInf || !t.retalUsed);
 }
 async function attack(u, t, fromRect){
@@ -1829,7 +1858,7 @@ async function startTurn(side, first){
   FX.banner(side === 'p' ? 'Ваш ход' : 'Ход противника', side === 'p' ? '' : 'e');
   S.units.forEach(u => { if (u.side !== side) u.curse = false; });
   for (const v of onField(side).filter(v => v.poison)){ const n = v.poison; v.poison = 0; const b = box(TILES.get(v.id) || slotEl(v)); floatAt(b.x + b.w / 2, b.y + b.h * .2, 'яд', 'p'); await damage(v, n); }
-  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = apMax(u); u.acted = false; } u.retalUsed = false; });
+  S.units.forEach(u => { if (u.side === side){ u.sleep = !!u.stun; u.stun = false; u.atks = apMax(u); u.acted = false; u.swapUsed = false; } u.retalUsed = false; });
   S.mana[side] = Math.min(S.turn, MANA_MAX) + (S.manaNext[side] || 0); S.manaNext[side] = 0;
   let healed = false;
   for (const u of onField(side).filter(v => U(v).heal)){
@@ -2013,6 +2042,7 @@ async function newGame(){
   $('#hand').querySelectorAll('.card').forEach(c => c.remove());
   buildBoard(); renderModes();
   for (let i = 0; i < 6; i++) S.hand.e.push(newCard('e'));
+  if (!S.hand.e.some(c => c.type === 0)) S.hand.e[0].type = 0;
   await startTurn('p', true);
   Sfx.play('deal'); S.dealing = true;
   await drawCards('p', 6, true); S.dealing = false;
@@ -2091,7 +2121,7 @@ document.addEventListener('pointerdown', e => {
   const campUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'c');
   const fieldUnit = tile && S.units.find(u => u.id === +tile.dataset.id && u.where === 'f');
   if (fieldUnit){
-    if (!(canAttack(fieldUnit) || canMove(fieldUnit)) && !readyTrios().heads.has(fieldUnit.id)){ nope(tile, whyIdle(fieldUnit)); skipClick = true; return; }
+    if (!(canAttack(fieldUnit) || canMove(fieldUnit) || sleepSwap(fieldUnit)) && !readyTrios().heads.has(fieldUnit.id)){ nope(tile, whyIdle(fieldUnit)); skipClick = true; return; }
     e.preventDefault();
     drag = {sel:{unit:fieldUnit.id}, src:tile, field:true, x0:e.clientX, y0:e.clientY, on:false, ghost:null};
     return;
@@ -2165,6 +2195,13 @@ async function restart(){
 $('#reset').onclick = restart;
 const sndBtn = $('#snd'), sndShow = () => { sndBtn.textContent = 'Звук: ' + (Sfx.on ? 'вкл' : 'выкл'); sndBtn.setAttribute('aria-pressed', Sfx.on); };
 sndBtn.onclick = () => { Sfx.toggle(); sndShow(); }; sndShow();
+const upBtn = $('#upmode'), upShow = () => { upBtn.textContent = 'Апгрейд: ' + (INSTANT_UP ? 'сразу' : 'вручную'); upBtn.setAttribute('aria-pressed', INSTANT_UP); };
+upBtn.onclick = () => {
+  INSTANT_UP = !INSTANT_UP; try { localStorage.setItem('fieldInstantUp', INSTANT_UP ? '1' : '0'); } catch (e) {} upShow();
+  if (INSTANT_UP && S && !S.over && S.side === 'p' && !S.busy) enqueue(async () => { await autoMerge('p'); await autoMerge('e'); });
+  if (S) renderAll();
+};
+upShow();
 
 function renderModes(){
   $('#modes').innerHTML = Object.entries(MODES).map(([k, m]) => `<button class="mbtn" type="button" data-m="${k}" aria-pressed="${k === MODE_ID}" title="${m.tag}">${m.name}<small>${m.tag}</small></button>`).join('');
